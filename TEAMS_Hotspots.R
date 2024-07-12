@@ -537,6 +537,58 @@ hotspots %>%
 
 
 
+# Identify numerical columns to work with
+numerical_columns <- c('temp',
+                       'rh',
+                       'ws',
+                       'wd',
+                       'pcp',
+                       'ffmc',
+                       'dmc',
+                       'dc',
+                       'isi',
+                       'bui',
+                       'fwi',
+                       'ros',
+                       'sfc',
+                       'tfc',
+                       'bfc',
+                       'hfi',
+                       'cfb',
+                       'age',
+                       'estarea',
+                       'polyid',
+                       'pcuring',
+                       'cfactor',
+                       'greenup',
+                       'elev',
+                       'cfl',
+                       'tfc0',
+                       'sfl',
+                       'ecozone',
+                       'sfc0',
+                       'cbh')
+
+
+# Function to describe each numerical column
+describe_numerical <- function(df, cols) {
+  for (col in cols) {
+    cat("Variable:", col, "\n")
+    cat("Type:", class(df[[col]]), "\n")
+    cat("Number of Missing Values:", sum(is.na(df[[col]])), "\n")
+    cat("Summary Statistics:\n")
+    print(summary(df[[col]]))
+    cat("\n")
+  }
+}
+
+# Describe numerical columns
+describe_numerical(hotspots, numerical_columns)
+
+
+
+# Describe numerical columns SUMMER DATA
+describe_numerical(hotspots_peak, numerical_columns)
 
 
 
@@ -544,9 +596,27 @@ hotspots %>%
 
 
 
-"temp"    # MORE BELOW _ WITH SUBSET FOR SUMMER
-summary(hotspots$temp)
-hist(hotspots$temp)
+
+"temp" # Temperature (°C)
+
+# This variable shows temperature in Celsius at the specific location, at the fire event
+# range -21 to 43 with a mean 21, ok as the set includes information from winter and places with high elevation
+
+summary(hotspots_peak$temp)
+
+# For the peak season range is -9 to 43 with mean 21
+# Filter the dataset for subzero temperatures, check these entries 
+subzero_temps <- hotspots_peak %>%
+  filter(temp < 0)
+
+# Print the resulting data frame to inspect the entries with subzero temperatures
+
+subzero_temps %>%
+  group_by(year, month) %>%
+  summarise(n_entries = n()) %>%
+  arrange(year, month)
+
+# Most are in October of 2015, 2019 and 2023, a usual month to have sub-zero temp
 
 
 # Histogram to show distribution of temperatures
@@ -564,10 +634,27 @@ ggplot(hotspots, aes(x = temp)) +
         axis.text.y = element_text(size = 10))
 
 
+# Distribution of temp for hotspots_peak
+
+# Histogram to show distribution of temperatures
+ggplot(hotspots_peak, aes(x = temp)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Temperature at Fire Hotspots (Peak)",
+       x = "Temperature (°C)",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
 # Create a box plot to compare temperature distributions across years
-ggplot(hotspots, aes(x = factor(year), y = temp)) +
+ggplot(hotspots_peak, aes(x = factor(year), y = temp)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Temperature Distribution Across Years",
+  labs(title = "Temperature Distribution Across Years (Peak)",
        x = "Year",
        y = "Temperature (°C)") +
   theme_minimal() +
@@ -579,7 +666,7 @@ ggplot(hotspots, aes(x = factor(year), y = temp)) +
 
 
 # Create a summary table with mean temperature by year
-mean_temp_by_year <- hotspots %>%
+mean_temp_by_year <- hotspots_peak %>%
   group_by(year) %>%
   summarise(mean_temp = mean(temp, na.rm = TRUE))
 
@@ -587,7 +674,7 @@ mean_temp_by_year <- hotspots %>%
 ggplot(mean_temp_by_year, aes(x = year, y = mean_temp)) +
   geom_line(color = "steelblue", size = 1) +
   geom_point(color = "black", size = 2) +
-  labs(title = "Average Temperature Over Years",
+  labs(title = "Average Temperature Over Years (Peak)",
        x = "Year",
        y = "Average Temperature (°C)") +
   theme_minimal() +
@@ -598,9 +685,29 @@ ggplot(mean_temp_by_year, aes(x = year, y = mean_temp)) +
         axis.text.y = element_text(size = 10))
 
 
+hotspots_peak %>% 
+  filter(year == 2019) %>% 
+  summarise(
+    mean_temp = mean(temp, na.rm = TRUE),
+    min_temp = min(temp, na.rm = TRUE),
+    max_temp = max(temp, na.rm = TRUE),
+    median_temp = median(temp, na.rm = TRUE)
+  )
+# Summary table for the year 2019 shows lower temperatures than usual
+# Filter data for the year 2019
+hotspots_2019 <- hotspots_peak %>%
+  filter(year == 2019)
 
+# Create a line plot for temperature in 2019
+ggplot(hotspots_2019, aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Year 2019",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-
+# Temperature drops in October
 
 "rh" 
 
@@ -712,54 +819,6 @@ ggplot(hotspots, aes(x = rep_date, y = ffmc)) +
 
 
 # TEMP
-
-# Histogram to show distribution of temperatures
-ggplot(hotspots_peak, aes(x = temp)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Temperature at Fire Hotspots",
-       x = "Temperature (°C)",
-       y = "Frequency") +
-  scale_y_continuous(labels = comma) +  # Adjust y-axis labels to numeric format (scales package)
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-# Create a box plot to compare temperature distributions across years
-ggplot(hotspots_peak, aes(x = factor(year), y = temp)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Temperature Distribution Across Years",
-       x = "Year",
-       y = "Temperature (°C)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-# Create a summary table with mean temperature by year
-mean_temp_by_year <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(mean_temp = mean(temp, na.rm = TRUE))
-
-# Create a line plot to show temperature trends over years
-ggplot(mean_temp_by_year, aes(x = year, y = mean_temp)) +
-  geom_line(color = "steelblue", size = 1) +
-  geom_point(color = "black", size = 2) +
-  labs(title = "Average Temperature Over Years",
-       x = "Year",
-       y = "Average Temperature (°C)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
 
 
 
@@ -986,24 +1045,6 @@ ggplot(mean_pcp_by_year, aes(x = year, y = mean_pcp)) +
 # the rest of indices are numeric
 # only exeption if fuel column - categorical
 
-
-# temp: Temperature (°C)
-
-# Measures the temperature in degrees Celcius
-# -21 to 43 with a mean 21
-# CHECK LOW TEMPERATURE _ WHAT IT MEANS
-
-# Filter the dataset for subzero temperatures
-subzero_temps <- hotspots_peak %>%
-  filter(temp < 0)
-
-# Print the resulting data frame to inspect the entries with subzero temperatures
-print(subzero_temps)
-
-summary(subzero_temps$lat)
-summary(subzero_temps$lon)
-summary(subzero_temps$month)
-# Most are in October in Quesnel, BC October 13° / 1° - average
 
 
 # rh: Relative Humidity (%)
@@ -1253,56 +1294,3 @@ hotspots %>%
 #   cfb, cfl, tfc, bfc: Advanced metrics for detailed fire behavior analysis
 
 
-
-# Identify numerical columns to work with
-numerical_columns <- c('temp',
-                       'rh',
-                       'ws',
-                       'wd',
-                       'pcp',
-                       'ffmc',
-                       'dmc',
-                       'dc',
-                       'isi',
-                       'bui',
-                       'fwi',
-                       'ros',
-                       'sfc',
-                       'tfc',
-                       'bfc',
-                       'hfi',
-                       'cfb',
-                       'age',
-                       'estarea',
-                       'polyid',
-                       'pcuring',
-                       'cfactor',
-                       'greenup',
-                       'elev',
-                       'cfl',
-                       'tfc0',
-                       'sfl',
-                       'ecozone',
-                       'sfc0',
-                       'cbh')
-
-
-# Function to describe each numerical column
-describe_numerical <- function(df, cols) {
-  for (col in cols) {
-    cat("Variable:", col, "\n")
-    cat("Type:", class(df[[col]]), "\n")
-    cat("Number of Missing Values:", sum(is.na(df[[col]])), "\n")
-    cat("Summary Statistics:\n")
-    print(summary(df[[col]]))
-    cat("\n")
-  }
-}
-
-# Describe numerical columns
-describe_numerical(hotspots, numerical_columns)
-
-
-
-# Describe numerical columns SUMMER DATA
-describe_numerical(hotspots_peak, numerical_columns)
