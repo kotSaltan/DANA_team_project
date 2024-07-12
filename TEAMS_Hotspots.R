@@ -694,12 +694,10 @@ hotspots_peak %>%
     median_temp = median(temp, na.rm = TRUE)
   )
 # Summary table for the year 2019 shows lower temperatures than usual
-# Filter data for the year 2019
-hotspots_2019 <- hotspots_peak %>%
-  filter(year == 2019)
+
 
 # Create a line plot for temperature in 2019
-ggplot(hotspots_2019, aes(x = rep_date, y = temp)) +
+ggplot(hotspots_peak %>% filter(year == 2019), aes(x = rep_date, y = temp)) +
   geom_line(color = "steelblue") +
   labs(title = "Temperature Over the Year 2019",
        x = "Date",
@@ -709,7 +707,65 @@ ggplot(hotspots_2019, aes(x = rep_date, y = temp)) +
 
 # Temperature drops in October
 
-"rh" 
+
+
+
+
+
+# Create Line Plots for 4 different years to compare temp
+
+# Define common axis limits
+y_limits <- range(hotspots_peak$temp[hotspots_peak$year %in% c(2014, 2018, 2020, 2023)])
+
+# Create plots with common axis limits
+plot_2014 <- ggplot(hotspots_peak %>% filter(year == 2014), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Peak Season 2014",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2018 <- ggplot(hotspots_peak %>% filter(year == 2018), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Peak Season 2018",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2020 <- ggplot(hotspots_peak %>% filter(year == 2020), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Peak Season 2020",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2023 <- ggplot(hotspots_peak %>% filter(year == 2023), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Peak Season 2023",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+# Arrange the plots side by side
+grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
+
+
+
+
+
+
+"rh" # Relative Humidity (%)
+
+# The amount of moisture in the air as a percentage
+# 0 to 100 with a mean 36
 
 "ws"     
 
@@ -1039,18 +1095,6 @@ ggplot(mean_pcp_by_year, aes(x = year, y = mean_pcp)) +
 
 
 
-
-# uid identificator
-# where the data comes from (source, sensor, satellite) and the BC identifier are categorical, char objects
-# the rest of indices are numeric
-# only exeption if fuel column - categorical
-
-
-
-# rh: Relative Humidity (%)
-
-# The amount of moisture in the air as a percentage
-# 0 to 100 with a mean 36
 
 
 # ws: Wind Speed (km/h)
