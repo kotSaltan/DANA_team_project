@@ -557,7 +557,6 @@ numerical_columns <- c('temp',
                        'cfb',
                        'age',
                        'estarea',
-                       'polyid',
                        'pcuring',
                        'cfactor',
                        'greenup',
@@ -570,25 +569,39 @@ numerical_columns <- c('temp',
                        'cbh')
 
 
-# Function to describe each numerical column
+
+# Function to describe each numerical column 
 describe_numerical <- function(df, cols) {
+  summary_list <- list()
+  
   for (col in cols) {
-    cat("Variable:", col, "\n")
-    cat("Type:", class(df[[col]]), "\n")
-    cat("Number of Missing Values:", sum(is.na(df[[col]])), "\n")
-    cat("Summary Statistics:\n")
-    print(summary(df[[col]]))
-    cat("\n")
+    summary_stats <- data.frame(
+      Variable = col,
+      Missing_Values = sum(is.na(df[[col]])),
+      Min = round(min(df[[col]], na.rm = TRUE), 2),
+      Median = round(median(df[[col]], na.rm = TRUE), 2),
+      Mean = round(mean(df[[col]], na.rm = TRUE), 2),
+      Max = round(max(df[[col]], na.rm = TRUE), 2)
+    )
+    summary_list[[col]] <- summary_stats
   }
+  
+  summary_table <- bind_rows(summary_list)
+  return(summary_table)
 }
 
-# Describe numerical columns
-describe_numerical(hotspots, numerical_columns)
+# Describe numerical columns for hotspots 
+summary_hotspots <- describe_numerical(hotspots, numerical_columns)
+
+# Print the summary table
+print(summary_hotspots)
 
 
+# Describe numerical columns for hotspots_peak
+summary_hotspots_peak <- describe_numerical(hotspots, numerical_columns)
 
-# Describe numerical columns SUMMER DATA
-describe_numerical(hotspots_peak, numerical_columns)
+# Print the summary table
+print(summary_hotspots_peak)
 
 
 
@@ -601,8 +614,6 @@ describe_numerical(hotspots_peak, numerical_columns)
 
 # This variable shows temperature in Celsius at the specific location, at the fire event
 # range -21 to 43 with a mean 21, ok as the set includes information from winter and places with high elevation
-
-summary(hotspots_peak$temp)
 
 # For the peak season range is -9 to 43 with mean 21
 # Filter the dataset for subzero temperatures, check these entries 
@@ -1336,5 +1347,7 @@ hotspots %>%
 # Specialized Variables:
 
 #   cfb, cfl, tfc, bfc: Advanced metrics for detailed fire behavior analysis
+
+############## draft####
 
 
