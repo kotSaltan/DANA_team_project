@@ -1517,8 +1517,23 @@ corrplot(corr_matrix, method = "circle", type = "lower",
 # High values in these indices suggest drier conditions, which can lead to higher fire. 
 
 
+# ISI vs BUI
 
-"fwi"      
+# ISI is more directly related to the rate of fire spread. 
+# It can how how quickly a fire can move,
+# particularly in higher wind conditions.
+
+# BUI shows more total fire potential.
+# It accounts for deeper fuel moisture and long-term drought conditions,
+# showing amount of fuel available for a fire.
+
+
+"fwi" # Fire Weather Index
+# A numeric rating of fire intensity. It is based on the ISI and the BUI, 
+# and is used as a general index of fire danger throughout the forested areas of Canada.
+
+
+
 "fuel"     
 "ros"      
 "sfc"      
