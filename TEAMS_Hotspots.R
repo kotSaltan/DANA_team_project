@@ -1067,7 +1067,7 @@ print(monthly_avg)
 
 
 
-# Plot histogram for FFMC
+# Plot histogram for DMC
 ggplot(hotspots_peak, aes(x = dmc)) +
   geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of DMC Values", x = "DMC", y = "Frequency") +
@@ -1111,7 +1111,89 @@ ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = ye
 # This shows that mid to late summer is typically drier, 
 # the risk of fire ignition and spread is high during these months.
 
-"dc"      
+
+
+"dc" # Drought Code 
+# A numeric rating of the average moisture content of deep, compact organic layers.
+# This code is a useful indicator of seasonal drought effects on forest fuels
+# and the amount of smoldering in deep duff layers and large logs.
+
+
+# 0-100: Indicates wet conditions with low fire potential.
+# 100-300: Moderate drought conditions with increasing fire potential.
+# 300-500: High drought conditions, leading to high fire risk.
+# 500+: Indicates extreme drought, posing a very high fire risk and potential for intense, prolonged burning.
+
+# NEED ADVICE - MAYBE DO THIS AVERAGE TABLE IN THE BEGINNING FOR ALL. 
+# FOR NOW WILL UPDATE IT EVERYTIME
+
+# ADD NEW MEAN VALUES
+# Monthly averages for temp, rh, ws and pcp, ffmc, dmc, dc
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+
+
+# Plot histogram for DC
+ggplot(hotspots_peak, aes(x = dc)) +
+  geom_histogram(binwidth = 20, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of DC Values", x = "DC", y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal()
+
+# Plot boxplot for DC
+ggplot(hotspots_peak, aes(x = factor(year), y = dc)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "DC Distribution Across Years",
+       x = "Year",
+       y = "DC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Line plot for DC over time
+ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "DC by Month",
+       x = "Month",
+       y = "DC",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# DC is important because it helps understand how dry the forest floor is
+# and the chance for deep-burning fires.
+# Higher DC values usually mean longer dry periods and can show how severe fire seasons might be.
+
+# The histogram of DC values from 2014 to 2023 shows most values are between 300 and 600,
+# peaking around 500. This means BC often has conditions that can lead to deep-burning fires.
+
+# The boxplot of DC values across years show the variability and trends in drought conditions over time.
+# 2017 and 2018: These years have higher median and upper whisker values,
+# meaning very dry conditions, likely leading to severe fire seasons.
+# 2016 and 2019: These years show lower DC values, 
+# suggesting wetter conditions and potentially less severe fire activity.
+  
+# The line plot of DC values by month shows a clear seasonal trend,
+# DC values increase during the summer months (July to August) and decrease in the autumn.
+# This occurs at the time of the peak fire season.
+# There are a lot of high DC values, more than 500, it shows conditions for deep-burning fires.
+
 "isi"     
 "bui"     
 "fwi"      
