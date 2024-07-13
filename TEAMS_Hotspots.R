@@ -598,7 +598,7 @@ print(summary_hotspots)
 
 
 # Describe numerical columns for hotspots_peak
-summary_hotspots_peak <- describe_numerical(hotspots, numerical_columns)
+summary_hotspots_peak <- describe_numerical(hotspots_peak, numerical_columns)
 
 # Print the summary table
 print(summary_hotspots_peak)
@@ -1390,6 +1390,7 @@ monthly_avg <- hotspots_peak_filtered %>%
             avg_dmc = mean(dmc, na.rm = TRUE),
             avg_dc = mean(dc, na.rm = TRUE),
             avg_isi = mean(isi, na.rm = TRUE),
+            avg_bui = mean(bui, na.rm = TRUE),
             .groups = 'drop') 
 
 print(monthly_avg)
@@ -1440,9 +1441,51 @@ corrplot(corr_matrix, method = "circle", type = "lower",
 
 
 
+"bui" # Buildup Index 
+# A numerical rating of the total amount of fuel available for combustion.
+# It is derived from the Duff Moisture Code (DMC) and the Drought Code (DC)
+
+# Low: 0-19.9
+# Moderate: 20-36.9
+# High: 37-52.9
+# Very High: 53-75.9
+# Extreme: 76 and above
+
+ggplot(hotspots_peak_filtered, aes(x = bui)) +
+  geom_histogram(binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of BUI Values", x = "BUI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+ggplot(hotspots_peak_filtered, aes(x = factor(year), y = bui)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "BUI Distribution Across Years",
+       x = "Year",
+       y = "BUI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
 
 
-"bui"     
+ggplot(monthly_avg, aes(x = month, y = avg_bui, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "BUI by Month",
+       x = "Month",
+       y = "BUI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# The histogram shows that BUI values mostly range from 60 to 100. This means the fire potential is moderate to high for most of the dataset.
+# Boxplots show BUI values vary year to year. Some years have higher values, which means drier conditions and a higher chance of intense fires.
+# BUI peaks in mid-summer, which matches the time when fire activity is usually the highest.
+
+sum(is.na(hotspots$bui))
+
 "fwi"      
 "fuel"     
 "ros"      
@@ -1554,13 +1597,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 # more variables####
 
-
-# isi: Initial Spread Index
-
-# Combines wind speed and FFMC to estimate the rate of spread immediately following ignition
-# 0 to 137 with mean of 8
-# HOW THIS INDEX CORRELATES WITH ffmc and ws
-# SAME CONCERNS WITH THE VALUES
 
 
 # bui: Buildup Index
@@ -1740,62 +1776,10 @@ hotspots %>%
 
 ############## draft####
 
-monthly_avg <- hotspots_peak_filtered %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(temp, na.rm = TRUE),
-            avg_rh = mean(rh, na.rm = TRUE),
-            avg_ws = mean(ws, na.rm = TRUE),
-            avg_pcp = mean(pcp, na.rm = TRUE),
-            avg_ffmc = mean(ffmc, na.rm = TRUE),
-            avg_dmc = mean(dmc, na.rm = TRUE),
-            avg_dc = mean(dc, na.rm = TRUE),
-            avg_isi = mean(isi, na.rm = TRUE),
-            .groups = 'drop') 
-
-print(monthly_avg)
-
-# Using monthly averages instead of individual observations for quicker plotting
-
-ggplot(monthly_avg, aes(x = avg_ws, y = avg_isi)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(title = "Average ISI vs Average Wind Speed", x = "Average Wind Speed (km/h)", y = "Average ISI") +
-  theme_minimal()
+library(naniar)
 
 
-ggplot(monthly_avg, aes(x = avg_temp, y = avg_isi)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(title = "Average ISI vs Average Temperature", x = "Average Temperature (°C)", y = "Average ISI") +
-  theme_minimal()
 
-
-ggplot(monthly_avg, aes(x = avg_rh, y = avg_isi)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "green") +
-  labs(title = "Average ISI vs Average Relative Humidity", x = "Average Relative Humidity (%)", y = "Average ISI") +
-  theme_minimal()
-
-# Average ISI vs. Average Relative Humidity: Shows that as relative humidity increases, ISI decreases.
-# Average ISI vs. Average Wind Speed: Shows that higher wind speeds are linked to higher ISI values.
-# Average ISI vs. Average Temperature: Shows that higher temperatures are associated with higher ISI values.
-
-
-# Select columns 
-data_corr <- hotspots_peak_filtered %>%
-  select(isi, ws, temp, rh)
-
-# Calculate the correlation matrix
-corr_matrix <- cor(data_corr)
-
-# Plot the correlation matrix
-corrplot(corr_matrix, method = "circle", type = "lower",
-         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of ISI and Weather Variables",
-         mar = c(0, 0, 1, 0))
-
-# Strong negative correlation between ISI and relative humidity.
-# Strong positive correlation between ISI and temperature.
-# Moderate positive correlation between ISI and wind speed.
 
 
 
