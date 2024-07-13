@@ -1577,7 +1577,52 @@ ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = ye
 # The data shows significant variability in fire danger, 
 # summer months and certain years  have extreme outliers.
 
-"fuel"     
+# FWI varies significantly year to year due to a combination of climatic factors, 
+# such as temperature, precipitation, and wind speed. 
+# For deeper analyses and trends weather has to be closely inspected.
+
+# The variation is influenced by both short-term weather patterns 
+# and long-term changes.
+
+
+"fuel"  
+
+# D1: Deciduous trees (leafless, early spring to fall)
+# C2, C3, C4, C5, C7: Various types of coniferous trees
+# O1, O1a, O1b: Grass or herbaceous vegetation
+# M1, M1M2, M2, M2_25, M2_35, M2_50, M2_65: Mixedwood or transitional vegetation
+# bog: Wetland areas with peatland vegetation
+# water: Water bodies
+# urban: Urban areas
+# non_fuel: Areas with no significant vegetation (rock, gravel)
+# low_veg: Areas with low vegetation (possibly recently burned or cleared)
+# farm: Agricultural areas
+# D2: Deadfall or downed wood
+
+# Group by fuel and summarize
+fuel_counts <- hotspots_peak_filtered %>%
+  group_by(fuel) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) 
+
+# Print the fuel counts
+print(fuel_counts)
+
+# Create a bar plot for the fuel column
+ggplot(hotspots_peak_filtered, aes(x = fuel)) +
+  geom_bar(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Fuel Types", x = "Fuel Type", y = "Count") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# The dataset shows a variety of fuel types, with "C2" (566,651 records)
+# and "C3" (383,781 records) being the most common. 
+# Other significant fuel types include "D1" (187,803 records) 
+# and "C7" (149,801 records).
+
+
+
 "ros"      
 "sfc"      
 "tfc"      
@@ -1851,6 +1896,7 @@ hotspots %>%
 #   cfb, cfl, tfc, bfc: Advanced metrics for detailed fire behavior analysis
 
 ############## draft####
+
 
 
 
