@@ -350,7 +350,7 @@ ggplot(fire_events_per_month, aes(x = month, y = factor(year), fill = n_events))
 hotspots_peak <- hotspots %>%
   filter(month(rep_date) %in% c(5, 6, 7, 8, 9, 10))
 
-write.csv(hotspots_peak, "hotspots_May_Oct.csv", row.names = FALSE)
+# write.csv(hotspots_peak, "hotspots_May_Oct.csv", row.names = FALSE)
 
 
 # MAKE A HEATMAP
@@ -825,6 +825,87 @@ plot_2023 <- ggplot(hotspots_peak %>% filter(year == 2023), aes(x = rep_date, y 
 grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
 
 # The variability in relative humidity makes it difficult to establish a consistent trend. 
+
+
+
+# PLOTS TO COMPARE TEMP AND RH
+
+
+
+# Monthly averages for temp and rh
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE), 
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+
+# Plot monthly temperature averages
+temp_plot <- ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
+  geom_line() +
+  labs(title = "Average Temperature by Month",
+       x = "Month",
+       y = "Average Temperature (°C)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Plot monthly humidity averages
+humidity_plot <- ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(year), group = year)) +
+  geom_line() +
+  labs(title = "Average Humidity by Month",
+       x = "Month",
+       y = "Average Humidity (%)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+grid.arrange(temp_plot, humidity_plot, ncol = 2)
+
+
+
+
+# PLOTS FOR 4 YEARS
+
+# Filter for specific years
+monthly_avg_filtered <- monthly_avg %>% 
+  filter(year %in% c(2014, 2018, 2020, 2023))
+
+# Plot monthly temperature averages
+temp_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
+  geom_line(size = 1) +
+  labs(title = "Average Temperature by Month",
+       x = "Month",
+       y = "Average Temperature (°C)",
+       color = "Year") +
+  scale_color_manual(values = c("2014" = "lightblue", "2018" = "plum", "2020" = "lightgreen", "2023" = "lightcoral")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot monthly humidity averages
+humidity_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_rh, color = factor(year), group = year)) +
+  geom_line(size = 1) +
+  labs(title = "Average Humidity by Month",
+       x = "Month",
+       y = "Average Humidity (%)",
+       color = "Year") +
+  scale_color_manual(values = c("2014" = "lightblue", "2018" = "plum", "2020" = "lightgreen", "2023" = "lightcoral")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Arrange the plots side by side
+grid.arrange(temp_plot_filtered, humidity_plot_filtered, ncol = 2)
+
+# There is a combination of high temperatures and low humidity during the peak fire months (June to September).
+# 2018 and 2023 had higher temperatures and lower humidity, meaning more fires.
+# When humidity rises sharply in October, fire activity goes down,
+# indicating the end of the peak fire season.
+
 
 "ws"     
 
@@ -1397,5 +1478,6 @@ hotspots %>%
 #   cfb, cfl, tfc, bfc: Advanced metrics for detailed fire behavior analysis
 
 ############## draft####
+
 
 
