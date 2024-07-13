@@ -1194,6 +1194,8 @@ ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = yea
 # This occurs at the time of the peak fire season.
 # There are a lot of high DC values, more than 500, it shows conditions for deep-burning fires.
 
+
+
 "isi"     
 "bui"     
 "fwi"      
@@ -1306,24 +1308,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 # more variables####
-
-
-
-
-# dmc: Duff Moisture Code
-
-# The average moisture content of loosely compacted organic layers of moderate depth
-# 0 to 459 with mean of 90
-# SAME CONCERNS
-# WHY ARE THESE VALUES CLOSE _ LOOK INTO SPECIFIC EVENTS
-
-
-# dc: Drought Code
-
-# Represents the moisture content of deep, compact organic layers
-# 0 to 1122 with mean of 512
-# HOW IS THIS DIFFERENT FROM INDICES ABOVE
-# SAME CONCERNS WITH THE VALUES
 
 
 # isi: Initial Spread Index
@@ -1511,3 +1495,83 @@ hotspots %>%
 
 ############## draft####
 
+# quick load####
+
+library(readr)
+library(readxl)
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(corrplot)
+library(gridExtra)
+library(reshape2)
+library(GGally)
+library(caret)
+library(dbscan)
+library(scales)
+set.seed(123)
+proj.path <- getwd()
+hotspots_raw <- read_csv(file.path(proj.path,'data', 'hotspots.csv'))
+hotspots_raw$rep_date <- as.POSIXct(hotspots_raw$rep_date, format = "%Y-%m-%d %H:%M:%S")
+hotspots_raw$year <- year(hotspots_raw$rep_date)
+hotspots_raw$month <- month(hotspots_raw$rep_date, label = TRUE, abbr = TRUE) 
+hotspots <- hotspots_raw %>%filter(year >= 2014 & year <= 2023)
+
+event_data <- hotspots %>%select(lat, lon, rep_date)
+event_data$date_numeric <- as.numeric(as.POSIXct(event_data$rep_date))
+event_data$date_scaled <- event_data$date_numeric * 0.001
+db <- dbscan(event_data[, c("lat", "lon", "date_scaled")], eps = 0.6, minPts = 5)
+hotspots$event_cluster <- db$cluster
+
+event_details <- hotspots %>%  filter(event_cluster != 0) %>%  group_by(year) %>%  summarise(    first_cluster = first(event_cluster),    start_date_hotspot = min(rep_date),    end_date_hotspot = max(rep_date),    events_count = length(unique(event_cluster))  )
+fire_events_per_month <- hotspots %>%  group_by(month) %>%  summarise(n_events = n())
+fire_events_wide <- fire_events_per_month %>%  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
+
+
+hotspots_peak <- hotspots %>%  filter(month(rep_date) %in% c(5, 6, 7, 8, 9, 10))
+
+fire_events_per_month_subset <- hotspots_peak %>%  filter(event_cluster != 0) %>%  group_by(year, month) %>%  summarise(n_events = n()) %>%  ungroup()
+fire_events_subset_wide <- fire_events_per_month_subset %>%  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
+
+events_count <- event_details %>%  select(year, events_count)
+hotspots_df_summary <- hotspots %>%  group_by(year) %>%  summarise(    start_date = min(rep_date),    end_date = max(rep_date),    hotspots_df_day_count = as.numeric(difftime(max(rep_date), min(rep_date), units = "days"))  )
+hotspots_df_summary <- hotspots_df_summary %>%  left_join(events_count, by = "year") %>%  mutate(    start_month_day = format(as.Date(start_date), "%m-%d"),    end_month_day = format(as.Date(end_date), "%m-%d")  )
+
+
+numerical_columns <- c('temp',                       'rh',                       'ws',                       'wd',                       'pcp',                       'ffmc',                       'dmc',                       'dc',                       'isi',                       'bui',                       'fwi',                       'ros',                       'sfc',                       'tfc',                       'bfc',                       'hfi',                       'cfb',                       'age',                       'estarea',                       'pcuring',                       'cfactor',                       'greenup',                       'elev',                       'cfl',                       'tfc0',                       'sfl',                       'ecozone',                       'sfc0',                       'cbh')
+
+describe_numerical <- function(df, cols) {
+  summary_list <- list()
+  
+  for (col in cols) {
+    summary_stats <- data.frame(
+      Variable = col,
+      Missing_Values = sum(is.na(df[[col]])),
+      Min = round(min(df[[col]], na.rm = TRUE), 2),
+      Median = round(median(df[[col]], na.rm = TRUE), 2),
+      Mean = round(mean(df[[col]], na.rm = TRUE), 2),
+      Max = round(max(df[[col]], na.rm = TRUE), 2)
+    )
+    summary_list[[col]] <- summary_stats
+  }
+  
+  summary_table <- bind_rows(summary_list)
+  return(summary_table)
+}
+
+summary_hotspots <- describe_numerical(hotspots, numerical_columns)
+summary_hotspots_peak <- describe_numerical(hotspots, numerical_columns)
+
+
+monthly_avg <- hotspots_peak %>%  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            .groups = 'drop') 
+
+
+
+#####
+#
