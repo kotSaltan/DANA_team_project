@@ -536,7 +536,7 @@ hotspots %>%
 
 
 
-
+# numerical####
 # Identify numerical columns to work with
 numerical_columns <- c('temp',
                        'rh',
@@ -623,7 +623,7 @@ print(monthly_avg)
 
 
 
-"temp" # Temperature (°C)
+"temp" # Temperature (°C)####
 
 # This variable shows temperature in Celsius at the specific location, at the fire event
 # range -21 to 43 with a mean 21, ok as the set includes information from winter and places with high elevation
@@ -776,7 +776,7 @@ grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
 
 
 
-"rh" # Relative Humidity (%)
+"rh" # Relative Humidity (%)####
 
 # The amount of moisture in the air as a percentage
 # 0 to 100 with a mean 36
@@ -899,7 +899,7 @@ grid.arrange(temp_plot_filtered, humidity_plot_filtered, ncol = 2)
 # indicating the end of the peak fire season.
 
 
-"ws" # Wind Speed (km/h)
+"ws" # Wind Speed (km/h)####
 
 # 0 to 59 with mean of 9
 # Higher wind speeds in peak fire months can make fire more intense and make it spread faster.
@@ -941,7 +941,7 @@ windRose(mydata = hotspots_peak, ws = "ws", wd = "wd",
 
 
 
-"pcp" # Precipitation (mm)
+"pcp" # Precipitation (mm)####
 # 0 to 651 with mean of 0.2
 # So the amount is very low generally
 
@@ -960,6 +960,8 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 # The plot indicates a clear seasonal variation in precipitation, 
 # with a noticeable peak in July for most years. 
 
+
+# indices####
 
 
 
@@ -1032,7 +1034,71 @@ ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = y
 
 # The histogram reveals that most FFMC values from 2014 to 2023 are between 85 and 99,
 # confirming consistently dry conditions.
-"dmc"     
+
+
+"dmc" # Duff Moisture Code
+# A numeric rating of the average moisture content
+# of loosely compacted organic layers of moderate depth. 
+# This code gives an indication of fuel consumption in moderate duff layers 
+# and medium-size woody material.
+
+# It ranges typically from 0 to over 200,
+# higher values indicate drier conditions and a higher fire risk.
+
+# Values below 20: Low fire danger, duff layers are wet, and ignition is unlikely.
+# Values between 21 and 40: Moderate fire danger, duff layers start drying.
+# Values between 41 and 100: High fire danger, the duff layer is dry, prone to ignition.
+# Values above 100: Extreme fire danger, the duff layer is very dry, and ignition is very likely with the potential for intense fires.
+
+
+# ADD NEW MEAN VALUES
+# Monthly averages for temp, rh, ws and pcp, ffmc, dmc
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+
+
+# Plot histogram for FFMC
+ggplot(hotspots_peak, aes(x = dmc)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of DMC Values", x = "DMC", y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal()
+
+# Plot boxplot for DMC
+ggplot(hotspots_peak, aes(x = factor(year), y = dmc)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "DMC Distribution Across Years",
+       x = "Year",
+       y = "DMC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Line plot for DMC over time
+ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "DMC by Month",
+       x = "Month",
+       y = "DMC",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
 "dc"      
 "isi"     
 "bui"     
