@@ -730,7 +730,7 @@ y_limits <- range(hotspots_peak$temp[hotspots_peak$year %in% c(2014, 2018, 2020,
 
 # Create plots with common axis limits
 plot_2014 <- ggplot(hotspots_peak %>% filter(year == 2014), aes(x = rep_date, y = temp)) +
-  geom_line(color = "steelblue") +
+  geom_line(color = "darkred") +
   labs(title = "Temperature Over the Peak Season 2014",
        x = "Date",
        y = "Temperature (°C)") +
@@ -739,7 +739,7 @@ plot_2014 <- ggplot(hotspots_peak %>% filter(year == 2014), aes(x = rep_date, y 
   scale_y_continuous(limits = y_limits)
 
 plot_2018 <- ggplot(hotspots_peak %>% filter(year == 2018), aes(x = rep_date, y = temp)) +
-  geom_line(color = "steelblue") +
+  geom_line(color = "darkred") +
   labs(title = "Temperature Over the Peak Season 2018",
        x = "Date",
        y = "Temperature (°C)") +
@@ -748,7 +748,7 @@ plot_2018 <- ggplot(hotspots_peak %>% filter(year == 2018), aes(x = rep_date, y 
   scale_y_continuous(limits = y_limits)
 
 plot_2020 <- ggplot(hotspots_peak %>% filter(year == 2020), aes(x = rep_date, y = temp)) +
-  geom_line(color = "steelblue") +
+  geom_line(color = "darkred") +
   labs(title = "Temperature Over the Peak Season 2020",
        x = "Date",
        y = "Temperature (°C)") +
@@ -757,7 +757,7 @@ plot_2020 <- ggplot(hotspots_peak %>% filter(year == 2020), aes(x = rep_date, y 
   scale_y_continuous(limits = y_limits)
 
 plot_2023 <- ggplot(hotspots_peak %>% filter(year == 2023), aes(x = rep_date, y = temp)) +
-  geom_line(color = "steelblue") +
+  geom_line(color = "darkred") +
   labs(title = "Temperature Over the Peak Season 2023",
        x = "Date",
        y = "Temperature (°C)") +
@@ -769,7 +769,7 @@ plot_2023 <- ggplot(hotspots_peak %>% filter(year == 2023), aes(x = rep_date, y 
 grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
 
 
-
+# 2018 and 2023 have on average higher temp during peak fire months
 
 
 
@@ -777,6 +777,54 @@ grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
 
 # The amount of moisture in the air as a percentage
 # 0 to 100 with a mean 36
+
+
+# Create Line Plots for 4 different years to compare rh
+
+# Define common axis limits
+y_limits <- range(hotspots_peak$rh[hotspots_peak$year %in% c(2014, 2018, 2020, 2023)])
+
+# Create plots with common axis limits
+plot_2014 <- ggplot(hotspots_peak %>% filter(year == 2014), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Humidity Over the Peak Season 2014",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2018 <- ggplot(hotspots_peak %>% filter(year == 2018), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Humidity Over the Peak Season 2018",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2020 <- ggplot(hotspots_peak %>% filter(year == 2020), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Humidity Over the Peak Season 2020",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2023 <- ggplot(hotspots_peak %>% filter(year == 2023), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Humidity Over the Peak Season 2023",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+# Arrange the plots side by side
+grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
+
+# The variability in relative humidity makes it difficult to establish a consistent trend. 
 
 "ws"     
 
