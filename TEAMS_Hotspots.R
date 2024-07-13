@@ -943,10 +943,10 @@ windRose(mydata = hotspots_peak, ws = "ws", wd = "wd",
 # So the amount is very low generally
 
 
-# Plot monthly precipitation averages with smoothing
+# Plot monthly precipitation averages
 ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
-  geom_line() +
-  geom_smooth(se = FALSE) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
   labs(title = "Average Precipitation by Month",
        x = "Month",
        y = "Average Precipitation (mm)",
@@ -954,6 +954,8 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+# The plot indicates a clear seasonal variation in precipitation, 
+# with a noticeable peak in July for most years. 
 
 
 
