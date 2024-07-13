@@ -1379,6 +1379,64 @@ ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = ye
 # Wind speed greatly affects ISI, as seen on July 19, 2014, at McAllister Creek, where high wind speeds caused high ISI values.
 
 
+# SHOW CORRELATION OF ISI AND WEATHER INDICES
+monthly_avg <- hotspots_peak_filtered %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+# Using monthly averages instead of individual observations for quicker plotting
+
+ggplot(monthly_avg, aes(x = avg_ws, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Average ISI vs Average Wind Speed", x = "Average Wind Speed (km/h)", y = "Average ISI") +
+  theme_minimal()
+
+
+ggplot(monthly_avg, aes(x = avg_temp, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average ISI vs Average Temperature", x = "Average Temperature (°C)", y = "Average ISI") +
+  theme_minimal()
+
+
+ggplot(monthly_avg, aes(x = avg_rh, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "green") +
+  labs(title = "Average ISI vs Average Relative Humidity", x = "Average Relative Humidity (%)", y = "Average ISI") +
+  theme_minimal()
+
+# Average ISI vs. Average Relative Humidity: Shows that as relative humidity increases, ISI decreases.
+# Average ISI vs. Average Wind Speed: Shows that higher wind speeds are linked to higher ISI values.
+# Average ISI vs. Average Temperature: Shows that higher temperatures are associated with higher ISI values.
+
+
+# Select columns 
+data_corr <- hotspots_peak_filtered %>%
+  select(isi, ws, temp, rh)
+
+# Calculate the correlation matrix
+corr_matrix <- cor(data_corr)
+
+# Plot the correlation matrix
+corrplot(corr_matrix, method = "circle", type = "lower",
+         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of ISI and Weather Variables",
+         mar = c(0, 0, 1, 0))
+
+# Strong negative correlation between ISI and relative humidity.
+# Strong positive correlation between ISI and temperature.
+# Moderate positive correlation between ISI and wind speed.
+
 
 
 
@@ -1682,8 +1740,62 @@ hotspots %>%
 
 ############## draft####
 
+monthly_avg <- hotspots_peak_filtered %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+# Using monthly averages instead of individual observations for quicker plotting
+
+ggplot(monthly_avg, aes(x = avg_ws, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Average ISI vs Average Wind Speed", x = "Average Wind Speed (km/h)", y = "Average ISI") +
+  theme_minimal()
 
 
+ggplot(monthly_avg, aes(x = avg_temp, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average ISI vs Average Temperature", x = "Average Temperature (°C)", y = "Average ISI") +
+  theme_minimal()
+
+
+ggplot(monthly_avg, aes(x = avg_rh, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "green") +
+  labs(title = "Average ISI vs Average Relative Humidity", x = "Average Relative Humidity (%)", y = "Average ISI") +
+  theme_minimal()
+
+# Average ISI vs. Average Relative Humidity: Shows that as relative humidity increases, ISI decreases.
+# Average ISI vs. Average Wind Speed: Shows that higher wind speeds are linked to higher ISI values.
+# Average ISI vs. Average Temperature: Shows that higher temperatures are associated with higher ISI values.
+
+
+# Select columns 
+data_corr <- hotspots_peak_filtered %>%
+  select(isi, ws, temp, rh)
+
+# Calculate the correlation matrix
+corr_matrix <- cor(data_corr)
+
+# Plot the correlation matrix
+corrplot(corr_matrix, method = "circle", type = "lower",
+         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of ISI and Weather Variables",
+         mar = c(0, 0, 1, 0))
+
+# Strong negative correlation between ISI and relative humidity.
+# Strong positive correlation between ISI and temperature.
+# Moderate positive correlation between ISI and wind speed.
 
 
 
