@@ -1196,7 +1196,194 @@ ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = yea
 
 
 
-"isi"     
+"isi" # Initial Spread Index
+# A numerical rating of the expected rate of fire spread
+# based on wind speed, temperature, and fine fuel moisture content. 
+# ISI is crucial for understanding how quickly a fire can spread once it has ignited.
+
+# 0-3: Low spread potential. Fires will spread slowly and are relatively easy to control.
+# 4-7: Moderate spread potential. Fires spread more quickly and may require more effort to control.
+# 8-12: High spread potential. Fires spread rapidly and can be difficult to control.
+# 13-19: Very high spread potential. Fires spread very rapidly and are challenging to control.
+# 20+: Extreme spread potential. Fires spread uncontrollably and can be extremely dangerous.
+
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+# Plot histogram for ISI
+ggplot(hotspots_peak, aes(x = isi)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of ISI Values", x = "ISI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+# Plot boxplot for ISI
+ggplot(hotspots_peak, aes(x = factor(year), y = isi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "ISI Distribution Across Years",
+       x = "Year",
+       y = "ISI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Line plot for ISI over time
+ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "ISI by Month",
+       x = "Month",
+       y = "ISI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# The graphs illustrate that ISI values tend to peak during the summer months,
+# indicating higher fire spread potential during this period.
+# The boxplot shows variability in ISI values across years, with notable outliers in 2014 and 2020.
+# The histogram indicates that most ISI values are low to moderate.
+# To improve the clarity of these insights,
+# removing NA values and extreme outliers from the dataset is necessary.
+
+# Remove rows with NA in the ISI column
+hotspots_peak_filtered <- hotspots_peak %>%
+  filter(!is.na(isi))
+
+# Remove extreme outliers
+hotspots_peak_filtered <- hotspots_peak_filtered %>%
+  filter(isi < 60)
+dim(hotspots_peak_filtered)
+
+# Filter out entries with ISI values greater than 75
+event_outliers <- hotspots_peak %>%
+  filter(isi >= 60)
+
+# Check single event
+dim(event_outliers)
+view(event_outliers)
+
+
+
+# The data from July 19, 2014, shows very high ISI values at a specific location in British Columbia.
+# This matches the date of the Mount McAllister fire, a large wildfire that burned over 20,000 hectares.
+# The weather that day included high temperatures, low humidity, and strong winds, which made the fire spread quickly.
+# These conditions explain the high ISI values, indicating a high potential for severe fire behavior.
+# The data points from July 19, 2014, are all in the same cluster, showing that the clustering algorithm grouped them correctly.
+
+# Filter the specific event cluster
+event_McAllister <- hotspots %>%
+  filter(event_cluster %in% 370:372) 
+
+# Calculate monthly averages for July 2014
+monthly_avg_july <- monthly_avg %>%
+  filter(year == 2014 & month == "Jul")
+
+# Plot the weather conditions with average lines
+ggplot(event_McAllister, aes(x = rep_date)) +
+  geom_point(aes(y = temp, color = "Temperature"), size = 3) +
+  geom_point(aes(y = rh, color = "Relative Humidity"), size = 3) +
+  geom_point(aes(y = ws, color = "Wind Speed"), size = 3) +
+  geom_hline(aes(yintercept = monthly_avg_july$avg_temp, color = "Avg Temperature"), linetype = "dashed") +
+  geom_hline(aes(yintercept = monthly_avg_july$avg_rh, color = "Avg Relative Humidity"), linetype = "dashed") +
+  geom_hline(aes(yintercept = monthly_avg_july$avg_ws, color = "Avg Wind Speed"), linetype = "dashed") +
+  labs(title = "Weather Conditions on July 19, 2014 with Monthly Averages",
+       x = "Date",
+       y = "Value",
+       color = "Variable") +
+  scale_color_manual(values = c("Temperature" = "red3", "Relative Humidity" = "steelblue2", "Wind Speed" = "green",
+                                "Avg Temperature" = "red3", "Avg Relative Humidity" = "steelblue2", "Avg Wind Speed" = "green")) +
+  theme_minimal()
+
+
+# Create a summary table of the weather conditions
+weather_summary <- event_McAllister %>%
+  select(lat, lon, rep_date, temp, rh, ws, wd, pcp, ffmc, dmc, dc, isi, bui, fwi, ros)
+
+# Print the summary table
+print(weather_summary)
+
+
+# This graph shows the weather conditions at McAllister Creek on July 19, 2014,
+# including temperature, relative humidity, and wind speed.
+# It compares these values to the average conditions for July 2014.
+# The wind speed during this event is notably higher than the monthly average,
+# suggesting stronger winds that could help spread the fire.
+
+monthly_avg <- hotspots_peak_filtered %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+# Plot histogram for ISI
+ggplot(hotspots_peak_filtered, aes(x = isi)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of ISI Values", x = "ISI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+# Plot boxplot for ISI
+ggplot(hotspots_peak_filtered, aes(x = factor(year), y = isi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "ISI Distribution Across Years",
+       x = "Year",
+       y = "ISI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Line plot for ISI over time
+ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "ISI by Month",
+       x = "Month",
+       y = "ISI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+# The histogram now shows a more typical range of ISI values, removing the extreme values that distorted the original plot.
+# 
+# The boxplot shows a clearer, more consistent ISI distribution across the years after removing high outliers.
+# 
+# The seasonal pattern plot still peaks in mid-summer but appears smoother without the extreme values.
+# 
+# Wind speed greatly affects ISI, as seen on July 19, 2014, at McAllister Creek, where high wind speeds caused high ISI values.
+
+
+
+
+
+
+
 "bui"     
 "fwi"      
 "fuel"     
@@ -1494,6 +1681,11 @@ hotspots %>%
 #   cfb, cfl, tfc, bfc: Advanced metrics for detailed fire behavior analysis
 
 ############## draft####
+
+
+
+
+
 
 # quick load####
 
