@@ -1389,6 +1389,7 @@ monthly_avg <- hotspots_peak_filtered %>%
             avg_isi = mean(isi, na.rm = TRUE),
             avg_bui = mean(bui, na.rm = TRUE),
             avg_fwi = mean(fwi, na.rm = TRUE),
+            avg_ros = mean(ros, na.rm = TRUE),
                         .groups = 'drop') 
 
 print(monthly_avg)
@@ -1623,7 +1624,98 @@ ggplot(hotspots_peak_filtered, aes(x = fuel)) +
 
 
 
-"ros"      
+"ros" # Rate of Spread
+# The predicted speed of the fire at the front or head of the fire (where the fire moves fastest),
+# and takes into account both crowning and spotting. 
+# It is measured in metres per minute and is based on the Fuel Type, Initial Spread Index, Buildup Index, 
+# and several fuel-specific parameters such as phenological state (leafless or green) in deciduous trees, 
+# crown base height in coniferous trees, and percent curing in grasses.
+# The scale ranges from 0 to over 20 m/min in the dataset.
+
+
+
+ggplot(hotspots_peak_filtered, aes(x = ros)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution Rate of Spread at Fire Hotspots",
+       x = "ROS (m/min)",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+ggplot(hotspots_peak_filtered, aes(x = factor(year), y = ros)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Rate of Spread Distribution Across Years",
+       x = "Year",
+       y = "ROS (m/min)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+# The plot shows that the ROS can vary significantly year to year, 
+# with some years experiencing more extreme fire spread conditions.
+
+# Scatter plot for average ROS vs average ISI
+ggplot(monthly_avg, aes(x = avg_isi, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Average ROS vs Average ISI",
+       x = "Average ISI",
+       y = "Average ROS") +
+  theme_minimal()
+
+# Scatter plot for average ROS vs average BUI
+ggplot(monthly_avg, aes(x = avg_bui, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average ROS vs Average BUI",
+       x = "Average BUI",
+       y = "Average ROS") +
+  theme_minimal()
+
+# Scatter plot for average ROS vs average FWI
+ggplot(monthly_avg, aes(x = avg_fwi, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "green") +
+  labs(title = "Average ROS vs Average FWI",
+       x = "Average FWI",
+       y = "Average ROS") +
+  theme_minimal()
+
+# Calculate correlations between ROS, ISI, BUI, and FWI
+correlation_ros_indices <- hotspots_peak_filtered %>%
+  select(ros, isi, bui, fwi) %>%
+  cor(use = "complete.obs")
+
+# Print the correlation matrix
+print(correlation_ros_indices)
+
+
+# Plot the correlation matrix
+corrplot(correlation_ros_indices, method = "circle", type = "lower",
+         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of ROS and Other Indices",
+         mar = c(0, 0, 1, 0))
+
+# The scatter plots for ROS vs FWI, ROS vs BUI, and ROS vs ISI all show a clear upward trend.
+# This means that as the values of FWI, BUI, and ISI increase,
+# the Rate of Spread also increases. Higher values indicate more severe fire conditions, 
+# more available fuel, and faster initial fire spread.
+# This means the fire spreads faster.
+
+# The matrix shows strong positive correlations between ROS and ISI, ROS and FWI,
+# and a moderate positive correlation between ROS and BUI.
+
+
+
 "sfc"      
 "tfc"      
 "bfc"      
@@ -1897,7 +1989,84 @@ hotspots %>%
 
 ############## draft####
 
+ggplot(hotspots_peak_filtered, aes(x = ros)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution Rate of Spread at Fire Hotspots",
+       x = "ROS (m/min)",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
 
+
+ggplot(hotspots_peak_filtered, aes(x = factor(year), y = ros)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Rate of Spread Distribution Across Years",
+       x = "Year",
+       y = "ROS (m/min)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+
+
+# Scatter plot for average ROS vs average ISI
+ggplot(monthly_avg, aes(x = avg_isi, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Average ROS vs Average ISI",
+       x = "Average ISI",
+       y = "Average ROS") +
+  theme_minimal()
+
+# Scatter plot for average ROS vs average BUI
+ggplot(monthly_avg, aes(x = avg_bui, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average ROS vs Average BUI",
+       x = "Average BUI",
+       y = "Average ROS") +
+  theme_minimal()
+
+# Scatter plot for average ROS vs average FWI
+ggplot(monthly_avg, aes(x = avg_fwi, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "green") +
+  labs(title = "Average ROS vs Average FWI",
+       x = "Average FWI",
+       y = "Average ROS") +
+  theme_minimal()
+
+# Calculate correlations between ROS, ISI, BUI, and FWI
+correlation_ros_indices <- hotspots_peak_filtered %>%
+  select(ros, isi, bui, fwi) %>%
+  cor(use = "complete.obs")
+
+# Print the correlation matrix
+print(correlation_ros_indices)
+
+
+# Plot the correlation matrix
+corrplot(correlation_ros_indices, method = "circle", type = "lower",
+         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of ROS and Other Indices",
+         mar = c(0, 0, 1, 0))
+
+# The scatter plots for ROS vs FWI, ROS vs BUI, and ROS vs ISI all show a clear upward trend.
+# This means that as the values of FWI, BUI, and ISI increase,
+# the Rate of Spread also increases. Higher values indicate more severe fire conditions, 
+# more available fuel, and faster initial fire spread.
+# This means the fire spreads faster.
+
+# The matrix shows strong positive correlations between ROS and ISI, ROS and FWI,
+# and a moderate positive correlation between ROS and BUI.
 
 
 # quick load####
