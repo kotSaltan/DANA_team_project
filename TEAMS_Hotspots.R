@@ -836,6 +836,7 @@ grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
 monthly_avg <- hotspots_peak %>%
   group_by(year, month) %>%
   summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
             avg_rh = mean(rh, na.rm = TRUE), 
             .groups = 'drop') 
 
@@ -907,7 +908,26 @@ grid.arrange(temp_plot_filtered, humidity_plot_filtered, ncol = 2)
 # indicating the end of the peak fire season.
 
 
-"ws"     
+"ws" # Wind Speed (km/h)
+
+# 0 to 59 with mean of 9
+# Higher wind speeds in peak fire months can make fire more intense and make it spread faster.
+
+# Plot monthly wind speed averages with custom colors
+ws_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
+  geom_line(size = 1) +
+  labs(title = "Average Wind Speed by Month",
+       x = "Month",
+       y = "Average Wind Speed (m/s)",
+       color = "Year") +
+  scale_color_manual(values = c("2014" = "lightblue", "2018" = "plum", "2020" = "lightgreen", "2023" = "lightcoral")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Arrange the plots side by side
+grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol = 3)
+
+# Wind speed shows significant variability.
 
 "wd"  
 
