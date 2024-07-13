@@ -1281,7 +1281,7 @@ view(event_outliers)
 # These conditions explain the high ISI values, indicating a high potential for severe fire behavior.
 # The data points from July 19, 2014, are all in the same cluster, showing that the clustering algorithm grouped them correctly.
 
-# Filter the specific event cluster
+# Filter the specific event cluster and near events
 event_McAllister <- hotspots %>%
   filter(event_cluster %in% 370:372) 
 
@@ -1388,7 +1388,8 @@ monthly_avg <- hotspots_peak_filtered %>%
             avg_dc = mean(dc, na.rm = TRUE),
             avg_isi = mean(isi, na.rm = TRUE),
             avg_bui = mean(bui, na.rm = TRUE),
-            .groups = 'drop') 
+            avg_fwi = mean(fwi, na.rm = TRUE),
+                        .groups = 'drop') 
 
 print(monthly_avg)
 
@@ -1532,7 +1533,49 @@ corrplot(corr_matrix, method = "circle", type = "lower",
 # A numeric rating of fire intensity. It is based on the ISI and the BUI, 
 # and is used as a general index of fire danger throughout the forested areas of Canada.
 
+# Low (0-5): Minimal fire danger.
+# Moderate (6-12): Fires can start from most accidental causes, but the spread is slow.
+# High (13-20): Fires can start easily and spread rapidly.
+# Very High (21-30): Fires will start very easily, spread rapidly, and burn intensely.
+# Extreme (31+): Fires start and spread quickly, and are intense and challenging to control.
 
+ggplot(hotspots_peak_filtered, aes(x = fwi)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of FWI Values", x = "FWI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+ggplot(hotspots_peak_filtered, aes(x = factor(year), y = fwi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "FWI Distribution Across Years",
+       x = "Year",
+       y = "FWI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "FWI by Month",
+       x = "Month",
+       y = "FWI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# The histogram shows that most FWI values are between 10 and 30, 
+# fire danger is from moderate to very high. 
+# Many values are above 30, severe fire weather conditions are frequent.
+
+# The boxplot shows the distribution of FWI values for different years. 
+# The line plot shows that FWI peaks in mid-summer, peak fire activity period. 
+# The data shows significant variability in fire danger, 
+# summer months and certain years  have extreme outliers.
 
 "fuel"     
 "ros"      
@@ -1646,20 +1689,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 
-# bui: Buildup Index
-
-# Combines DMC and DC to estimate the total amount of fuel available for combustion
-# 0 to 458 with mean of 120
-# HOW THIS INDEX CORRELATES WITH dmc and dc
-# SAME CONCERNS WITH THE VALUES
-
-
-# fwi: Fire Weather Index
-
-# A comprehensive index that rates the potential fire intensity
-# 0 to 183 with mean of 28
-# WHAT DOES THIS INDEX CONSISTS OF
-# SAME CONCERNS WITH THE VALUES
 
 
 # ros: Rate of Spread (m/min)
