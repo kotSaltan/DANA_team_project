@@ -924,6 +924,8 @@ grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol 
 
 # Wind speed shows significant variability.
 
+
+
 "wd" # Wind direction (degrees)
 
 # Visualise with Wind Rose to see most common wind direction
@@ -936,6 +938,7 @@ windRose(mydata = hotspots_peak, ws = "ws", wd = "wd",
 # Regions east and north of areas with strong western, southern and southwestern winds
 # should be careful, as these winds can quickly spread fires.
 # Wind patterns have are important for wildfire management.
+
 
 
 "pcp" # Precipitation (mm)
@@ -960,13 +963,75 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 
-"ffmc" 
-ggplot(hotspots, aes(x = rep_date, y = ffmc)) +
-  geom_line() +
-  labs(title = "Trend Over Time", x = "Date", y = "ffmc")
+"ffmc" # Fine Fuel Moisture Code
+# A numeric rating of the moisture content of litter and other cured fine fuels.
+# This code is an indicator of the relative ease of ignition and the flammability of fine fuel.
+
+# The FFMC scale ranges from 0 to 101.
+# 0-30: Very wet conditions; ignition is difficult.
+# 30-70: Damp conditions; moderate difficulty for ignition.
+# 70-85: Dry conditions; fuels are easily ignitable.
+# 85-101: Very dry conditions; fuels are highly ignitable and fires can spread rapidly.
+
+# The values in the dataset indicate that during the peak season,
+# the FFMC values are generally high, with a median around 91.50 and a maximum of 99.00.
+# This suggests that the fine fuels are often in a dry state,
+# making them highly ignitable and prone to rapid fire spread.
+
+# ADD NEW MEAN VALUES
+# Monthly averages for temp, rh, ws and pcp, ffmc
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
 
 
 
+# Plot histogram for FFMC
+ggplot(hotspots_peak, aes(x = ffmc)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of FFMC Values", x = "FFMC", y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal()
+
+# Plot boxplot for FFMC
+ggplot(hotspots_peak, aes(x = factor(year), y = ffmc)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "FFMC Distribution Across Years",
+       x = "Year",
+       y = "FFMC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Line plot for FFMC over time
+ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "FFMC by Month",
+       x = "Month",
+       y = "FFMC",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# The line plot shows that FFMC values peak every year during the fire season,
+# indicating drier conditions that make it easier for fires to start.
+
+# The boxplots show that most years have high FFMC values above 90,
+# meaning conditions are very dry and prone to fires. Only 2020 shows slightly lower dryness.
+
+# The histogram reveals that most FFMC values from 2014 to 2023 are between 85 and 99,
+# confirming consistently dry conditions.
 "dmc"     
 "dc"      
 "isi"     
@@ -1084,13 +1149,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 
-# ffmc: Fine Fuel Moisture Code
-
-# An index that represents the moisture content of surface litter and other cured fine fuels
-# 0 to 459 with mean of  88
-# CHECK EVENTS WITH 0 VALUE _ WHAT THEY MEAN
-# WHAT IS THE RANGE FOR THIS INDEX
-# WHAT IS THE USUAL SCALE
 
 # dmc: Duff Moisture Code
 
@@ -1292,16 +1350,4 @@ hotspots %>%
 #   cfb, cfl, tfc, bfc: Advanced metrics for detailed fire behavior analysis
 
 ############## draft####
-
-
-# Plot monthly precipitation averages with smoothing
-ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
-  geom_line() +
-  geom_smooth(se = FALSE) +
-  labs(title = "Average Precipitation by Month",
-       x = "Month",
-       y = "Average Precipitation (mm)",
-       color = "Year") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
