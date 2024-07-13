@@ -959,6 +959,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 
+
 "ffmc" 
 ggplot(hotspots, aes(x = rep_date, y = ffmc)) +
   geom_line() +
@@ -1016,9 +1017,9 @@ ggplot(hotspots, aes(x = rep_date, y = ffmc)) +
 
 
 
-# WS
 
-# Histogram to show distribution of windspeed
+
+# HISTOGRAM - DISTRIBUTION OF THE VALUE IN ALL 10 YEARS
 ggplot(hotspots_peak, aes(x = ws)) +
   geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Windspeed at Fire Hotspots",
@@ -1033,7 +1034,7 @@ ggplot(hotspots_peak, aes(x = ws)) +
         axis.text.y = element_text(size = 10))
 
 
-# Create a box plot to compare windspeed distributions across years
+# BOXPLOTS 10 YEARS SIDE BY SIDE
 ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Windspeed Distribution Across Years",
@@ -1048,6 +1049,34 @@ ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
 
 
 
+
+
+# LINE PLOT WITH FILTER FOR SPECIFIC YEAR  (trend line added)
+ggplot(hotspots_peak %>% filter(year == 2014), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "Humidity Over the Peak Season 2014",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+
+
+
+
+
+# 10 YEAR AVERAGE LINEPLOT - USES AVG TABLE
+# TRENDLINE
+ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "Average Precipitation by Month",
+       x = "Month",
+       y = "Average Precipitation (mm)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 
