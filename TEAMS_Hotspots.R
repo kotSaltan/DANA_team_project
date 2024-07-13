@@ -931,6 +931,21 @@ grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol 
 
 "wd"  
 
+# Visualise with Wind Rose to see most common wind direction
+library(openair)
+
+# Convert wind speed from km/h to m/s
+hotspots_peak$ws <- hotspots_peak$ws * 0.27778
+
+windRose(mydata = hotspots_peak, ws = "ws", wd = "wd", 
+         main = "Wind Rose", paddle = FALSE)
+
+# Most of the wind comes from the west (W) and southwest (SW). 
+# Regions east and north of areas with strong western, southern and southwestern winds
+# should be careful, as these winds can quickly spread fires.
+# Wind patterns have are important for wildfire management.
+
+
 "pcp" 
 ggplot(hotspots, aes(x = pcp)) +
   geom_histogram(binwidth = 10, fill = "steelblue", color = "black", alpha = 0.7) +
