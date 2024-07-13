@@ -1259,12 +1259,9 @@ ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = ye
 # To improve the clarity of these insights,
 # removing NA values and extreme outliers from the dataset is necessary.
 
-# Remove rows with NA in the ISI column
-hotspots_peak_filtered <- hotspots_peak %>%
-  filter(!is.na(isi))
 
 # Remove extreme outliers
-hotspots_peak_filtered <- hotspots_peak_filtered %>%
+hotspots_peak_filtered <- hotspots_peak%>%
   filter(isi < 60)
 dim(hotspots_peak_filtered)
 
@@ -1445,11 +1442,10 @@ corrplot(corr_matrix, method = "circle", type = "lower",
 # A numerical rating of the total amount of fuel available for combustion.
 # It is derived from the Duff Moisture Code (DMC) and the Drought Code (DC)
 
-# Low: 0-19.9
-# Moderate: 20-36.9
-# High: 37-52.9
-# Very High: 53-75.9
-# Extreme: 76 and above
+# Low: 0-40
+# Moderate: 41-80
+# High: 81-120
+# Extreme: 121 and above
 
 ggplot(hotspots_peak_filtered, aes(x = bui)) +
   geom_histogram(binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
@@ -1484,7 +1480,43 @@ ggplot(monthly_avg, aes(x = month, y = avg_bui, color = factor(year), group = ye
 # Boxplots show BUI values vary year to year. Some years have higher values, which means drier conditions and a higher chance of intense fires.
 # BUI peaks in mid-summer, which matches the time when fire activity is usually the highest.
 
-sum(is.na(hotspots$bui))
+
+# Scatter plots to visualize relationships using average values
+ggplot(monthly_avg, aes(x = avg_dmc, y = avg_bui)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average BUI vs Average DMC", x = "Average DMC", y = "Average BUI") +
+  theme_minimal()
+
+ggplot(monthly_avg, aes(x = avg_dc, y = avg_bui)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Average BUI vs Average DC", x = "Average DC", y = "Average BUI") +
+  theme_minimal()
+
+
+
+# Select columns
+data_corr <- hotspots_peak_filtered %>%
+  select(bui, dmc, dc)
+
+# Calculate the correlation matrix
+corr_matrix <- cor(data_corr)
+
+# Plot the correlation matrix
+corrplot(corr_matrix, method = "circle", type = "lower",
+         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of BUI, DMC, and DC",
+         mar = c(0, 0, 1, 0))
+
+# BUI and DMC have a very strong positive correlation, 
+# indicating that they are closely related (fire potential and moisture of layer).
+# BUI and DC also show a positive correlation, 
+# though it is slightly weaker.
+
+# BUI, DMC, and DC are all indicators of fire potential. 
+# High values in these indices suggest drier conditions, which can lead to higher fire. 
+
+
 
 "fwi"      
 "fuel"     
@@ -1775,11 +1807,6 @@ hotspots %>%
 #   cfb, cfl, tfc, bfc: Advanced metrics for detailed fire behavior analysis
 
 ############## draft####
-
-library(naniar)
-
-
-
 
 
 
