@@ -1099,6 +1099,18 @@ ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = ye
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
+# The histogram shows that most DMC values range between 0 and 100,
+# with a peak around 50-100. Values above 200 are less common but indicate long dry periods.
+# 
+# The boxplot for each year reveals that 2017 and 2018 had particularly high outliers,
+# indicating extremely dry conditions that could lead to fires.
+# On the other hand, 2016 and 2019 had lower DMC values, showing less severe drought.
+# 
+# The line plot indicates that DMC values peak in late summer (July-August)
+# and decrease in autumn.
+# This shows that mid to late summer is typically drier, 
+# the risk of fire ignition and spread is high during these months.
+
 "dc"      
 "isi"     
 "bui"     
