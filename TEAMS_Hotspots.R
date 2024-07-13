@@ -929,7 +929,7 @@ grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol 
 
 # Wind speed shows significant variability.
 
-"wd"  
+"wd" # Wind direction (degrees)
 
 # Visualise with Wind Rose to see most common wind direction
 library(openair)
