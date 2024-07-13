@@ -606,6 +606,19 @@ print(summary_hotspots_peak)
 
 
 
+# Create a table with mean values for plots
+
+# Monthly averages for temp, rh, ws and pcp
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
 
 
 
@@ -629,20 +642,6 @@ subzero_temps %>%
 
 # Most are in October of 2015, 2019 and 2023, a usual month to have sub-zero temp
 
-
-# Histogram to show distribution of temperatures
-ggplot(hotspots, aes(x = temp)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Temperature at Fire Hotspots",
-       x = "Temperature (°C)",
-       y = "Frequency") +
-  scale_y_continuous(labels = comma) +  # Adjust y-axis labels to numeric format (scales package)
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
 
 
 # Distribution of temp for hotspots_peak
@@ -676,10 +675,14 @@ ggplot(hotspots_peak, aes(x = factor(year), y = temp)) +
         axis.text.y = element_text(size = 10))
 
 
+
+
+monthly_avg 
 # Create a summary table with mean temperature by year
-mean_temp_by_year <- hotspots_peak %>%
+
+mean_temp_by_year <- monthly_avg %>%
   group_by(year) %>%
-  summarise(mean_temp = mean(temp, na.rm = TRUE))
+  summarise(mean_temp = mean(avg_temp, na.rm = TRUE), .groups = 'drop')
 
 # Create a line plot to show temperature trends over years
 ggplot(mean_temp_by_year, aes(x = year, y = mean_temp)) +
@@ -831,18 +834,6 @@ grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
 # PLOTS TO COMPARE TEMP AND RH
 
 
-
-# Monthly averages for temp and rh
-monthly_avg <- hotspots_peak %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(temp, na.rm = TRUE),
-            avg_ws = mean(ws, na.rm = TRUE),
-            avg_rh = mean(rh, na.rm = TRUE), 
-            .groups = 'drop') 
-
-print(monthly_avg)
-
-
 # Plot monthly temperature averages
 temp_plot <- ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
   geom_line() +
@@ -913,6 +904,10 @@ grid.arrange(temp_plot_filtered, humidity_plot_filtered, ncol = 2)
 # 0 to 59 with mean of 9
 # Higher wind speeds in peak fire months can make fire more intense and make it spread faster.
 
+# Common wind speed scale used is the Beaufort scale (in m/s)
+# Convert wind speed from km/h to m/s (t) - to plot wd later
+hotspots_peak$ws <- hotspots_peak$ws * 0.27778
+
 # Plot monthly wind speed averages with custom colors
 ws_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
   geom_line(size = 1) +
@@ -934,9 +929,6 @@ grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol 
 # Visualise with Wind Rose to see most common wind direction
 library(openair)
 
-# Convert wind speed from km/h to m/s
-hotspots_peak$ws <- hotspots_peak$ws * 0.27778
-
 windRose(mydata = hotspots_peak, ws = "ws", wd = "wd", 
          main = "Wind Rose", paddle = FALSE)
 
@@ -946,48 +938,21 @@ windRose(mydata = hotspots_peak, ws = "ws", wd = "wd",
 # Wind patterns have are important for wildfire management.
 
 
-"pcp" 
-ggplot(hotspots, aes(x = pcp)) +
-  geom_histogram(binwidth = 10, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Percipitation at Fire Hotspots",
-       x = "Percipitation (mm)",
-       y = "Frequency") +
-  scale_y_continuous(labels = comma) +  # Adjust y-axis labels to numeric format (scales package)
+"pcp" # Precipitation (mm)
+# 0 to 651 with mean of 0.2
+# So the amount is very low generally
+
+
+# Plot monthly precipitation averages with smoothing
+ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  labs(title = "Average Precipitation by Month",
+       x = "Month",
+       y = "Average Precipitation (mm)",
+       color = "Year") +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# Set a threshold for precipitation
-precip_threshold <- 50
-
-# Filter the data to exclude outliers
-hotspots_filtered <- hotspots %>%
-  filter(pcp <= precip_threshold)
-
-ggplot(hotspots_filtered, aes(x = factor(year), y = pcp)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Percipitation Distribution Across Years",
-       x = "Year",
-       y = "Percipitation (mm)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-
-
-
-
-
-
-
-
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 
@@ -1045,63 +1010,7 @@ ggplot(hotspots, aes(x = rep_date, y = ffmc)) +
 
 
 
-# weather var plots####
-
-
-
-# TEMP
-
-
-
-# RH
-
-# Histogram to show distribution of humidity
-ggplot(hotspots_peak, aes(x = rh)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Humidity at Fire Hotspots",
-       x = "Humidity (%)",
-       y = "Frequency") +
-  scale_y_continuous(labels = comma) +  # Adjust y-axis labels to numeric format (scales package)
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-# Create a box plot to compare humidity distributions across years
-ggplot(hotspots_peak, aes(x = factor(year), y = rh)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Humidity Distribution Across Years",
-       x = "Year",
-       y = "Humidity (%)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-# Create a summary table with mean humidity by year
-mean_rh_by_year <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(mean_rh = mean(rh, na.rm = TRUE))
-
-# Create a line plot to show humidity trends over years
-ggplot(mean_rh_by_year, aes(x = year, y = mean_rh)) +
-  geom_line(color = "steelblue", size = 1) +
-  geom_point(color = "black", size = 2) +
-  labs(title = "Average Humidity Over Years",
-       x = "Year",
-       y = "Average Humidity (%)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
+# template boxplot & hist####
 
 
 
@@ -1111,9 +1020,9 @@ ggplot(mean_rh_by_year, aes(x = year, y = mean_rh)) +
 ggplot(hotspots_peak, aes(x = ws)) +
   geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Windspeed at Fire Hotspots",
-       x = "Windspeed ()",
+       x = "Windspeed (m/s)",
        y = "Frequency") +
-  scale_y_continuous(labels = comma) +  # Adjust y-axis labels to numeric format (scales package)
+  scale_y_continuous(labels = comma) + 
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 15),
         axis.title.x = element_text(size = 12),
@@ -1127,7 +1036,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Windspeed Distribution Across Years",
        x = "Year",
-       y = "Windspeed ()") +
+       y = "Windspeed (m/s)") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 15),
         axis.title.x = element_text(size = 12),
@@ -1136,173 +1045,12 @@ ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
         axis.text.y = element_text(size = 10))
 
 
-# Create a summary table with mean windspeed by year
-mean_ws_by_year <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(mean_ws = mean(ws, na.rm = TRUE))
-
-# Create a line plot to show windspeed trends over years
-ggplot(mean_ws_by_year, aes(x = year, y = mean_ws)) +
-  geom_line(color = "steelblue", size = 1) +
-  geom_point(color = "black", size = 2) +
-  labs(title = "Average Windspeed Over Years",
-       x = "Year",
-       y = "Average Windspeed ()") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
 
 
-
-
-
-# PCP
-
-# Histogram to show distribution of precipitation
-ggplot(hotspots_peak, aes(x = pcp)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Precipitation at Fire Hotspots",
-       x = "Precipitation ()",
-       y = "Frequency") +
-  scale_y_continuous(labels = comma) +  # Adjust y-axis labels to numeric format (scales package)
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-# Create a box plot to compare precipitation distributions across years
-ggplot(hotspots_peak, aes(x = factor(year), y = pcp)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Precipitation Distribution Across Years",
-       x = "Year",
-       y = "Precipitation ()") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-# Create a summary table with mean precipitation by year
-mean_pcp_by_year <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(mean_pcp = mean(ws, na.rm = TRUE))
-
-# Create a line plot to show precipitation trends over years
-ggplot(mean_pcp_by_year, aes(x = year, y = mean_pcp)) +
-  geom_line(color = "steelblue", size = 1) +
-  geom_point(color = "black", size = 2) +
-  labs(title = "Average Precipitation Over Years",
-       x = "Year",
-       y = "Average Precipitation ()") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-# Set a threshold for precipitation
-precip_threshold <- 50
-
-# Filter the data to exclude outliers
-hotspots_filtered <- hotspots_peak %>%
-  filter(pcp <= precip_threshold)
-
-# Histogram to show distribution of precipitation
-ggplot(hotspots_filtered, aes(x = pcp)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Precipitation at Fire Hotspots",
-       x = "Precipitation ()",
-       y = "Frequency") +
-  scale_y_continuous(labels = comma) +  # Adjust y-axis labels to numeric format (scales package)
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-# Create a box plot to compare precipitation distributions across years
-ggplot(hotspots_filtered, aes(x = factor(year), y = pcp)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Precipitation Distribution Across Years",
-       x = "Year",
-       y = "Precipitation ()") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-# Create a summary table with mean precipitation by year
-mean_pcp_by_year <- hotspots_filtered %>%
-  group_by(year) %>%
-  summarise(mean_pcp = mean(ws, na.rm = TRUE))
-
-# Create a line plot to show precipitation trends over years
-ggplot(mean_pcp_by_year, aes(x = year, y = mean_pcp)) +
-  geom_line(color = "steelblue", size = 1) +
-  geom_point(color = "black", size = 2) +
-  labs(title = "Average Precipitation Over Years",
-       x = "Year",
-       y = "Average Precipitation ()") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
 
 
 # more variables####
 
-
-
-
-
-# ws: Wind Speed (km/h)
-
-# Speed of wind in km/h
-# 0 to 59 with mean of 9
-
-
-# wd: Wind Direction (degrees)
-
-# Direction from which the wind is blowing in degrees
-# 0 to 360 with mean of 201
-# NEED TO FIND THE DIRECTION NWSE
-
-
-# pcp: Precipitation (mm)
-
-# Amount of precipitation in mm
-# 0 to 651 with mean of 0.2
-# So the amount is very low generally
-# CHECK WHAT EVENTS HAVE HIGH PCP AND CHECK OTHER VAR
-
-# Filter the dataset for high pcp
-high_pcp <- hotspots_peak %>%
-  filter(pcp > 50)
-
-# Print the resulting data frame to inspect the entries with high pcp
-print(high_pcp)
-
-summary(high_pcp$lat)
-summary(high_pcp$lon)
-summary(high_pcp$month)
-# 
 
 
 # ffmc: Fine Fuel Moisture Code
@@ -1515,4 +1263,14 @@ hotspots %>%
 ############## draft####
 
 
+# Plot monthly precipitation averages with smoothing
+ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
+  geom_line() +
+  geom_smooth(se = FALSE) +
+  labs(title = "Average Precipitation by Month",
+       x = "Month",
+       y = "Average Precipitation (mm)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
