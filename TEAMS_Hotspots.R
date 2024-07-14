@@ -1390,7 +1390,8 @@ monthly_avg <- hotspots_peak_filtered %>%
             avg_bui = mean(bui, na.rm = TRUE),
             avg_fwi = mean(fwi, na.rm = TRUE),
             avg_ros = mean(ros, na.rm = TRUE),
-                        .groups = 'drop') 
+            avg_hfi = mean(hfi, na.rm = TRUE),
+            .groups = 'drop') 
 
 print(monthly_avg)
 
@@ -1727,7 +1728,72 @@ corrplot(correlation_ros_indices, method = "circle", type = "lower",
 "sfc"      
 "tfc"      
 "bfc"      
-"hfi"    
+"hfi" # Head Fire Intencity
+# Measures the intensity or energy output of a fire at its front (head).
+# HFI is measured in kilowatts per metre (kW/m) of the fire front and is calculated based on the Rate of Spread (ROS)
+# and the Total Fuel Consumption (TFC).
+
+# Low (0-500 kW/m): Fires are relatively easy to control and generally cause limited damage.
+# Moderate (500-2000 kW/m): Fires can be challenging to control, requiring more resources and effort.
+# High (2000-4000 kW/m): Fires are intense and difficult to manage, often requiring aerial firefighting resources.
+# Very High (4000-10,000 kW/m): Fires are extremely intense and nearly impossible to control, posing significant risk to life and property.
+# Extreme (10,000+ kW/m): Fires exhibit explosive behavior and can cause catastrophic damage.
+
+# Helps predict fire destructiveness, allocate resources, warn or evacuate public.
+
+# Plot histogram for HFI
+ggplot(hotspots_peak_filtered, aes(x = hfi)) +
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
+  labs(title = "Distribution of HFI Values",
+       x = "HFI (kW/m)",
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  scale_x_continuous(breaks = seq(0, 75000, 10000)) +
+  theme_minimal()
+
+ggplot(hotspots_peak_filtered, aes(x = factor(year), y = hfi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "HFI Distribution Across Years",
+       x = "Year",
+       y = "HFI (kW/m)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+# The histogram shows the frequency distribution of HFI values.
+# Most HFI values are concentrated at the lower end of the scale, as values increase there are fewer.
+# Very high HFI values are outliers they show occasional extremely intense fires.
+# While most fires are less intense, the few high-intensity fires can be significant and impactful.
+
+
+
+# The boxplots show the distribution of HFI across different years.
+# The median value varies yearly, there are fluctuations in fire intensity.
+# There are significant outliers in almost all years, there are some fires with extremely high intensities.
+
+
+
+ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "HFI by Month",
+       x = "Month",
+       y = "HFI (kW/m)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Different years show a lot of differences in HFI values. 
+# For example, 2014 and 2021 had higher peaks, meaning there was more intense fire activity in those years. 
+# 2020 had lower HFI values,  there were milder fire conditions or better fire control efforts.
+# 
+# The plots also show how HFI can change from month to month within a single fire season.
+# Weather conditions, temperature, humidity, and wind speed,  can affect how fires behave.
+
 "cfb"    
 "age"     
 "estarea"  
@@ -1764,7 +1830,6 @@ corrplot(correlation_ros_indices, method = "circle", type = "lower",
 
 
 # template boxplot & hist####
-
 
 
 
@@ -1834,14 +1899,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 
-
-
-# ros: Rate of Spread (m/min)
-
-# Measures how fast the fire spreads
-# -429 to 96 with mean of 6
-# WHY THE NEGATIVE INDEX
-# HOW IS THE INDEX COMPUTED
 
 
 # sfc: Surface Fuel Consumption (kg/m²)
@@ -1997,84 +2054,15 @@ hotspots %>%
 
 ############## draft####
 
-ggplot(hotspots_peak_filtered, aes(x = ros)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution Rate of Spread at Fire Hotspots",
-       x = "ROS (m/min)",
+
+
+ggplot(hotspots_peak_filtered, aes(x = hfi)) +
+  geom_histogram(binwidth = 1000, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of HFI Values",
+       x = "HFI (kW/m)",
        y = "Frequency") +
-  scale_y_continuous(labels = comma) + 
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-ggplot(hotspots_peak_filtered, aes(x = factor(year), y = ros)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Rate of Spread Distribution Across Years",
-       x = "Year",
-       y = "ROS (m/min)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-
-
-# Scatter plot for average ROS vs average ISI
-ggplot(monthly_avg, aes(x = avg_isi, y = avg_ros)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(title = "Average ROS vs Average ISI",
-       x = "Average ISI",
-       y = "Average ROS") +
+  scale_x_continuous(breaks = seq(0, 75000, 10000)) +
   theme_minimal()
-
-# Scatter plot for average ROS vs average BUI
-ggplot(monthly_avg, aes(x = avg_bui, y = avg_ros)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(title = "Average ROS vs Average BUI",
-       x = "Average BUI",
-       y = "Average ROS") +
-  theme_minimal()
-
-# Scatter plot for average ROS vs average FWI
-ggplot(monthly_avg, aes(x = avg_fwi, y = avg_ros)) +
-  geom_point(alpha = 0.7) +
-  geom_smooth(method = "lm", se = FALSE, color = "green") +
-  labs(title = "Average ROS vs Average FWI",
-       x = "Average FWI",
-       y = "Average ROS") +
-  theme_minimal()
-
-# Calculate correlations between ROS, ISI, BUI, and FWI
-correlation_ros_indices <- hotspots_peak_filtered %>%
-  select(ros, isi, bui, fwi) %>%
-  cor(use = "complete.obs")
-
-# Print the correlation matrix
-print(correlation_ros_indices)
-
-
-# Plot the correlation matrix
-corrplot(correlation_ros_indices, method = "circle", type = "lower",
-         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of ROS and Other Indices",
-         mar = c(0, 0, 1, 0))
-
-# The scatter plots for ROS vs FWI, ROS vs BUI, and ROS vs ISI all show a clear upward trend.
-# This means that as the values of FWI, BUI, and ISI increase,
-# the Rate of Spread also increases. Higher values indicate more severe fire conditions, 
-# more available fuel, and faster initial fire spread.
-# This means the fire spreads faster.
-
-# The matrix shows strong positive correlations between ROS and ISI, ROS and FWI,
-# and a moderate positive correlation between ROS and BUI.
 
 
 # quick load####
