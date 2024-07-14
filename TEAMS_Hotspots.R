@@ -1594,6 +1594,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = ye
 # Fire agencies use the FWI to inform the public, issue fire bans, and respond to fires. 
 # It helps prioritize resources and actions to mitigate fire risks effectively.
 
+# не коррелирует с количеством пожаров
 
 "fuel" # Fuel Type  ####
 
