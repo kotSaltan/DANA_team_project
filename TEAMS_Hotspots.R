@@ -1585,6 +1585,14 @@ ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = ye
 # The variation is influenced by both short-term weather patterns 
 # and long-term changes.
 
+# The FWI is calculated using the Initial Spread Index and the Buildup Index,
+# both of which take into account wind speed,
+# temperature, humidity, and fuel moisture. 
+# This is why FWI a reliable indicator of overall fire danger.
+
+# Fire agencies use the FWI to inform the public, issue fire bans, and respond to fires. 
+# It helps prioritize resources and actions to mitigate fire risks effectively.
+
 
 "fuel"  
 
