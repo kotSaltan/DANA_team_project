@@ -198,3 +198,116 @@ ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = y
 
 
 
+########
+
+# WINDSPEED
+names(weather_peak)
+monthly_avg <- weather_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(mean_temp, na.rm = TRUE),
+            avg_ws = mean(spd_max_gust, na.rm = TRUE),
+            avg_pcp = mean(total_precip, na.rm = TRUE),
+            avg_rain = mean(total_rain, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+# Plot histogram for spd_max_gust
+ggplot(weather_peak, aes(x = spd_max_gust)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of spd_max_gust Values", x = "spd_max_gust", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+# Plot boxplot for spd_max_gust
+ggplot(weather_peak, aes(x = factor(year), y = spd_max_gust)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "spd_max_gust Distribution Across Years",
+       x = "Year",
+       y = "spd_max_gust") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Line plot for spd_max_gust over time
+ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "avg_ws by Month",
+       x = "Month",
+       y = "avg_ws",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# PCP
+# Plot histogram for total_precip
+ggplot(weather_peak, aes(x = total_precip)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of total_precip Values", x = "total_precip", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+# Plot boxplot for total_precip
+ggplot(weather_peak, aes(x = factor(year), y = total_precip)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "total_precip Distribution Across Years",
+       x = "Year",
+       y = "total_precip") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Line plot for total_precip over time
+ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "avg_pcp by Month",
+       x = "Month",
+       y = "avg_pcp",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+
+# RAIN
+# Plot histogram for total_rain
+ggplot(weather_peak, aes(x = total_rain)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of total_rain Values", x = "total_rain", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+# Plot boxplot for total_rain
+ggplot(weather_peak, aes(x = factor(year), y = total_rain)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "total_rain Distribution Across Years",
+       x = "Year",
+       y = "total_rain") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Line plot for total_rain over time
+ggplot(monthly_avg, aes(x = month, y = avg_rain, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "avg_rain by Month",
+       x = "Month",
+       y = "avg_rain",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
