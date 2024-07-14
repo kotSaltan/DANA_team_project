@@ -965,7 +965,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 
-"ffmc" # Fine Fuel Moisture Code
+"ffmc" # Fine Fuel Moisture Code####
 # A numeric rating of the moisture content of litter and other cured fine fuels.
 # This code is an indicator of the relative ease of ignition and the flammability of fine fuel.
 
@@ -1036,7 +1036,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = y
 # confirming consistently dry conditions.
 
 
-"dmc" # Duff Moisture Code
+"dmc" # Duff Moisture Code####
 # A numeric rating of the average moisture content
 # of loosely compacted organic layers of moderate depth. 
 # This code gives an indication of fuel consumption in moderate duff layers 
@@ -1113,7 +1113,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = ye
 
 
 
-"dc" # Drought Code 
+"dc" # Drought Code ####
 # A numeric rating of the average moisture content of deep, compact organic layers.
 # This code is a useful indicator of seasonal drought effects on forest fuels
 # and the amount of smoldering in deep duff layers and large logs.
@@ -1196,7 +1196,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = yea
 
 
 
-"isi" # Initial Spread Index
+"isi" # Initial Spread Index ####
 # A numerical rating of the expected rate of fire spread
 # based on wind speed, temperature, and fine fuel moisture content. 
 # ISI is crucial for understanding how quickly a fire can spread once it has ignited.
@@ -1441,7 +1441,7 @@ corrplot(corr_matrix, method = "circle", type = "lower",
 
 
 
-"bui" # Buildup Index 
+"bui" # Buildup Index ####
 # A numerical rating of the total amount of fuel available for combustion.
 # It is derived from the Duff Moisture Code (DMC) and the Drought Code (DC)
 
@@ -1531,7 +1531,7 @@ corrplot(corr_matrix, method = "circle", type = "lower",
 # showing amount of fuel available for a fire.
 
 
-"fwi" # Fire Weather Index
+"fwi" # Fire Weather Index ####
 # A numeric rating of fire intensity. It is based on the ISI and the BUI, 
 # and is used as a general index of fire danger throughout the forested areas of Canada.
 
@@ -1595,7 +1595,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = ye
 # It helps prioritize resources and actions to mitigate fire risks effectively.
 
 
-"fuel"  
+"fuel" # Fuel Type  ####
 
 # D1: Deciduous trees (leafless, early spring to fall)
 # C2, C3, C4, C5, C7: Various types of coniferous trees
@@ -1633,7 +1633,7 @@ ggplot(hotspots_peak_filtered, aes(x = fuel)) +
 
 
 
-"ros" # Rate of Spread
+"ros" # Rate of Spread ####
 # The predicted speed of the fire at the front or head of the fire (where the fire moves fastest),
 # and takes into account both crowning and spotting. 
 # It is measured in metres per minute and is based on the Fuel Type, Initial Spread Index, Buildup Index, 
@@ -1728,7 +1728,7 @@ corrplot(correlation_ros_indices, method = "circle", type = "lower",
 "sfc"      
 "tfc"      
 "bfc"      
-"hfi" # Head Fire Intencity
+"hfi" # Head Fire Intencity ####
 # Measures the intensity or energy output of a fire at its front (head).
 # HFI is measured in kilowatts per metre (kW/m) of the fire front and is calculated based on the Rate of Spread (ROS)
 # and the Total Fuel Consumption (TFC).
@@ -1808,15 +1808,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = ye
 "ecozone"  
 "sfc0"     
 "cbh"   
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1924,11 +1915,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 # CHECK THE SIGNIFICANCE
 
 
-# hfi: Head Fire Intensity (kW/m)
-
-# Intensity of the fire at the head
-# -91845 to 93142 with mean of 8544
-# CHECK THE NEGATIVE VALUES
 
 
 # cfb: Crown Fraction Burned (%)
