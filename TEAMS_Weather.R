@@ -148,6 +148,12 @@ print(flag_counts_by_year)
 
 #######################
 
+
+
+
+# Weather Variables Plots####
+# NEED TO MAKE ALL FOUR VARIABLES AND DESCRIBE)
+
 names(weather_peak)
 monthly_avg <- weather_peak %>%
   group_by(year, month) %>%
