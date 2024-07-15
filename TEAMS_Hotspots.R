@@ -615,6 +615,14 @@ monthly_avg <- hotspots_peak %>%
             avg_rh = mean(rh, na.rm = TRUE),
             avg_ws = mean(ws, na.rm = TRUE),
             avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            avg_sfc = mean(sfc, na.rm = TRUE),
+            avg_tfc = mean(tfc, na.rm = TRUE),
+            avg_bfc = mean(bfc, na.rm = TRUE),
+            avg_hfi = mean(hfi, na.rm = TRUE),
             .groups = 'drop') 
 
 print(monthly_avg)
@@ -677,28 +685,33 @@ ggplot(hotspots_peak, aes(x = factor(year), y = temp)) +
 
 
 
-monthly_avg 
-# Create a summary table with mean temperature by year
-
-mean_temp_by_year <- monthly_avg %>%
-  group_by(year) %>%
-  summarise(mean_temp = mean(avg_temp, na.rm = TRUE), .groups = 'drop')
-
-# Create a line plot to show temperature trends over years
-ggplot(mean_temp_by_year, aes(x = year, y = mean_temp)) +
-  geom_line(color = "steelblue", size = 1) +
-  geom_point(color = "black", size = 2) +
-  labs(title = "Average Temperature Over Years (Peak)",
-       x = "Year",
-       y = "Average Temperature (°C)") +
+# Line plot for temperature over time
+ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "Temperature by Month",
+       x = "Month",
+       y = "Temperature (°C)",
+       color = "Year") +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
+# The boxplots and lineplots show  the temperature patterns
+# across different years and months in the hotspots dataset.
+# 
+# he median temperatures for each year generally are around 20-25°C. 
+# Some years, like 2016 and 2020, have slightly lower median temperatures.
+# There are significant outliers, particularly in 2014, 2015, and 2018,
+# showing extremely high or low temperatures on specific days at the event locations.
+# 
+# 
+# Line plots show how temperature flactuates over time.
+# Certain years, like 2018 and 2023, show higher peaks, suggesting hotter summer months compared to other years.
+# he year 2019 stands out with noticeably lower temperatures during the peak months.
+#   
+
+# Explore the the temperature in 2019 as it shows lower values than average
 hotspots_peak %>% 
   filter(year == 2019) %>% 
   summarise(
