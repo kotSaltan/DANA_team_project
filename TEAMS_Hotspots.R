@@ -624,6 +624,7 @@ monthly_avg <- hotspots_peak %>%
             avg_tfc = mean(tfc, na.rm = TRUE),
             avg_bfc = mean(bfc, na.rm = TRUE),
             avg_hfi = mean(hfi, na.rm = TRUE),
+            
             .groups = 'drop') 
 
 print(monthly_avg)
@@ -1825,7 +1826,7 @@ ggplot(hotspots_peak_filtered, aes(x = fuel)) +
 
 
 
-"ros" # Rate of Spread ####
+"ros" # Rate of Spread (modelled)####
 # The predicted speed of the fire at the front or head of the fire (where the fire moves fastest),
 # and takes into account both crowning and spotting. 
 # It is measured in metres per minute and is based on the Fuel Type, Initial Spread Index, Buildup Index, 
@@ -1917,93 +1918,113 @@ corrplot(correlation_ros_indices, method = "circle", type = "lower",
 
 
 
-"sfc" # Surface Fuel Consumption 
-# SFC measures the amount of surface fuel (e.g., grasses, leaves, small branches) consumed by a fire, in kg/m²,
-# indicating fire intensity. It isrelevant to initial spread of fire as easily ignitible material burns first.
-# Ranges from 0 kg/m² (no fuel) to several kg/m² (dense vegetation).
 
+
+
+# SFC TFC and BFC are a part of BORFIRE model.
+# The Boreal Fire Effects (BORFIRE) model estimates carbon emissions from wildfires in Canada. 
+# It calculates preburn fuel loads for various forest components using the Canadian Forest Fire Weather Index (FWI) System.
+# This model considers surface fuel consumption, 
+# which includes organic soil, surface litter, and dead wood, to estimate fire emissions accurately.
+
+"sfc" # Surface Fuel Consumption (modelled)
+# SFC represents the amount of fuel consumed by surface fires, 
+# including organic soil (duff), surface litter, dead and downed woody debris.
+# Calculated using indices of the FWI System (BUI and DC).
+
+# Range typically varies significantly depending on the forest type and weather conditions.
 
 print(monthly_avg)
 
 ggplot(hotspots_peak, aes(x = sfc)) +
-  geom_histogram(binwidth = 0.1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution Surface Fuel Consumption at Fire Hotspots",
+  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Surface Fuel Consumption (SFC)",
        x = "SFC (kg/m²)",
        y = "Frequency") +
-  scale_y_continuous(labels = comma) + 
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# Most SFC values are between 0 to 1.5 kg/m².
-# Peaks around 0 and 1.5 kg/m² suggest many fires had low to moderate fuel consumption.
-# Fewer high-intensity fires with higher SFC values.
-
-
-ggplot(hotspots_peak, aes(x = factor(year), y = sfc)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Surface Fuel Consumption Distribution Across Years",
-       x = "Year",
-       y = "SFC (kg/m²)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-# SFC varies throughout the years. 
-# The SFC can also depend on the type of fuel available.
+  theme_minimal() + 
+  scale_y_continuous(labels = comma)
 
 
 
-"tfc" # Total Fuel Consumption
-# TFC measures the total amount of all types of fuels (including surface fuels, larger woody fuels, and subsurface organic matter)
-# consumed by the fire in kg/m².
-# It shows full impact of the fire on the ecosystem.
+
+"tfc" # Total Fuel Consumption (modelled)
+# TFC is the total amount of fuel consumed by both surface and crown fires. 
+# It includes all components in SFC plus the consumption of overstory fuels (canopy).
+# Estimates the overall carbon emissions from a fire event.
+# Range varies widely based on the intensity and spread of the fire, 
+# as well as the initial fuel load and moisture content.
 
 
-print(monthly_avg)
 
 ggplot(hotspots_peak, aes(x = tfc)) +
-  geom_histogram(binwidth = 0.1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution Total Fuel Consumption at Fire Hotspots",
+  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Total Fuel Consumption (TFC)",
        x = "TFC (kg/m²)",
        y = "Frequency") +
-  scale_y_continuous(labels = comma) + 
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# The histogram shows a wide range of TFC values,
-# with a notable amount of lower values around 0-3 kg/m² and a few extreme outliers reaching up to 10 kg/m².
+  scale_y_continuous(labels = comma)
+  
 
 
-ggplot(hotspots_peak, aes(x = factor(year), y = tfc)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Total Fuel Consumption Distribution Across Years",
-       x = "Year",
-       y = "TFC (kg/m²)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
 
-# 2017, 2018 and 2021 had relatively high median TFC values, indicating significant fuel consumption in those years.
-# 2020 shows a significantly lower median TFC compared to other years, less fuel consumption on average.
+"bfc" # Borfire Fuel Consumption (modelled)      
+# BFC refers to a specific component of the BORFIRE model focused on estimating carbon emissions from boreal forest fires.
+
+summary(hotspots_peak$bfc)
+
+# Explore huge bfc values
+huge_bfc <- hotspots_peak %>%
+  filter(bfc > 1000)
+
+# Print the resulting data frame to inspect the entries with huge bfc values
+
+huge_bfc %>%
+  group_by(year, month) %>%
+  summarise(n_entries = n()) %>%
+  arrange(year, month)
+
+summary(huge_bfc$bfc)
+
+# Possibly the information here is incorrectly recorded
+
+# The Max  value in the dataset appeart to be out of valid range
+
+# Remove NA values from BFC data
+hotspots_peak_BFC <- hotspots_peak %>%
+  filter(!is.na(bfc))
 
 
-"bfc"      
 
-"hfi" # Head Fire Intencity ####
+# Calculate IQR for BFC
+IQR_bfc <- IQR(hotspots_peak_BFC$bfc, na.rm = TRUE)
+Q1_bfc <- quantile(hotspots_peak_BFC$bfc, 0.25, na.rm = TRUE)
+Q3_bfc <- quantile(hotspots_peak_BFC$bfc, 0.75, na.rm = TRUE)
+
+# Define lower and upper bounds for outliers
+upper_bound_bfc <- Q3_bfc + 1.5 * IQR_bfc
+
+# Filter out the outliers
+hotspots_peak_BFC <- hotspots_peak_BFC %>%
+  filter(bfc <= upper_bound_bfc)
+
+# Summary of filtered data
+summary(hotspots_peak_BFC$bfc)
+
+
+# Plot Histogram of BFC Data Without Handling Outliers
+ggplot(hotspots_peak_BFC, aes(x = bfc)) +
+  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Boreal Fire Consumption (BFC)",
+       x = "BFC",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::comma)
+
+
+
+
+
+"hfi" # Head Fire Intencity (modelled) ####
 # Measures the intensity or energy output of a fire at its front (head).
 # HFI is measured in kilowatts per metre (kW/m) of the fire front and is calculated based on the Rate of Spread (ROS)
 # and the Total Fuel Consumption (TFC).
@@ -2069,18 +2090,23 @@ ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = ye
 # The plots also show how HFI can change from month to month within a single fire season.
 # Weather conditions, temperature, humidity, and wind speed,  can affect how fires behave.
 
-"cfb"    
+
+
+"cfb" #  Crown Fraction Burned (%) at hotspot location (modelled)
+ 
 "age"     
-"estarea"  
+"estarea" # approximate burned area based on historical average area burned per hotspot by
+# agency and fuel type
+
 "polyid"   
-"pcuring"  
-"cfactor"  
-"greenup"  
-"elev"     
+"pcuring" # percent curing
+"cfactor" # curing factor
+"greenup" # – phenological state of deciduous trees (0=leafless, 1=green)
+"elev" # elevation above sea level (meters)
 "cfl"      
 "tfc0"     
 "sfl"      
-"ecozone"  
+"ecozone" # – ecozone in which hotspot is located
 "sfc0"     
 "cbh"   
 
@@ -2162,33 +2188,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 # more variables####
-
-
-
-
-
-# sfc: Surface Fuel Consumption (kg/m²)
-
-# Amount of surface fuel consumed during the fire
-# 0 to 4992 with mean of 2689
-# WHY THE 0 VALUES
-
-
-# tfc: Total Fuel Consumption (kg/m²)
-
-# Total fuel consumed including surface, ground, and crown fuel
-# 0 to 9 with mean of 3
-# CHECK THE SCALE
-
-
-# bfc: Burnable Fuel Consumption (kg/m²)
-
-# Amount of biomass fuel consumed
-# 0 to 45488500 with mean of 297
-# LARGE OUTLIERS IN THIS VARIABLE
-# THERE ARE A LOT OF MISSING VALUES FOR THIS VARIABLE 42%
-# CHECK THE SIGNIFICANCE
-
 
 
 
@@ -2316,93 +2315,36 @@ hotspots %>%
 ############## draft####
 
 
+# Remove NA values from BFC data
+hotspots_peak_BFC <- hotspots_peak %>%
+  filter(!is.na(bfc))
 
 
 
+# Calculate IQR for BFC
+IQR_bfc <- IQR(hotspots_peak_BFC$bfc, na.rm = TRUE)
+Q1_bfc <- quantile(hotspots_peak_BFC$bfc, 0.25, na.rm = TRUE)
+Q3_bfc <- quantile(hotspots_peak_BFC$bfc, 0.75, na.rm = TRUE)
 
-# Compare indices trends to timeline of fire events####
+# Define lower and upper bounds for outliers
+upper_bound_bfc <- Q3_bfc + 1.5 * IQR_bfc
 
-# Analyze the trends of key indices (ISI BUI FWI) and the number of fire events.
-# This can show how environmental conditions, indicated by these indices, correlate with the frequency of fires.
+# Filter out the outliers
+hotspots_peak_BFC <- hotspots_peak_BFC %>%
+  filter(bfc <= upper_bound_bfc)
 
-# Use the previously normalized monthly_data table
-
-# Maximum values for scaling
-max_isi <- max(monthly_data$avg_isi, na.rm = TRUE)
-max_bui <- max(monthly_data$avg_bui, na.rm = TRUE)
-max_fwi <- max(monthly_data$avg_fwi, na.rm = TRUE)
-
-
-
-# Plot ISI and Fire Counts
-ggplot(monthly_data, aes(x = Date)) +
-  geom_line(aes(y = avg_isi, color = "ISI"), size = 1) +
-  geom_bar(aes(y = norm_n_events * max_isi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
-  scale_y_continuous(
-    name = "ISI",
-    sec.axis = sec_axis(~ . * 1000 / max_isi * max(monthly_data$n_events) / 1000, 
-                        name = "Number of Fire Occurrences", labels = comma)) +
-  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
-  labs(title = "Monthly Trends of ISI and Fire Occurrences",
-       x = "Year",
-       color = "Index",
-       fill = "Index") +
-  scale_color_manual(values = c("ISI" = "steelblue")) +
-  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# Plot BUI and Fire Counts
-ggplot(monthly_data, aes(x = Date)) +
-  geom_line(aes(y = avg_bui, color = "BUI"), size = 1) +
-  geom_bar(aes(y = norm_n_events * max_bui, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
-  scale_y_continuous(
-    name = "BUI",
-    sec.axis = sec_axis(~ . * 1000 / max_bui * max(monthly_data$n_events) / 1000, 
-                        name = "Number of Fire Occurrences", labels = comma)) +
-  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
-  labs(title = "Monthly Trends of BUI and Fire Occurrences",
-       x = "Year",
-       color = "Index",
-       fill = "Index") +
-  scale_color_manual(values = c("BUI" = "steelblue")) +
-  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# Plot FWI and Fire Counts
-ggplot(monthly_data, aes(x = Date)) +
-  geom_line(aes(y = avg_fwi, color = "FWI"), size = 1) +
-  geom_bar(aes(y = norm_n_events * max_fwi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
-  scale_y_continuous(
-    name = "FWI",
-    sec.axis = sec_axis(~ . * 1000 / max_fwi * max(monthly_data$n_events) / 1000, 
-                        name = "Number of Fire Occurrences", labels = comma)) +
-  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
-  labs(title = "Monthly Trends of FWI and Fire Occurrences",
-       x = "Year",
-       color = "Index",
-       fill = "Index") +
-  scale_color_manual(values = c("FWI" = "steelblue")) +
-  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# The plots show a clear link between indices and the number of fires.
-# When there are more fires, the FWI is also higher.
-
-# It's important to remember that while high FWI values mean conditions are good for fires,
-# they don't cause fires by themselves.
-# Other factors like human activities or lightning strikes are needed to start fires in these conditions.
-
-# Also, while the FWI helps predict how severe fires might be,
-# it can't tell us exactly how many fires will happen in a season.
-# For example, the FWI was lower in 2018 than in 2017, but 2018 still had some major fires. 
-# This shows that indices can indicate fire conditions but don't predict the exact number of fires.
+# Summary of filtered data
+summary(hotspots_peak_BFC$bfc)
 
 
-
-
+# Plot Histogram of BFC Data Without Handling Outliers
+ggplot(hotspots_peak_BFC, aes(x = bfc)) +
+  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Boreal Fire Consumption (BFC)",
+       x = "BFC",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::comma)
 
 
 
