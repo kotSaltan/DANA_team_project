@@ -1775,7 +1775,7 @@ ggplot(monthly_data, aes(x = Date)) +
 # When there are more fires, the FWI is also higher.
 
 # It's important to remember that while high FWI values mean conditions are good for fires,
-# they don't cause fires by themselves.
+# they don't indicate fire presence.
 # Other factors like human activities or lightning strikes are needed to start fires in these conditions.
 
 # Also, while the FWI helps predict how severe fires might be,
@@ -1802,7 +1802,7 @@ ggplot(monthly_data, aes(x = Date)) +
 # D2: Deadfall or downed wood
 
 # Group by fuel and summarize
-fuel_counts <- hotspots_peak_filtered %>%
+fuel_counts <- hotspots_peak %>%
   group_by(fuel) %>%
   summarise(count = n()) %>%
   arrange(desc(count)) 
