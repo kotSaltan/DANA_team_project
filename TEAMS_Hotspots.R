@@ -618,6 +618,8 @@ monthly_avg <- hotspots_peak %>%
             avg_dmc = mean(dmc, na.rm = TRUE),
             avg_dc = mean(dc, na.rm = TRUE),
             avg_isi = mean(isi, na.rm = TRUE),
+            avg_bui = mean(bui, na.rm = TRUE),
+            avg_fwi = mean(fwi, na.rm = TRUE),
             avg_sfc = mean(sfc, na.rm = TRUE),
             avg_tfc = mean(tfc, na.rm = TRUE),
             avg_bfc = mean(bfc, na.rm = TRUE),
@@ -1699,7 +1701,91 @@ ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = ye
 # Fire agencies use the FWI to inform the public, issue fire bans, and respond to fires. 
 # It helps prioritize resources and actions to mitigate fire risks effectively.
 
-# не коррелирует с количеством пожаров
+
+
+# Compare indices trends to timeline of fire events####
+
+# Analyze the trends of key indices (ISI BUI FWI) and the number of fire events.
+# This can show how environmental conditions, indicated by these indices, correlate with the frequency of fires.
+
+# Use the previously normalized monthly_data table
+
+# Maximum values for scaling
+max_isi <- max(monthly_data$avg_isi, na.rm = TRUE)
+max_bui <- max(monthly_data$avg_bui, na.rm = TRUE)
+max_fwi <- max(monthly_data$avg_fwi, na.rm = TRUE)
+
+
+
+# Plot ISI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_isi, color = "ISI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_isi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "ISI",
+    sec.axis = sec_axis(~ . * 1000 / max_isi * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of ISI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("ISI" = "steelblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot BUI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_bui, color = "BUI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_bui, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "BUI",
+    sec.axis = sec_axis(~ . * 1000 / max_bui * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of BUI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("BUI" = "steelblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot FWI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_fwi, color = "FWI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_fwi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "FWI",
+    sec.axis = sec_axis(~ . * 1000 / max_fwi * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of FWI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("FWI" = "steelblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# The plots show a clear link between indices and the number of fires.
+# When there are more fires, the FWI is also higher.
+
+# It's important to remember that while high FWI values mean conditions are good for fires,
+# they don't cause fires by themselves.
+# Other factors like human activities or lightning strikes are needed to start fires in these conditions.
+
+# Also, while the FWI helps predict how severe fires might be,
+# it can't tell us exactly how many fires will happen in a season.
+# For example, the FWI was lower in 2018 than in 2017, but 2018 still had some major fires. 
+# This shows that indices can indicate fire conditions but don't predict the exact number of fires.
+
+
+
+
 
 "fuel" # Fuel Type  ####
 
@@ -2148,65 +2234,94 @@ hotspots %>%
 
 
 
-# Load necessary libraries
-library(ggplot2)
-library(dplyr)
-library(scales)
 
-# Assuming monthly_data is already created and preprocessed
-# Plot FFMC and Fire Counts with bar plot for fire occurrences
+
+
+# Compare indices trends to timeline of fire events####
+
+# Analyze the trends of key indices (ISI BUI FWI) and the number of fire events.
+# This can show how environmental conditions, indicated by these indices, correlate with the frequency of fires.
+
+# Use the previously normalized monthly_data table
+
+# Maximum values for scaling
+max_isi <- max(monthly_data$avg_isi, na.rm = TRUE)
+max_bui <- max(monthly_data$avg_bui, na.rm = TRUE)
+max_fwi <- max(monthly_data$avg_fwi, na.rm = TRUE)
+
+
+
+# Plot ISI and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
-  geom_line(aes(y = avg_ffmc, color = "FFMC"), size = 1) +
-  geom_bar(aes(y = norm_n_events * max_ffmc, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  geom_line(aes(y = avg_isi, color = "ISI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_isi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
   scale_y_continuous(
-    name = "FFMC",
-    sec.axis = sec_axis(~ . * 1000 / max_ffmc * max(monthly_data$n_events) / 1000, 
+    name = "ISI",
+    sec.axis = sec_axis(~ . * 1000 / max_isi * max(monthly_data$n_events) / 1000, 
                         name = "Number of Fire Occurrences", labels = comma)) +
   scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
-  labs(title = "Monthly Trends of FFMC and Fire Occurrences",
+  labs(title = "Monthly Trends of ISI and Fire Occurrences",
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("FFMC" = "lightblue")) +
+  scale_color_manual(values = c("ISI" = "steelblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Plot DMC and Fire Counts with bar plot for fire occurrences
+# Plot BUI and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
-  geom_line(aes(y = avg_dmc, color = "DMC"), size = 1) +
-  geom_bar(aes(y = norm_n_events * max_dmc, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  geom_line(aes(y = avg_bui, color = "BUI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_bui, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
   scale_y_continuous(
-    name = "DMC",
-    sec.axis = sec_axis(~ . * 1000 / max_dmc * max(monthly_data$n_events) / 1000, 
+    name = "BUI",
+    sec.axis = sec_axis(~ . * 1000 / max_bui * max(monthly_data$n_events) / 1000, 
                         name = "Number of Fire Occurrences", labels = comma)) +
   scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
-  labs(title = "Monthly Trends of DMC and Fire Occurrences",
+  labs(title = "Monthly Trends of BUI and Fire Occurrences",
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("DMC" = "lightblue")) +
+  scale_color_manual(values = c("BUI" = "steelblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# Plot DC and Fire Counts with bar plot for fire occurrences
+# Plot FWI and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
-  geom_line(aes(y = avg_dc, color = "DC"), size = 1) +
-  geom_bar(aes(y = norm_n_events * max_dc, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  geom_line(aes(y = avg_fwi, color = "FWI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_fwi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
   scale_y_continuous(
-    name = "DC",
-    sec.axis = sec_axis(~ . * 1000 / max_dc * max(monthly_data$n_events) / 1000, 
+    name = "FWI",
+    sec.axis = sec_axis(~ . * 1000 / max_fwi * max(monthly_data$n_events) / 1000, 
                         name = "Number of Fire Occurrences", labels = comma)) +
   scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
-  labs(title = "Monthly Trends of DC and Fire Occurrences",
+  labs(title = "Monthly Trends of FWI and Fire Occurrences",
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("DC" = "lightblue")) +
+  scale_color_manual(values = c("FWI" = "steelblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# The plots show a clear link between indices and the number of fires.
+# When there are more fires, the FWI is also higher.
+
+# It's important to remember that while high FWI values mean conditions are good for fires,
+# they don't cause fires by themselves.
+# Other factors like human activities or lightning strikes are needed to start fires in these conditions.
+
+# Also, while the FWI helps predict how severe fires might be,
+# it can't tell us exactly how many fires will happen in a season.
+# For example, the FWI was lower in 2018 than in 2017, but 2018 still had some major fires. 
+# This shows that indices can indicate fire conditions but don't predict the exact number of fires.
+
+
+
+
+
+
 
 
 
