@@ -881,6 +881,8 @@ grid.arrange(temp_plot, humidity_plot, ncol = 1)
 monthly_avg_filtered <- monthly_avg %>% 
   filter(year %in% c(2014, 2018, 2020, 2023))
 
+
+
 # Plot monthly temperature averages
 temp_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
   geom_line(size = 1) +
@@ -888,7 +890,7 @@ temp_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_temp, 
        x = "Month",
        y = "Average Temperature (°C)",
        color = "Year") +
-  scale_color_manual(values = c("2014" = "lightblue", "2018" = "plum", "2020" = "lightgreen", "2023" = "lightcoral")) +
+  scale_color_manual(values = c("2014" = "#F8766D", "2018" = "#00C19F", "2020" = "#619CFF", "2023" = "#FF61C3")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -899,7 +901,7 @@ humidity_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_rh
        x = "Month",
        y = "Average Humidity (%)",
        color = "Year") +
-  scale_color_manual(values = c("2014" = "lightblue", "2018" = "plum", "2020" = "lightgreen", "2023" = "lightcoral")) +
+  scale_color_manual(values = c("2014" = "#F8766D", "2018" = "#00C19F", "2020" = "#619CFF", "2023" = "#FF61C3")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -928,12 +930,12 @@ ws_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_ws, colo
        x = "Month",
        y = "Average Wind Speed (m/s)",
        color = "Year") +
-  scale_color_manual(values = c("2014" = "lightblue", "2018" = "plum", "2020" = "lightgreen", "2023" = "lightcoral")) +
+  scale_color_manual(values = c("2014" = "#F8766D", "2018" = "#00C19F", "2020" = "#619CFF", "2023" = "#FF61C3")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Arrange the plots side by side
-grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol = 3)
+grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol = 1)
 
 # Wind speed shows significant variability.
 
@@ -1840,7 +1842,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = ye
 
 
 # HISTOGRAM - DISTRIBUTION OF THE VALUE IN ALL 10 YEARS
-ggplot(hotspots_peak, aes(x = ws)) +
+ggplot(hotspots_peak, aes(x = pcp)) +
   geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Windspeed at Fire Hotspots",
        x = "Windspeed (m/s)",
@@ -1855,7 +1857,7 @@ ggplot(hotspots_peak, aes(x = ws)) +
 
 
 # BOXPLOTS 10 YEARS SIDE BY SIDE
-ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
+ggplot(hotspots_peak, aes(x = factor(year), y = pcp)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Windspeed Distribution Across Years",
        x = "Year",
@@ -1872,10 +1874,10 @@ ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
 
 
 # LINE PLOT WITH FILTER FOR SPECIFIC YEAR  (trend line added)
-ggplot(hotspots_peak %>% filter(year == 2014), aes(x = rep_date, y = rh)) +
+ggplot(hotspots_peak %>% filter(year == 2018), aes(x = rep_date, y = pcp)) +
   geom_line(color = "steelblue") +
   geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
-  labs(title = "Humidity Over the Peak Season 2014",
+  labs(title = "pcp Over the Peak Season 2014",
        x = "Date",
        y = "Relative Humidity (%)") +
   theme_minimal() +
