@@ -51,7 +51,7 @@ hotspots <- hotspots_raw %>%
   filter(year >= 2014 & year <= 2023)
 
 # Check range of date
-range(hotspots$rep_date) #10 years period for further observations
+range(hotspots$rep_date) # 10 years period for further observations
 ```
 
 #### **To identify specific fire events, apply DBSCAN (Density-Based Spatial Clustering of Application with Noise) function and classify every data point into cluster. The number of clusters has to be close to the official information from BC Website (<https://www2.gov.bc.ca/gov/content/safety/wildfire-status/about-bcws/wildfire-statistics/wildfire-averages>)**
@@ -83,6 +83,7 @@ hotspots$event_cluster <- db$cluster
 ```
 
 #### Preview single specific event for observation
+
 ```{r}
 # Filter for a specific cluster (event of fire) for sample
 event_500 <- hotspots %>%
@@ -91,7 +92,9 @@ event_500 <- hotspots %>%
 event_500
 # OUTPUT 14 observations lat 53 lon -124 on 16 July 2014
 ```
+
 #### Count the events without noise included
+
 ```{r}
 # Count the number of unique clusters
 num_clusters <- length(unique(hotspots$event_cluster))-1 # Subtract 1 to exclude the noise cluster (label 0)
@@ -101,7 +104,9 @@ num_clusters
 2293+1801+1647+670+825+2117+1353+1050+1858+1481+1861
 # 16956
 ```
-#### Summary of the clusters 
+
+#### Summary of the clusters
+
 ```{r}
 
 # Detailed summary of the clusters
@@ -122,7 +127,7 @@ print(event_details)
 # Events_count : Total number of fire event in yearly basis based on cluster.
 ```
 
-#### Analysis on the fire events in graphs. 
+#### Analysis on the fire events in graphs.
 
 ```{r}
 # In order to identify the time period to focus on and further yearly basis comparison purpose, summarize the number of cluster per year and month (exclude number of noise)
@@ -221,7 +226,8 @@ fire_events_wide2 <- fire_events_per_month_subset %>%
 # Print the wide format summary table
 print(fire_events_wide2)
 ```
-#### Visualize the peak fire events with heatmap 
+
+#### Visualize the peak fire events with heatmap
 
 ```{r}
 # Create a heatmap to visualize the number of fire events per month and year
@@ -265,9 +271,11 @@ events_count <- event_details %>%
 # Check the extracted table
 print(events_count)
 ```
+
 The period of data covers 10 years period started from 2014 and included the major fire events in 2023.
 
 #### Show the summary of hotspots dataset in days count per year
+
 ```{r}
 # Create summary table describing each hotspots dataset by year
 hotspots_df_summary <- hotspots %>%
@@ -289,6 +297,7 @@ hotspots_df_summary <- hotspots_df_summary %>%
 print(hotspots_df_summary)
 
 ```
+
 ***This table shows the beginning and end day of data collected by yearly basis with number of fire event counts. The notable finding is started from 2021 to 2023, it shows the data recorded in full year round, making it has more data point reference and can increase accuracy of analysis.***
 
 #### UID (Identifier)
@@ -425,7 +434,9 @@ summary_hotspots <- describe_numerical(hotspots, numerical_columns)
 # Print the summary table
 print(summary_hotspots)
 ```
+
 #### Statistical summary of numerical variables in peak period from the hotspots dataset
+
 ```{r}
 # Describe numerical columns for hotspots_peak
 summary_hotspots_peak <- describe_numerical(hotspots_peak, numerical_columns)
@@ -433,6 +444,8 @@ summary_hotspots_peak <- describe_numerical(hotspots_peak, numerical_columns)
 # Print the summary table
 print(summary_hotspots_peak)
 ```
+The statistical summary of the hotspots_peak dataset shows that there are no missing values in key variables, used by Canadian Forest Fire Weather Index (FWI) System, therefore we can continue with visual analysis and provide detailed description.
+
 #### Summarize table with mean values for plots.
 
 ```{r}
@@ -642,6 +655,7 @@ grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
 ```
 
 #### Comparison betweent temperature and humidity (RH) from 4 different years.
+
 ```{r}
 # Plot compare the temperature and humidity from 4 different years
 # Filter for specific years
@@ -701,6 +715,7 @@ grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol 
 ```
 
 #### Wind exploration with openair() package.
+
 ```{r}
 # Visualise with Wind Rose to see most common wind direction
 library(openair)
@@ -769,7 +784,9 @@ monthly_avg <- hotspots_peak %>%
 
 print(monthly_avg)
 ```
+
 #### FFMC (Fine Fuel Moisture Code)
+
 ```{r}
 # A numeric rating of the moisture content of litter and other cured fine fuels.
 # This code is an indicator of the relative ease of ignition and the flammability of fine fuel.
@@ -901,7 +918,9 @@ monthly_avg <- hotspots_peak %>%
 print(monthly_avg)
 
 ```
+
 #### DC (Drought Code)
+
 ```{r}
 # A numeric rating of the average moisture content of deep, compact organic layers.
 # This code is a useful indicator of seasonal drought effects on forest fuels
@@ -982,7 +1001,9 @@ monthly_avg <- hotspots_peak %>%
 print(monthly_avg)
 
 ```
+
 #### ISI (Initial Spread Index)
+
 ```{r}
 # A numerical rating of the expected rate of fire spread
 # based on wind speed, temperature, and fine fuel moisture content. 
@@ -1001,8 +1022,8 @@ ggplot(hotspots_peak, aes(x = isi)) +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 ```
-#### The histogram indicates that most ISI values are low to moderate.
 
+#### The histogram indicates that most ISI values are low to moderate.
 
 ```{r}
 # Plot boxplot for ISI
@@ -1018,8 +1039,8 @@ ggplot(hotspots_peak, aes(x = factor(year), y = isi)) +
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 ```
-#### The boxplot shows variability in ISI values across years, with notable outliers in 2014 and 2020.
 
+#### The boxplot shows variability in ISI values across years, with notable outliers in 2014 and 2020.
 
 ```{r}
 # Line plot for ISI over time
@@ -1052,7 +1073,8 @@ event_outliers <- hotspots_peak %>%
 dim(event_outliers)
 view(event_outliers)
 ```
-#### Sample of one specific event with FWI index 
+
+#### Sample of one specific event with FWI index
 
 ```{r}
 # Filter the specific event cluster and near events
@@ -1802,6 +1824,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = age)) +
 ```
 
 "est area" (Estimated Area Burned )
+
 ```{r}
 ggplot(hotspots_peak, aes(x = estarea)) +
   geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
@@ -1873,7 +1896,7 @@ ggplot(pcuring_cluster_count, aes(x = pcuring, y = num_clusters)) +
 
 ```
 
-"cfactor" 
+"cfactor"
 
 ```{r}
 # The factor of curing
