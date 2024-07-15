@@ -870,7 +870,7 @@ humidity_plot <- ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(y
 
 
 
-grid.arrange(temp_plot, humidity_plot, ncol = 2)
+grid.arrange(temp_plot, humidity_plot, ncol = 1)
 
 
 
@@ -904,7 +904,7 @@ humidity_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_rh
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Arrange the plots side by side
-grid.arrange(temp_plot_filtered, humidity_plot_filtered, ncol = 2)
+grid.arrange(temp_plot_filtered, humidity_plot_filtered, ncol = 1)
 
 # There is a combination of high temperatures and low humidity during the peak fire months (June to September).
 # 2018 and 2023 had higher temperatures and lower humidity, meaning more fires.
