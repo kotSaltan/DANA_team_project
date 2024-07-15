@@ -1359,8 +1359,8 @@ ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = ye
 # indicating higher fire spread potential during this period.
 # The boxplot shows variability in ISI values across years, with notable outliers in 2014 and 2020.
 # The histogram indicates that most ISI values are low to moderate.
-# To improve the clarity of these insights,
-# removing NA values and extreme outliers from the dataset is necessary.
+
+# Analyses of the extreme outliers
 
 
 # Remove extreme outliers
@@ -1368,7 +1368,7 @@ hotspots_peak_filtered <- hotspots_peak%>%
   filter(isi < 60)
 dim(hotspots_peak_filtered)
 
-# Filter out entries with ISI values greater than 75
+# Filter out entries with ISI values greater than 60
 event_outliers <- hotspots_peak %>%
   filter(isi >= 60)
 
@@ -1423,7 +1423,9 @@ print(weather_summary)
 # The wind speed during this event is notably higher than the monthly average,
 # suggesting stronger winds that could help spread the fire.
 
-monthly_avg <- hotspots_peak_filtered %>%
+
+
+monthly_avg <- hotspots_peak %>%
   group_by(year, month) %>%
   summarise(avg_temp = mean(temp, na.rm = TRUE),
             avg_rh = mean(rh, na.rm = TRUE),
@@ -1438,8 +1440,8 @@ monthly_avg <- hotspots_peak_filtered %>%
 print(monthly_avg)
 
 # Plot histogram for ISI
-ggplot(hotspots_peak_filtered, aes(x = isi)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+ggplot(hotspots_peak, aes(x = isi)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of ISI Values", x = "ISI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
@@ -1480,7 +1482,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = ye
 
 
 # SHOW CORRELATION OF ISI AND WEATHER INDICES
-monthly_avg <- hotspots_peak_filtered %>%
+monthly_avg <- hotspots_peak %>%
   group_by(year, month) %>%
   summarise(avg_temp = mean(temp, na.rm = TRUE),
             avg_rh = mean(rh, na.rm = TRUE),
