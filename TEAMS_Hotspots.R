@@ -2002,6 +2002,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = tfc)) +
 
 
 "bfc"      
+
 "hfi" # Head Fire Intencity ####
 # Measures the intensity or energy output of a fire at its front (head).
 # HFI is measured in kilowatts per metre (kW/m) of the fire front and is calculated based on the Rate of Spread (ROS)
