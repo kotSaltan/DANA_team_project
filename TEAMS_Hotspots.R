@@ -1209,6 +1209,89 @@ ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = yea
 # There are a lot of high DC values, more than 500, it shows conditions for deep-burning fires.
 
 
+# Compare indices trends to timeline of fire events####
+
+# Analyze the trends of key indices (FFMC DMC DC) and the number of fire events.
+# This can show how environmental conditions, indicated by these indices, correlate with the frequency of fires.
+
+# Normalize the number of fire events to allow for a meaningful comparison with the indices. 
+# Merge the dataframes
+monthly_data <- merge(monthly_avg, fire_events_per_month, by = c("year", "month"))
+
+# Convert 'month' column from ordered factor to numeric
+monthly_data$month <- as.numeric(monthly_data$month)
+
+# Create the 'Date' column using 'year' and 'month'
+monthly_data$Date <- as.Date(paste(monthly_data$year, monthly_data$month, "01", sep = "-"))
+
+# Normalize the fire numbers data 
+max_events <- max(monthly_data$n_events, na.rm = TRUE)
+
+monthly_data <- monthly_data %>%
+  mutate(norm_n_events = n_events / max_events)
+
+# Maximum values for scaling
+max_ffmc <- max(monthly_data$avg_ffmc, na.rm = TRUE)
+max_dmc <- max(monthly_data$avg_dmc, na.rm = TRUE)
+max_dc <- max(monthly_data$avg_dc, na.rm = TRUE)
+
+
+
+# Plot FFMC and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_ffmc, color = "FFMC"), size = 1) +
+  geom_line(aes(y = norm_n_events * max_ffmc, color = "Fire Occurrences"), size = 1) +
+  scale_y_continuous(
+    name = "FFMC",
+    sec.axis = sec_axis(~ . * 1000 / max_ffmc * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)  ) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of FFMC and Fire Occurrences",
+       x = "Year",
+       color = "Index") +
+  scale_color_manual(values = c("FFMC" = "lightblue", "Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot DMC and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_dmc, color = "DMC"), size = 1) +
+  geom_line(aes(y = norm_n_events * max_dmc, color = "Fire Occurrences"), size = 1) +
+  scale_y_continuous(
+    name = "DMC",
+    sec.axis = sec_axis(~ . * 1000 / max_dmc * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)  ) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of DMC and Fire Occurrences",
+       x = "Year",
+       color = "Index") +
+  scale_color_manual(values = c("DMC" = "lightblue", "Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot DC and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_dc, color = "DC"), size = 1) +
+  geom_line(aes(y = norm_n_events * max_dc, color = "Fire Occurrences"), size = 1) +
+  scale_y_continuous(
+    name = "DC",
+    sec.axis = sec_axis(~ . * 1000 / max_dc * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)  ) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of DC and Fire Occurrences",
+       x = "Year",
+       color = "Index") +
+  scale_color_manual(values = c("DC" = "lightblue", "Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# The plots show a clear relationship between the fire indices (FFMC, DMC, and DC) and the number of fires. 
+# When the number of fires is high, the indices also show higher values.
+
+# It's important to note that while high indices indicate conditions favorable for fires, they alone do not cause fires. 
+# Additional factors, such as human activities or lightning strikes, are necessary to ignite fires under these conditions.
+
+
 
 "isi" # Initial Spread Index ####
 # A numerical rating of the expected rate of fire spread
@@ -2055,11 +2138,12 @@ hotspots %>%
 
 ############## draft####
 
+# Analyze the trends of key indices (FFMC DMC DC) and the number of fire events.
+# This can show how environmental conditions, indicated by these indices, correlate with the frequency of fires.
 
-
+# Normalize the number of fire events to allow for a meaningful comparison with the indices. 
 # Merge the dataframes
 monthly_data <- merge(monthly_avg, fire_events_per_month, by = c("year", "month"))
-str(monthly_data)
 
 # Convert 'month' column from ordered factor to numeric
 monthly_data$month <- as.numeric(monthly_data$month)
@@ -2067,19 +2151,11 @@ monthly_data$month <- as.numeric(monthly_data$month)
 # Create the 'Date' column using 'year' and 'month'
 monthly_data$Date <- as.Date(paste(monthly_data$year, monthly_data$month, "01", sep = "-"))
 
-
-# 
-# Combine data
-monthly_data <- left_join(monthly_avg, fire_events_per_month, by = c("year", "month"))
-
-# Convert year and month to a Date object for proper plotting
-monthly_data$Date <- as.Date(paste(monthly_data$year, monthly_data$month, "01", sep = "-"))
-
 # Normalize the fire numbers data 
 max_events <- max(monthly_data$n_events, na.rm = TRUE)
 
 monthly_data <- monthly_data %>%
-  mutate(norm_n_events = n_events / max(n_events))
+  mutate(norm_n_events = n_events / max_events)
 
 # Maximum values for scaling
 max_ffmc <- max(monthly_data$avg_ffmc, na.rm = TRUE)
@@ -2141,6 +2217,9 @@ ggplot(monthly_data, aes(x = Date)) +
 
 # It's important to note that while high indices indicate conditions favorable for fires, they alone do not cause fires. 
 # Additional factors, such as human activities or lightning strikes, are necessary to ignite fires under these conditions.
+
+
+
 
 # quick load####
 
