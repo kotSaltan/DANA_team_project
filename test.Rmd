@@ -444,6 +444,7 @@ summary_hotspots_peak <- describe_numerical(hotspots_peak, numerical_columns)
 # Print the summary table
 print(summary_hotspots_peak)
 ```
+
 The statistical summary of the hotspots_peak dataset shows that there are no missing values in key variables, used by Canadian Forest Fire Weather Index (FWI) System, therefore we can continue with visual analysis and provide detailed description.
 
 #### Summarize table with mean values for plots.
@@ -451,13 +452,21 @@ The statistical summary of the hotspots_peak dataset shows that there are no mis
 ```{r}
 # Create a table with mean values for plots
 
-# Monthly averages for temp, rh, ws and pcp
+# Monthly averages for numerical variables
 monthly_avg <- hotspots_peak %>%
   group_by(year, month) %>%
   summarise(avg_temp = mean(temp, na.rm = TRUE),
             avg_rh = mean(rh, na.rm = TRUE),
             avg_ws = mean(ws, na.rm = TRUE),
             avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            avg_sfc = mean(sfc, na.rm = TRUE),
+            avg_tfc = mean(tfc, na.rm = TRUE),
+            avg_bfc = mean(bfc, na.rm = TRUE),
+            avg_hfi = mean(hfi, na.rm = TRUE),
             .groups = 'drop') 
 
 print(monthly_avg)
