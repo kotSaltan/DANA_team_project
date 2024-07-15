@@ -1917,8 +1917,90 @@ corrplot(correlation_ros_indices, method = "circle", type = "lower",
 
 
 
-"sfc"      
-"tfc"      
+"sfc" # Surface Fuel Consumption 
+# SFC measures the amount of surface fuel (e.g., grasses, leaves, small branches) consumed by a fire, in kg/m²,
+# indicating fire intensity. It isrelevant to initial spread of fire as easily ignitible material burns first.
+# Ranges from 0 kg/m² (no fuel) to several kg/m² (dense vegetation).
+
+
+print(monthly_avg)
+
+ggplot(hotspots_peak, aes(x = sfc)) +
+  geom_histogram(binwidth = 0.1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution Surface Fuel Consumption at Fire Hotspots",
+       x = "SFC (kg/m²)",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# Most SFC values are between 0 to 1.5 kg/m².
+# Peaks around 0 and 1.5 kg/m² suggest many fires had low to moderate fuel consumption.
+# Fewer high-intensity fires with higher SFC values.
+
+
+ggplot(hotspots_peak, aes(x = factor(year), y = sfc)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Surface Fuel Consumption Distribution Across Years",
+       x = "Year",
+       y = "SFC (kg/m²)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# SFC varies throughout the years. 
+# The SFC can also depend on the type of fuel available.
+
+
+
+"tfc" # Total Fuel Consumption
+# TFC measures the total amount of all types of fuels (including surface fuels, larger woody fuels, and subsurface organic matter)
+# consumed by the fire in kg/m².
+# It shows full impact of the fire on the ecosystem.
+
+
+print(monthly_avg)
+
+ggplot(hotspots_peak, aes(x = tfc)) +
+  geom_histogram(binwidth = 0.1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution Total Fuel Consumption at Fire Hotspots",
+       x = "TFC (kg/m²)",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# The histogram shows a wide range of TFC values,
+# with a notable amount of lower values around 0-3 kg/m² and a few extreme outliers reaching up to 10 kg/m².
+
+
+ggplot(hotspots_peak, aes(x = factor(year), y = tfc)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Total Fuel Consumption Distribution Across Years",
+       x = "Year",
+       y = "TFC (kg/m²)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# 2017, 2018 and 2021 had relatively high median TFC values, indicating significant fuel consumption in those years.
+# 2020 shows a significantly lower median TFC compared to other years, less fuel consumption on average.
+
+
 "bfc"      
 "hfi" # Head Fire Intencity ####
 # Measures the intensity or energy output of a fire at its front (head).
