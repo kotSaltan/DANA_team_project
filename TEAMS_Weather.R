@@ -10,6 +10,7 @@ library(gridExtra)
 library(reshape2)
 library(GGally)
 library(caret)
+library(ggbreak)
 
 # Create a new RProject, create data folder with the datasets, set working directory.
 
@@ -43,6 +44,16 @@ weather_peak <- weather %>%
 # Subset the data for May to October
 weather_peak <- weather_peak %>%
   filter(month %in% c("05", "06", "07", "08", "09", "10"))
+
+# Convert numeric month to ordered factor with month names
+weather_peak$month <- factor(weather_peak$month, 
+                             levels = c("05", "06", "07", "08", "09", "10"),
+                             labels = c("May", "Jun", "Jul", "Aug", "Sep", "Oct"),
+                             ordered = TRUE)
+
+# Check the structure to confirm the change
+str(weather_peak$month)
+
 
 # Select only the specified variables
 weather_peak <- weather_peak %>%
@@ -511,4 +522,177 @@ ggplot(monthly_avg, aes(x = month, y = avg_rain, color = factor(year), group = y
 # DRAFT ####
 names(weather)
 
+# Load necessary libraries
+
+
+
+install.packages("ggbreak")
+library(ggbreak)
+library(ggplot2)
+
+# Create the histogram plot with a gap using ggbreak
+hist_plot <- ggplot(weather_peak %>%
+                      filter(!is.na(total_precip)),
+                    aes(x = total_precip)) +
+  geom_histogram(binwidth = 2, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Total Precipitation Values", 
+       x = "Total Precipitation (mm)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+  ) +
+  scale_x_break(c(60, 200), scales = 1) +
+  theme(axis.ticks.y.right = element_blank(),
+        axis.text.y.right = element_blank(),
+        axis.title.y.right = element_blank())
+
+# Print the plot
+print(hist_plot)
+
+# The histogram shows a significant spike at 0 mm, indicating a high number of observations with no recorded precipitation. 
+# This large number of zero values can distort the overall distribution and obscure meaningful patterns in the data.
+# 
+# There are a few very high precipitation values (200 mm and above) that appear to be outliers. 
+# These extreme values could result from significant weather events or measurement errors and have a considerable impact on the distribution, skewing the analysis.
+
+
+
+
+# Filter out zero values
+non_zero_precip <- weather_peak %>%
+  filter(total_precip > 0)
+
+# Plot histogram for non-zero precipitation values
+hist_non_zero <- ggplot(non_zero_precip,
+                        aes(x = total_precip)) +
+  geom_histogram(binwidth = 2, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Non-Zero Total Precipitation Values", 
+       x = "Total Precipitation (mm)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+  ) +
+  scale_x_break(c(60, 200))
+
+# Print the plot
+print(hist_non_zero)
+
+
+
+# Identify extreme values
+extreme_values <- weather_peak %>%
+  filter(total_precip > 200)
+
+# Display extreme values
+print(extreme_values)
+# 
+# These values range from 208.2 mm to 286.6 mm.
+# The dates of these extreme events are in the years 2017 and 2019.
+# These high values likely correspond to significant weather events, such as heavy rainstorms.
+
+# Identify heavy rains
+rain_values <- weather_peak %>%
+  filter(total_precip > 50)
+
+# Display extreme values
+print(rain_values)
+
+
+# Filter out light rain values and heavy rain values (>50 mm)
+filtered_precip <- weather_peak %>%
+  filter(total_precip > 2.5 & total_precip <= 50)
+
+# Plot histogram for filtered precipitation values
+hist_filtered <- ggplot(filtered_precip,
+                        aes(x = total_precip)) +
+  geom_histogram(binwidth = 2, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Total Precipitation Values (Excluding Extremes)", 
+       x = "Total Precipitation (mm)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+  )
+
+# Print the plot
+print(hist_filtered)
+
+
+
+
+
+# 
+# Based on the official guidelines from Environment and Climate Change Canada (ECCC), rainfall intensity is classified into three main categories:
+#   
+#   Light Rain:
+#   
+#   Rate: 2.5 mm/hour or less
+# Description: Light rain usually has minimal impact on visibility and does not accumulate quickly.
+# Moderate Rain:
+#   
+#   Rate: Between 2.6 mm and 7.5 mm/hour
+# Description: Moderate rain has a more noticeable impact, potentially forming puddles and causing slight visibility reductions.
+# Heavy Rain:
+#   
+#   Rate: Greater than 7.6 mm/hour
+# Description: Heavy rain can lead to significant runoff, flooding, and substantial visibility reductions​ (Canada.ca)​​ (Environment Canada)​.
+
+
+
+
+
+# E boxplot for total_precip 
+ggplot(filtered_precip %>%
+         filter(!is.na(total_precip)),
+       aes(x = factor(year), y = total_precip)) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
+  labs(title = "Total Precipitation Distribution Across Years",
+       x = "Year",
+       y = "Total Precipitation (mm)") +
+  scale_y_continuous(breaks = seq(0, 300, by = 20)) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 12)
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+str(weather_peak$month)
+str(weather_peak$year)
 
