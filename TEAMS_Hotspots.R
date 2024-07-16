@@ -2450,7 +2450,70 @@ ggplot(hotspots_peak_pcuring, aes(x = factor(year), y = pcuring)) +
 # possibly indicating periods with no drying or data recording issues.
 
 
-"cfactor" # curing factor
+"cfactor" # Curing Factor
+# The amount of curing, or drying, of vegetation.
+
+# Count missing values in the cfactor
+sum(is.na(hotspots_peak$cfactor))
+
+
+# Identify years with the most missing values
+missing_cfactor <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(cfactor)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_cfactor
+
+# 2019 - 2023 does not have this variable.
+
+
+# Exclude the years where cfactor is missing
+hotspots_peak_cfactor <- hotspots_peak %>%
+  filter((year < 2019)) %>%
+  filter(!is.na(cfactor))
+
+# Check the summary of the filtered data
+summary(hotspots_peak_cfactor$cfactor)
+
+# range from 0 to 1
+# Represents the curing factor as a proportion rather than a percentage.
+
+
+# Create the histogram for cfactor
+ggplot(hotspots_peak_cfactor, aes(x = cfactor)) +
+  geom_histogram(binwidth = 0.1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Factor (cfactor) Values", 
+       x = "Curing Factor (cfactor)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+# Create the boxplot for cfactor across years
+ggplot(hotspots_peak_cfactor, aes(x = factor(year), y = cfactor)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Factor (cfactor) Across Years",
+       x = "Year",
+       y = "Curing Factor (cfactor)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+
+# The mean cfactor is 0.13
+# The variable has stopped being recorded recently.
+# It may be not suitable for meaningful analyses for the 10 year period
+
+
+
 "greenup" # – phenological state of deciduous trees (0=leafless, 1=green)
 "elev" # elevation above sea level (meters)
 "cfl"      
@@ -2630,67 +2693,52 @@ hotspots %>%
 
 
 
-# Count missing values in the pcuring
-sum(is.na(hotspots_peak$pcuring))
+# Count missing values in the greenup
+sum(is.na(hotspots_peak$greenup))
 
 
 # Identify years with the most missing values
-missing_pcuring <- hotspots_peak %>%
+missing_cfactor <- hotspots_peak %>%
   group_by(year) %>%
   summarise(
     total_count = n(),
-    missing_count = sum(is.na(pcuring)),
+    missing_count = sum(is.na(cfactor)),
     missing_percentage = (missing_count / total_count) * 100
   ) %>%
   arrange(desc(year))
 
-missing_pcuring
+missing_cfactor
 
-# 2023 does not have this variable.
+# 2019 - 2023 does not have this variable.
 
 
-# Exclude the year 2023 where pcuring is missing
-hotspots_peak_pcuring <- hotspots_peak %>%
-  filter(!(year == 2023)) %>%
-  filter(!is.na(pcuring))
+# Exclude the years where cfactor is missing
+hotspots_peak_cfactor <- hotspots_peak %>%
+  filter((year < 2019)) %>%
+  filter(!is.na(cfactor))
 
 # Check the summary of the filtered data
-summary(hotspots_peak_pcuring$pcuring)
+summary(hotspots_peak_cfactor$cfactor)
 
-# Checking for values greater than 100%
-pcuring_above_100 <- hotspots_peak %>% filter(pcuring > 100)
-summary(pcuring_above_100)
+# range from 0 to 1
+# Represents the curing factor as a proportion rather than a percentage.
 
-# 4 entries with values above 100% - out of range values, possible mistake in reporting
 
-zero_pcuring <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    zero_count = sum(pcuring == 0, na.rm = TRUE),
-    zero_percentage = (zero_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-zero_pcuring
-sum(zero_pcuring$zero_count)
-# 62239 zero values
-
-# Create the histogram for pcuring
-ggplot(hotspots_peak_pcuring, aes(x = pcuring)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Curing Percentage (pcuring) Values", 
-       x = "Curing Percentage (pcuring)", 
+# Create the histogram for cfactor
+ggplot(hotspots_peak_cfactor, aes(x = cfactor)) +
+  geom_histogram(binwidth = 0.1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Factor (cfactor) Values", 
+       x = "Curing Factor (cfactor)", 
        y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
-# Create the boxplot for pcuring across years
-ggplot(hotspots_peak_pcuring, aes(x = factor(year), y = pcuring)) +
+# Create the boxplot for cfactor across years
+ggplot(hotspots_peak_cfactor, aes(x = factor(year), y = cfactor)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Curing Percentage (pcuring) Across Years",
+  labs(title = "Distribution of Curing Factor (cfactor) Across Years",
        x = "Year",
-       y = "Curing Percentage (pcuring)") +
+       y = "Curing Factor (cfactor)") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 15),
         axis.title.x = element_text(size = 12),
@@ -2699,9 +2747,10 @@ ggplot(hotspots_peak_pcuring, aes(x = factor(year), y = pcuring)) +
         axis.text.y = element_text(size = 10))
 
 
-# The median pcuring values for these years range between 30% and 50%.
-# There are many entries with pcuring at 0%, 
-# possibly indicating periods with no drying or data recording issues.
+
+# The mean cfactor is 0.13
+# The variable has stopped being recorded recently.
+# It may be not suitable for meaningful analyses for the 10 year period
 
 
 # quick load####
