@@ -88,13 +88,13 @@ describe_numerical <- function(df, cols) {
 
 
 # Get the summary for each numerical column
-summary_weather_peak <- describe_numerical(weather_peak, c("mean_temp", "spd_max_gust", "total_precip", "total_rain"))
+summary_weather_peak <- describe_numerical(weather_peak, c("mean_temp", "spd_max_gust", "total_precip"))
 
 # Print the summary table
 print(summary_weather_peak)
 
 
-# Table shows NA values in spd_max_gust  (80%) and total_rain (54%)
+# Table shows NA values in spd_max_gust  (80%)
 
 
 
@@ -105,7 +105,6 @@ monthly_avg <- weather_peak %>%
   summarise(avg_temp = mean(mean_temp, na.rm = TRUE),
             avg_ws = mean(spd_max_gust, na.rm = TRUE),
             avg_pcp = mean(total_precip, na.rm = TRUE),
-            avg_rain = mean(total_rain, na.rm = TRUE),
             
             .groups = 'drop') 
 
@@ -211,35 +210,6 @@ missing_pcp
 
 
 
-# See missing values of Total Rain by year
-
-missing_rain <- weather_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(total_rain)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-missing_rain
-
-# See missing values of Total Rain by month
-
-missing_rain <- weather_peak %>%
-  group_by(month) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(total_rain)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(month))
-
-missing_rain
-
-# The missing values range from 44.8% to 61.2% per year.
-# The year with the highest percentage of missing values is 2023 with 61.2%.
-# There is an increasing trend of missing values over the years.
 
 
 
@@ -293,7 +263,6 @@ monthly_avg <- weather_peak %>%
   summarise(avg_temp = mean(mean_temp, na.rm = TRUE),
             avg_ws = mean(spd_max_gust, na.rm = TRUE),
             avg_pcp = mean(total_precip, na.rm = TRUE),
-            avg_rain = mean(total_rain, na.rm = TRUE),
             .groups = 'drop') 
 
 print(monthly_avg)
