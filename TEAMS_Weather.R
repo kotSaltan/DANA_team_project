@@ -417,6 +417,72 @@ ggplot(weather_peak %>%
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
+# The histogram shows many days with little or no precipitation, mainly around zero.
+# There are a few days with very high rainfall, as the distribution has a long tail to the right.
+
+# Most rainfall amounts are low and close to zero.
+# Each year has a few days with very high rainfall, shown as outliers.
+# The median values remain relatively consistent.
+
+
+# There is a large number of zero values that distort the distribution and hide meaningful patterns in the data.
+# To create a cleared visualization and to see how the data can be cleaned,
+# create the histogram plot with a gap using ggbreak
+
+ggplot(weather_peak %>%
+                      filter(!is.na(total_precip)),
+                    aes(x = total_precip)) +
+  geom_histogram(binwidth = 2, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Total Precipitation Values", 
+       x = "Total Precipitation (mm)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+  ) +
+  scale_x_break(c(30, 100), scales = 1) +
+  theme(axis.ticks.y.right = element_blank(),
+        axis.text.y.right = element_blank(),
+        axis.title.y.right = element_blank())
+
+
+# There are a few very high precipitation values (100 mm and above) that appear to be outliers. 
+# These extreme values could be significant weather events that
+# impact the distribution, skewing the analysis.
+
+
+
+# Identify extreme values
+extreme_values <- weather_peak %>%
+  filter(total_precip > 200)
+
+# Display extreme values
+print(extreme_values)
+ 
+# These values range from 208.2 mm to 286.6 mm.
+# The dates of these extreme events are in the years 2017 and 2019.
+# These high values likely correspond to significant weather events, such as heavy rainstorms.
+
+# Identify heavy rains
+rain_values <- weather_peak %>%
+  filter(total_precip > 100)
+
+# Count heavy rain events by year
+heavy_rain_count <- rain_values %>%
+  group_by(year) %>%
+  summarise(count = n())
+
+# Display the count of heavy rain events by year
+print(heavy_rain_count)
+
+# There are a total of 76 events in the overall 10 year dataset suggesting that the heavy rains occur few times a year.
+# The exception is 2017 with 25 heavy rains and 2020 and 2021 with 11 heavy rain events
+
 
 # Line plot for avg_pcp over time
 ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
@@ -434,149 +500,18 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
         legend.title = element_text(size = 10),
         legend.text = element_text(size = 8))
 
+# Precipitation generally increases towards the end of the season,
+# with peaks in September and October.
 
 
-
-# Rain ####
-
-# Analyze the distribution of Total Rain
-
-# Plot histogram for total_rain
-ggplot(weather_peak %>%
-         filter(!is.na(total_rain)),
-       aes(x = total_rain)) +
-  geom_histogram(binwidth = 1, fill = "lightblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Total Rain Values", 
-       x = "Total Rain (mm)", 
-       y = "Frequency") +
-  scale_y_continuous(labels = scales::comma) + 
-  theme_minimal()
-
-
-# Plot boxplot for total_rain
-ggplot(weather_peak %>%
-         filter(!is.na(total_rain)),
-       aes(x = factor(year), y = total_rain)) +
-  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
-  labs(title = "Total Rain Distribution Across Years",
-       x = "Year",
-       y = "Total Rain (mm)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-# Line plot for avg_rain over time
-ggplot(monthly_avg, aes(x = month, y = avg_rain, color = factor(year), group = year)) +
-  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
-  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
-  labs(title = "Average Monthly Rain Over Years",
-       x = "Month",
-       y = "Average Rain (mm)",
-       color = "Year") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        plot.title = element_text(size = 15, hjust = 0.5),
-        legend.title = element_text(size = 10),
-        legend.text = element_text(size = 8))
-
-
-
-
-
+# Each year shows unique trends, indicating variability in weather patterns.
+# Some years, such as 2023, show significantly higher peaks in precipitation compared to others.
 # DRAFT ####
 names(weather)
 
-# Load necessary libraries
 
 
 
-install.packages("ggbreak")
-library(ggbreak)
-library(ggplot2)
-
-# Create the histogram plot with a gap using ggbreak
-hist_plot <- ggplot(weather_peak %>%
-                      filter(!is.na(total_precip)),
-                    aes(x = total_precip)) +
-  geom_histogram(binwidth = 2, fill = "lightblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Total Precipitation Values", 
-       x = "Total Precipitation (mm)", 
-       y = "Frequency") +
-  scale_y_continuous(labels = scales::comma) + 
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
-    axis.title.x = element_text(size = 15),
-    axis.title.y = element_text(size = 15),
-    axis.text.x = element_text(size = 12),
-    axis.text.y = element_text(size = 12)
-  ) +
-  scale_x_break(c(60, 200), scales = 1) +
-  theme(axis.ticks.y.right = element_blank(),
-        axis.text.y.right = element_blank(),
-        axis.title.y.right = element_blank())
-
-# Print the plot
-print(hist_plot)
-
-# The histogram shows a significant spike at 0 mm, indicating a high number of observations with no recorded precipitation. 
-# This large number of zero values can distort the overall distribution and obscure meaningful patterns in the data.
-# 
-# There are a few very high precipitation values (200 mm and above) that appear to be outliers. 
-# These extreme values could result from significant weather events or measurement errors and have a considerable impact on the distribution, skewing the analysis.
-
-
-
-
-# Filter out zero values
-non_zero_precip <- weather_peak %>%
-  filter(total_precip > 0)
-
-# Plot histogram for non-zero precipitation values
-hist_non_zero <- ggplot(non_zero_precip,
-                        aes(x = total_precip)) +
-  geom_histogram(binwidth = 2, fill = "lightblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Non-Zero Total Precipitation Values", 
-       x = "Total Precipitation (mm)", 
-       y = "Frequency") +
-  scale_y_continuous(labels = scales::comma) + 
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
-    axis.title.x = element_text(size = 15),
-    axis.title.y = element_text(size = 15),
-    axis.text.x = element_text(size = 12),
-    axis.text.y = element_text(size = 12)
-  ) +
-  scale_x_break(c(60, 200))
-
-# Print the plot
-print(hist_non_zero)
-
-
-
-# Identify extreme values
-extreme_values <- weather_peak %>%
-  filter(total_precip > 200)
-
-# Display extreme values
-print(extreme_values)
-# 
-# These values range from 208.2 mm to 286.6 mm.
-# The dates of these extreme events are in the years 2017 and 2019.
-# These high values likely correspond to significant weather events, such as heavy rainstorms.
-
-# Identify heavy rains
-rain_values <- weather_peak %>%
-  filter(total_precip > 50)
-
-# Display extreme values
-print(rain_values)
 
 
 # Filter out light rain values and heavy rain values (>50 mm)
@@ -607,61 +542,19 @@ print(hist_filtered)
 
 
 
-# 
-# Based on the official guidelines from Environment and Climate Change Canada (ECCC), rainfall intensity is classified into three main categories:
-#   
-#   Light Rain:
-#   
+
+# Based on the official guidelines from Environment and Climate Change Canada (ECCC), 
+# rainfall intensity is classified into three main categories:
+
+#   Light Rain:  
 #   Rate: 2.5 mm/hour or less
 # Description: Light rain usually has minimal impact on visibility and does not accumulate quickly.
 # Moderate Rain:
-#   
+
 #   Rate: Between 2.6 mm and 7.5 mm/hour
 # Description: Moderate rain has a more noticeable impact, potentially forming puddles and causing slight visibility reductions.
 # Heavy Rain:
-#   
+
 #   Rate: Greater than 7.6 mm/hour
-# Description: Heavy rain can lead to significant runoff, flooding, and substantial visibility reductions​ (Canada.ca)​​ (Environment Canada)​.
-
-
-
-
-
-# E boxplot for total_precip 
-ggplot(filtered_precip %>%
-         filter(!is.na(total_precip)),
-       aes(x = factor(year), y = total_precip)) +
-  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
-  labs(title = "Total Precipitation Distribution Across Years",
-       x = "Year",
-       y = "Total Precipitation (mm)") +
-  scale_y_continuous(breaks = seq(0, 300, by = 20)) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
-    axis.title.x = element_text(size = 15),
-    axis.title.y = element_text(size = 15),
-    axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
-    axis.text.y = element_text(size = 12)
-  )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-str(weather_peak$month)
-str(weather_peak$year)
+# Description: Heavy rain can lead to significant runoff, flooding, and substantial visibility reductions
 
