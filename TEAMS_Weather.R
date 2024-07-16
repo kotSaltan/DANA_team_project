@@ -27,9 +27,21 @@ str(weather)
 
 ##############
  
+# Ensure the date column is in Date format
+weather <- weather %>%
+  mutate(date = as.Date(date, format = "%Y-%m-%d"),
+         month = format(date, "%m"))
+
+# Set range of dates to analyze
+start_date <- as.Date('2014-01-01')
+end_date <- as.Date('2023-12-31')
+
+# Subset the data by date range
+weather_peak <- weather %>%
+  filter(date >= start_date & date <= end_date)
 
 # Subset the data for May to October
-weather_peak <- weather %>%
+weather_peak <- weather_peak %>%
   filter(month %in% c("05", "06", "07", "08", "09", "10"))
 
 # Select only the specified variables
@@ -37,7 +49,6 @@ weather_peak <- weather_peak %>%
   select(station_name, station_id, lat, lon, date, year, month, day, 
          mean_temp, spd_max_gust, total_precip, total_rain)
 
-library(dplyr)
 
 
 # Function to describe each numerical column
@@ -135,7 +146,7 @@ flag_counts_by_year <- weather_peak_flag %>%
     L_total_rain = sum(total_rain_flag == "L", na.rm = TRUE),
     E_spd_max_gust = sum(spd_max_gust_flag == "E", na.rm = TRUE)
   ) %>%
-  arrange(desc(NA_total_rain), desc(NA_spd_max_gust))
+  arrange(desc(M_total_rain), desc(M_spd_max_gust))
 
 # Display the summaries
 print(flag_counts_by_month)
