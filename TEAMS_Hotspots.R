@@ -2132,7 +2132,86 @@ ggplot(monthly_data, aes(x = Date)) +
 
 
 "cfb" #  Crown Fraction Burned (%) at hotspot location (modelled)
- 
+# The CFB index measures the proportion of tree crowns that are consumed by a wildfire. 
+# It ranges from 0 to 100%, 
+# where 0% means no crown fire activity and 100% indicates 
+# that the entire tree crowns in the area have been burned.
+
+ggplot(hotspots_peak, aes(x = cfb)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of CFB at Fire Hotspots",
+       x = "CFB",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# This histogram is dominated by zero values, making it difficult to identify clear trends.
+
+
+# Count missing values in the CFB column
+sum(is.na(hotspots_peak$cfb))
+
+
+# Identify years with the most missing values
+missing_cfb <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(cfb)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(missing_percentage))
+
+missing_cfb
+
+# 2015 has the highest percentage of missing values at 56.1%.
+# 2017 has 54.9%.
+# 2016 has 46.8%.
+# 2018-2024 and 2014 have no missing values
+
+zero_cfb <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(cfb == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(zero_percentage))
+
+zero_cfb
+
+# 2019 has the highest percentage of zero values at 92.7%.
+# 2020, 2021, 2022, and 2023 also have high values ranging from 65.4% to 77.8%.
+# 2015-2018, and 2024 have almost no zero values.
+
+# Data collection for this variable lacks quality.
+
+# Filter out zero and na values to check the CFB values when it was properly recorded.
+
+hotspots_peak_CFB <- hotspots_peak %>%
+  filter(cfb > 0 & !is.na(cfb))
+
+# Create the histogram for CFB
+ggplot(hotspots_peak_CFB, aes(x = cfb)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Crown Fraction Burned (CFB) at Fire Hotspots",
+       x = "CFB",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::comma)
+
+# The histogram shows a significant peak at the value of 100%,
+# indicating that in many fire events with non zero recorded CFB values,
+# the entire tree crown is completely burned.
+# This suggests that when fires do occur,
+# they tend to be quite severe, affecting the full canopy of trees.
+
+
 "age"     
 "estarea" # approximate burned area based on historical average area burned per hotspot by
 # agency and fuel type
@@ -2228,13 +2307,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 # more variables####
 
-
-
-# cfb: Crown Fraction Burned (%)
-
-#???
-# 0 to 100 with a mean of 33
-# MISSING VALUES 3%
 
 
 # age: Age of the Fire (days)
@@ -2355,54 +2427,63 @@ hotspots %>%
 
 
 
-
-# Analyze the trends of HFI and the number of fire events.
-
-# Use the previously normalized monthly_data table
-
-# Maximum values for scaling
-max_hfi <- max(monthly_data$avg_hfi, na.rm = TRUE)
+# Count missing values in the CFB column
+sum(is.na(hotspots_peak$cfb))
 
 
-# Plot HFI and Fire Counts
-ggplot(monthly_data, aes(x = Date)) +
-  geom_line(aes(y = avg_hfi, color = "HFI"), size = 1) +
-  geom_bar(aes(y = norm_n_events * max_hfi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
-  scale_y_continuous(
-    name = "HFI",
-    sec.axis = sec_axis(~ . * 1000 / max_hfi * max(monthly_data$n_events) / 1000, 
-                        name = "Number of Fire Occurrences", labels = comma)) +
-  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
-  labs(title = "Monthly Trends of HFI and Fire Occurrences",
-       x = "Year",
-       color = "Index",
-       fill = "Index") +
-  scale_color_manual(values = c("HFI" = "lightblue")) +
-  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# Identify years with the most missing values
+missing_cfb <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(cfb)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(missing_percentage))
 
+missing_cfb
 
-# The HFI index shows notable peaks, particularly in the years 2015, 2018, and 2019,
-# showing periods with high fire intensity.
-# These peaks suggest severe fire conditions during these years.
-# 
-# The number of fire events is notably higher in the years with higher HFI values, such as 2018 and 2019.
-# 
-# While high HFI values indicate severe fire conditions, the actual number of fires also depends on other factors
-# like ignition sources and weather conditions.
+# 2015 has the highest percentage of missing values at 56.1%.
+# 2017 has 54.9%.
+# 2016 has 46.8%.
+# 2018-2024 and 2014 have no missing values
 
+zero_cfb <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(cfb == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(zero_percentage))
 
+zero_cfb
 
+# 2019 has the highest percentage of zero values at 92.7%.
+# 2020, 2021, 2022, and 2023 also have high values ranging from 65.4% to 77.8%.
+# 2015-2018, and 2024 have almost no zero values.
 
-# The plots show a clear relationship between the fire indices (FFMC, DMC, and DC) and the number of fires. 
-# When the number of fires is high, the indices also show higher values.
+# Data collection for this variable lacks quality.
 
-# It's important to note that while high indices indicate conditions favorable for fires, they alone do not cause fires. 
-# Additional factors, such as human activities or lightning strikes, are necessary to ignite fires under these conditions.
+# Filter out zero and na values to check the CFB values when it was properly recorded.
 
+hotspots_peak_CFB <- hotspots_peak %>%
+  filter(cfb > 0 & !is.na(cfb))
 
+# Create the histogram for CFB
+ggplot(hotspots_peak_CFB, aes(x = cfb)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Crown Fraction Burned (CFB) at Fire Hotspots",
+       x = "CFB",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::comma)
 
+# The histogram shows a significant peak at the value of 100%,
+# indicating that in many fire events with non zero recorded CFB values,
+# the entire tree crown is completely burned.
+# This suggests that when fires do occur,
+# they tend to be quite severe, affecting the full canopy of trees.
 
 
 
