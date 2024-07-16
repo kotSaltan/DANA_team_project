@@ -80,7 +80,7 @@ names(hotspots)
 
 
 
-write.csv(hotspots, file = "hotspots.csv", row.names = FALSE)
+# write.csv(hotspots, file = "hotspots.csv", row.names = FALSE)
 
 # dbcluster####
 
@@ -624,6 +624,8 @@ monthly_avg <- hotspots_peak %>%
             avg_tfc = mean(tfc, na.rm = TRUE),
             avg_bfc = mean(bfc, na.rm = TRUE),
             avg_hfi = mean(hfi, na.rm = TRUE),
+            avg_ros = mean(ros, na.rm = TRUE),
+            
             
             .groups = 'drop') 
 
@@ -997,18 +999,9 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 # This suggests that the fine fuels are often in a dry state,
 # making them highly ignitable and prone to rapid fire spread.
 
-# ADD NEW MEAN VALUES
-# Monthly averages for temp, rh, ws and pcp, ffmc
-monthly_avg <- hotspots_peak %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(temp, na.rm = TRUE),
-            avg_rh = mean(rh, na.rm = TRUE),
-            avg_ws = mean(ws, na.rm = TRUE),
-            avg_pcp = mean(pcp, na.rm = TRUE),
-            avg_ffmc = mean(ffmc, na.rm = TRUE),
-            .groups = 'drop') 
+# Ref to mean values 
+monthly_avg
 
-print(monthly_avg)
 
 
 
@@ -1068,17 +1061,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = y
 # Values above 100: Extreme fire danger, the duff layer is very dry, and ignition is very likely with the potential for intense fires.
 
 
-# ADD NEW MEAN VALUES
-# Monthly averages for temp, rh, ws and pcp, ffmc, dmc
-monthly_avg <- hotspots_peak %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(temp, na.rm = TRUE),
-            avg_rh = mean(rh, na.rm = TRUE),
-            avg_ws = mean(ws, na.rm = TRUE),
-            avg_pcp = mean(pcp, na.rm = TRUE),
-            avg_ffmc = mean(ffmc, na.rm = TRUE),
-            avg_dmc = mean(dmc, na.rm = TRUE),
-            .groups = 'drop') 
+# Monthly averages 
 
 print(monthly_avg)
 
@@ -1141,21 +1124,9 @@ ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = ye
 # 300-500: High drought conditions, leading to high fire risk.
 # 500+: Indicates extreme drought, posing a very high fire risk and potential for intense, prolonged burning.
 
-# NEED ADVICE - MAYBE DO THIS AVERAGE TABLE IN THE BEGINNING FOR ALL. 
-# FOR NOW WILL UPDATE IT EVERYTIME
 
-# ADD NEW MEAN VALUES
-# Monthly averages for temp, rh, ws and pcp, ffmc, dmc, dc
-monthly_avg <- hotspots_peak %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(temp, na.rm = TRUE),
-            avg_rh = mean(rh, na.rm = TRUE),
-            avg_ws = mean(ws, na.rm = TRUE),
-            avg_pcp = mean(pcp, na.rm = TRUE),
-            avg_ffmc = mean(ffmc, na.rm = TRUE),
-            avg_dmc = mean(dmc, na.rm = TRUE),
-            avg_dc = mean(dc, na.rm = TRUE),
-            .groups = 'drop') 
+
+# Monthly averages 
 
 print(monthly_avg)
 
@@ -1313,17 +1284,7 @@ ggplot(monthly_data, aes(x = Date)) +
 # 13-19: Very high spread potential. Fires spread very rapidly and are challenging to control.
 # 20+: Extreme spread potential. Fires spread uncontrollably and can be extremely dangerous.
 
-monthly_avg <- hotspots_peak %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(temp, na.rm = TRUE),
-            avg_rh = mean(rh, na.rm = TRUE),
-            avg_ws = mean(ws, na.rm = TRUE),
-            avg_pcp = mean(pcp, na.rm = TRUE),
-            avg_ffmc = mean(ffmc, na.rm = TRUE),
-            avg_dmc = mean(dmc, na.rm = TRUE),
-            avg_dc = mean(dc, na.rm = TRUE),
-            avg_isi = mean(isi, na.rm = TRUE),
-            .groups = 'drop') 
+
 
 print(monthly_avg)
 
@@ -1377,7 +1338,7 @@ event_outliers <- hotspots_peak %>%
 
 # Check single event
 dim(event_outliers)
-view(event_outliers)
+# view(event_outliers)
 
 
 
@@ -1428,17 +1389,6 @@ print(weather_summary)
 
 
 
-monthly_avg <- hotspots_peak %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(temp, na.rm = TRUE),
-            avg_rh = mean(rh, na.rm = TRUE),
-            avg_ws = mean(ws, na.rm = TRUE),
-            avg_pcp = mean(pcp, na.rm = TRUE),
-            avg_ffmc = mean(ffmc, na.rm = TRUE),
-            avg_dmc = mean(dmc, na.rm = TRUE),
-            avg_dc = mean(dc, na.rm = TRUE),
-            avg_isi = mean(isi, na.rm = TRUE),
-            .groups = 'drop') 
 
 print(monthly_avg)
 
@@ -1485,21 +1435,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = ye
 
 
 # SHOW CORRELATION OF ISI AND WEATHER INDICES
-monthly_avg <- hotspots_peak %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(temp, na.rm = TRUE),
-            avg_rh = mean(rh, na.rm = TRUE),
-            avg_ws = mean(ws, na.rm = TRUE),
-            avg_pcp = mean(pcp, na.rm = TRUE),
-            avg_ffmc = mean(ffmc, na.rm = TRUE),
-            avg_dmc = mean(dmc, na.rm = TRUE),
-            avg_dc = mean(dc, na.rm = TRUE),
-            avg_isi = mean(isi, na.rm = TRUE),
-            avg_bui = mean(bui, na.rm = TRUE),
-            avg_fwi = mean(fwi, na.rm = TRUE),
-            avg_ros = mean(ros, na.rm = TRUE),
-            avg_hfi = mean(hfi, na.rm = TRUE),
-            .groups = 'drop') 
+
 
 print(monthly_avg)
 
