@@ -2515,6 +2515,58 @@ ggplot(hotspots_peak_cfactor, aes(x = factor(year), y = cfactor)) +
 
 
 "greenup" # – phenological state of deciduous trees (0=leafless, 1=green)
+sum(is.na(hotspots_peak$greenup))
+
+# Identify years with the most missing values
+missing_greenup <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(greenup)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_greenup
+
+# 2023 does not have this variable.
+
+# Count the number of observations in each greenup state
+greenup_count <- hotspots_peak %>%
+  group_by(greenup) %>%
+  summarise(count = n())
+greenup_count
+
+# There are invalid values present in the dataset. This variable is only 0 or 1
+
+# Filter out invalid values in the greenup variable
+hotspots_peak_greenup <- hotspots_peak %>%
+  filter(greenup %in% c(0, 1))
+
+# Check the summary of the filtered data
+summary(hotspots_peak_greenup$greenup)
+
+greenup_by_year <- hotspots_peak_greenup %>%
+  group_by(year, greenup) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(desc(year), greenup)
+
+# Visualize the count of observations in each greenup state
+ggplot(greenup_by_year, aes(x = factor(greenup), y = count, fill = factor(greenup))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Count of Observations by Greenup State",
+       x = "Greenup State",
+       y = "Count",
+       fill = "Greenup State") +
+  scale_fill_manual(values = c("0" = "bisque3", "1" = "lightgreen")) +
+  theme_minimal()+
+  scale_y_continuous(labels = scales::comma) 
+
+# There are significantly more observations for greenup state 1 (trees with green leaves) compared to state 0 (leafless trees).
+# The greenup state alone may not provide significant insights into fire behavior or risks.
+
+
+
 "elev" # elevation above sea level (meters)
 "cfl"      
 "tfc0"     
@@ -2693,65 +2745,55 @@ hotspots %>%
 
 
 
-# Count missing values in the greenup
 sum(is.na(hotspots_peak$greenup))
 
-
 # Identify years with the most missing values
-missing_cfactor <- hotspots_peak %>%
+missing_greenup <- hotspots_peak %>%
   group_by(year) %>%
   summarise(
     total_count = n(),
-    missing_count = sum(is.na(cfactor)),
+    missing_count = sum(is.na(greenup)),
     missing_percentage = (missing_count / total_count) * 100
   ) %>%
   arrange(desc(year))
 
-missing_cfactor
+missing_greenup
 
-# 2019 - 2023 does not have this variable.
+# 2023 does not have this variable.
 
+# Count the number of observations in each greenup state
+greenup_count <- hotspots_peak %>%
+  group_by(greenup) %>%
+  summarise(count = n())
+greenup_count
 
-# Exclude the years where cfactor is missing
-hotspots_peak_cfactor <- hotspots_peak %>%
-  filter((year < 2019)) %>%
-  filter(!is.na(cfactor))
+# There are invalid values present in the dataset. This variable is only 0 or 1
+
+# Filter out invalid values in the greenup variable
+hotspots_peak_greenup <- hotspots_peak %>%
+  filter(greenup %in% c(0, 1))
 
 # Check the summary of the filtered data
-summary(hotspots_peak_cfactor$cfactor)
+summary(hotspots_peak_greenup$greenup)
 
-# range from 0 to 1
-# Represents the curing factor as a proportion rather than a percentage.
+greenup_by_year <- hotspots_peak_greenup %>%
+  group_by(year, greenup) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(desc(year), greenup)
 
-
-# Create the histogram for cfactor
-ggplot(hotspots_peak_cfactor, aes(x = cfactor)) +
-  geom_histogram(binwidth = 0.1, fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Curing Factor (cfactor) Values", 
-       x = "Curing Factor (cfactor)", 
-       y = "Frequency") +
-  scale_y_continuous(labels = scales::comma) + 
-  theme_minimal()
-
-# Create the boxplot for cfactor across years
-ggplot(hotspots_peak_cfactor, aes(x = factor(year), y = cfactor)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Curing Factor (cfactor) Across Years",
-       x = "Year",
-       y = "Curing Factor (cfactor)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-
-# The mean cfactor is 0.13
-# The variable has stopped being recorded recently.
-# It may be not suitable for meaningful analyses for the 10 year period
-
+# Visualize the count of observations in each greenup state
+ggplot(greenup_by_year, aes(x = factor(greenup), y = count, fill = factor(greenup))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Count of Observations by Greenup State",
+       x = "Greenup State",
+       y = "Count",
+       fill = "Greenup State") +
+  scale_fill_manual(values = c("0" = "bisque3", "1" = "lightgreen")) +
+  theme_minimal()+
+  scale_y_continuous(labels = scales::comma) 
+  
+# There are significantly more observations for greenup state 1 (trees with green leaves) compared to state 0 (leafless trees).
+# The greenup state alone may not provide significant insights into fire behavior or risks.
 
 # quick load####
 
