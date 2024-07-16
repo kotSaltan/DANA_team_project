@@ -1927,6 +1927,9 @@ corrplot(correlation_ros_indices, method = "circle", type = "lower",
 # This model considers surface fuel consumption, 
 # which includes organic soil, surface litter, and dead wood, to estimate fire emissions accurately.
 
+
+
+
 "sfc" # Surface Fuel Consumption (modelled)
 # SFC represents the amount of fuel consumed by surface fires, 
 # including organic soil (duff), surface litter, dead and downed woody debris.
@@ -1943,6 +1946,8 @@ ggplot(hotspots_peak, aes(x = sfc)) +
        y = "Frequency") +
   theme_minimal() + 
   scale_y_continuous(labels = comma)
+
+
 
 
 
@@ -1964,6 +1969,8 @@ ggplot(hotspots_peak, aes(x = tfc)) +
   theme_minimal() +
   scale_y_continuous(labels = comma)
   
+
+
 
 
 
@@ -2019,6 +2026,8 @@ ggplot(hotspots_peak_BFC, aes(x = bfc)) +
        y = "Frequency") +
   theme_minimal() + 
   scale_y_continuous(labels = scales::comma)
+
+
 
 
 
@@ -2131,6 +2140,8 @@ ggplot(monthly_data, aes(x = Date)) +
 
 
 
+
+
 "cfb" #  Crown Fraction Burned (%) at hotspot location (modelled)
 # The CFB index measures the proportion of tree crowns that are consumed by a wildfire. 
 # It ranges from 0 to 100%, 
@@ -2212,9 +2223,106 @@ ggplot(hotspots_peak_CFB, aes(x = cfb)) +
 # they tend to be quite severe, affecting the full canopy of trees.
 
 
-"age"     
+
+
+
+
+"age"
+
+
+# Count missing values in the Age column
+sum(is.na(hotspots_peak$age))
+
+
+# Identify years with the most missing values
+missing_age <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(age)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(missing_percentage))
+
+missing_age
+
+
+zero_age <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(age == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(zero_percentage))
+
+zero_age
+
+# # The years with valid amount of observations are 2014 2015 2016. 
+# The variable almost doesnt have meaningfull values in 2017 and 2018. 
+# The more resent hotspots have stopped recording this variable altogether.
+
+hotspots_peak_age <- hotspots_peak %>%
+  filter(age > 0 & !is.na(age))
+
+# Create the histogram for Age
+ggplot(hotspots_peak_age, aes(x = age)) +
+  geom_histogram(binwidth = 100, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Tree Age at Fire Hotspots",
+       x = "Age",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::comma)
+
+
+
+
+
+
 "estarea" # approximate burned area based on historical average area burned per hotspot by
 # agency and fuel type
+
+
+# Count missing values in the estarea
+sum(is.na(hotspots_peak$estarea))
+
+
+# Identify years with the most missing values
+missing_estarea <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(estarea)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_estarea
+
+# 2023 2022 and 2021 do not have this variable.
+# 2015 2016 2018 2019 has around 50% missing values
+# 2020 85 % missing values
+
+
+zero_estarea <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(estarea == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+zero_estarea
+
+# Additionally to the missing values already described, 2017 has almost 50% zero values
+# The only year with values present is 2014
+# The more resent hotspots have stopped recording this variable altogether.
+# There has probable been a change in reporting teckniques with this variable,
+# it may be not suitable for meaningfull analyses for the 10 year period
+
+
+
 
 "polyid"   
 "pcuring" # percent curing
@@ -2309,15 +2417,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 
-# age: Age of the Fire (days)
-
-# 0 to 13569 with mean of 604
-# CHECK THE SCALE _ CANNOT BE DAYS MAYBE HOURS
-# A LOT OF MISSING VALUES 77 %
-t <- 1781266
-1378215/t
-13569/24
-# STILL THE MAX IS 565 DAYS DOESNT SEEM PLAUSABLE
 
 
 # estarea: Estimated Area Burned (ha)
@@ -2427,63 +2526,49 @@ hotspots %>%
 
 
 
-# Count missing values in the CFB column
-sum(is.na(hotspots_peak$cfb))
+# Count missing values in the estarea
+sum(is.na(hotspots_peak$estarea))
 
 
 # Identify years with the most missing values
-missing_cfb <- hotspots_peak %>%
+missing_estarea <- hotspots_peak %>%
   group_by(year) %>%
   summarise(
     total_count = n(),
-    missing_count = sum(is.na(cfb)),
+    missing_count = sum(is.na(estarea)),
     missing_percentage = (missing_count / total_count) * 100
   ) %>%
-  arrange(desc(missing_percentage))
+  arrange(desc(year))
 
-missing_cfb
+missing_estarea
 
-# 2015 has the highest percentage of missing values at 56.1%.
-# 2017 has 54.9%.
-# 2016 has 46.8%.
-# 2018-2024 and 2014 have no missing values
+# 2023 2022 and 2021 do not have this variable.
+# 2015 2016 2018 2019 has around 50% missing values
+# 2020 85 % missing values
 
-zero_cfb <- hotspots_peak %>%
+
+zero_estarea <- hotspots_peak %>%
   group_by(year) %>%
   summarise(
     total_count = n(),
-    zero_count = sum(cfb == 0, na.rm = TRUE),
+    zero_count = sum(estarea == 0, na.rm = TRUE),
     zero_percentage = (zero_count / total_count) * 100
   ) %>%
-  arrange(desc(zero_percentage))
+  arrange(desc(year))
 
-zero_cfb
+zero_estarea
 
-# 2019 has the highest percentage of zero values at 92.7%.
-# 2020, 2021, 2022, and 2023 also have high values ranging from 65.4% to 77.8%.
-# 2015-2018, and 2024 have almost no zero values.
+# Additionally to the missing values already described, 2017 has almost 50% zero values
+# The only year with values present is 2014
+# The more resent hotspots have stopped recording this variable altogether.
+# There has probable been a change in reporting teckniques with this variable,
+# it may be not suitable for meaningfull analyses for the 10 year period
 
-# Data collection for this variable lacks quality.
 
-# Filter out zero and na values to check the CFB values when it was properly recorded.
 
-hotspots_peak_CFB <- hotspots_peak %>%
-  filter(cfb > 0 & !is.na(cfb))
 
-# Create the histogram for CFB
-ggplot(hotspots_peak_CFB, aes(x = cfb)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Crown Fraction Burned (CFB) at Fire Hotspots",
-       x = "CFB",
-       y = "Frequency") +
-  theme_minimal() + 
-  scale_y_continuous(labels = scales::comma)
 
-# The histogram shows a significant peak at the value of 100%,
-# indicating that in many fire events with non zero recorded CFB values,
-# the entire tree crown is completely burned.
-# This suggests that when fires do occur,
-# they tend to be quite severe, affecting the full canopy of trees.
+
 
 
 
