@@ -2322,9 +2322,51 @@ zero_estarea
 # it may be not suitable for meaningfull analyses for the 10 year period
 
 
-
-
 "polyid"   
+
+
+# Count missing values in the estarea
+sum(is.na(hotspots_peak$polyid))
+
+
+# Identify years with the most missing values
+missing_polyid <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(polyid)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_polyid
+
+# 2018-2023 do not have this variable.
+
+
+
+zero_polyid <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(polyid == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+zero_polyid
+
+# Additionally 2017 has almost all zero values
+
+# Initially the variable was used to identify specific event,
+# but recently the reporting process has changed
+# Only meaningfull information in 2014 2015 and 2016, 
+# it may be not suitable for meaningfull analyses for the 10 year period
+
+
+
+
+
 "pcuring" # percent curing
 "cfactor" # curing factor
 "greenup" # – phenological state of deciduous trees (0=leafless, 1=green)
@@ -2527,43 +2569,42 @@ hotspots %>%
 
 
 # Count missing values in the estarea
-sum(is.na(hotspots_peak$estarea))
+sum(is.na(hotspots_peak$polyid))
 
 
 # Identify years with the most missing values
-missing_estarea <- hotspots_peak %>%
+missing_polyid <- hotspots_peak %>%
   group_by(year) %>%
   summarise(
     total_count = n(),
-    missing_count = sum(is.na(estarea)),
+    missing_count = sum(is.na(polyid)),
     missing_percentage = (missing_count / total_count) * 100
   ) %>%
   arrange(desc(year))
 
-missing_estarea
+missing_polyid
 
-# 2023 2022 and 2021 do not have this variable.
-# 2015 2016 2018 2019 has around 50% missing values
-# 2020 85 % missing values
+# 2018-2023 do not have this variable.
 
 
-zero_estarea <- hotspots_peak %>%
+
+zero_polyid <- hotspots_peak %>%
   group_by(year) %>%
   summarise(
     total_count = n(),
-    zero_count = sum(estarea == 0, na.rm = TRUE),
+    zero_count = sum(polyid == 0, na.rm = TRUE),
     zero_percentage = (zero_count / total_count) * 100
   ) %>%
   arrange(desc(year))
 
-zero_estarea
+zero_polyid
 
-# Additionally to the missing values already described, 2017 has almost 50% zero values
-# The only year with values present is 2014
-# The more resent hotspots have stopped recording this variable altogether.
-# There has probable been a change in reporting teckniques with this variable,
+# Additionally 2017 has almost all zero values
+
+# Initially the variable was used to identify specific event,
+# but recently the reporting process has changed
+# Only meaningfull information in 2014 2015 and 2016, 
 # it may be not suitable for meaningfull analyses for the 10 year period
-
 
 
 
