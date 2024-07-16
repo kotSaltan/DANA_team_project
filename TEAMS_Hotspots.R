@@ -1531,7 +1531,7 @@ ggplot(monthly_avg, aes(x = avg_rh, y = avg_isi)) +
 
 
 # Select columns 
-data_corr <- hotspots_peak_filtered %>%
+data_corr <- hotspots_peak %>%
   select(isi, ws, temp, rh)
 
 # Calculate the correlation matrix
@@ -1558,13 +1558,13 @@ corrplot(corr_matrix, method = "circle", type = "lower",
 # High: 81-120
 # Extreme: 121 and above
 
-ggplot(hotspots_peak_filtered, aes(x = bui)) +
+ggplot(hotspots_peak, aes(x = bui)) +
   geom_histogram(binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of BUI Values", x = "BUI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
-ggplot(hotspots_peak_filtered, aes(x = factor(year), y = bui)) +
+ggplot(hotspots_peak, aes(x = factor(year), y = bui)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "BUI Distribution Across Years",
        x = "Year",
@@ -1608,7 +1608,7 @@ ggplot(monthly_avg, aes(x = avg_dc, y = avg_bui)) +
 
 
 # Select columns
-data_corr <- hotspots_peak_filtered %>%
+data_corr <- hotspots_peak %>%
   select(bui, dmc, dc)
 
 # Calculate the correlation matrix
@@ -1649,13 +1649,13 @@ corrplot(corr_matrix, method = "circle", type = "lower",
 # Very High (21-30): Fires will start very easily, spread rapidly, and burn intensely.
 # Extreme (31+): Fires start and spread quickly, and are intense and challenging to control.
 
-ggplot(hotspots_peak_filtered, aes(x = fwi)) +
+ggplot(hotspots_peak, aes(x = fwi)) +
   geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of FWI Values", x = "FWI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
-ggplot(hotspots_peak_filtered, aes(x = factor(year), y = fwi)) +
+ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "FWI Distribution Across Years",
        x = "Year",
@@ -1812,7 +1812,7 @@ fuel_counts <- hotspots_peak %>%
 print(fuel_counts)
 
 # Create a bar plot for the fuel column
-ggplot(hotspots_peak_filtered, aes(x = fuel)) +
+ggplot(hotspots_peak, aes(x = fuel)) +
   geom_bar(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Fuel Types", x = "Fuel Type", y = "Count") +
   theme_minimal() +
@@ -1836,7 +1836,7 @@ ggplot(hotspots_peak_filtered, aes(x = fuel)) +
 
 
 
-ggplot(hotspots_peak_filtered, aes(x = ros)) +
+ggplot(hotspots_peak, aes(x = ros)) +
   geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution Rate of Spread at Fire Hotspots",
        x = "ROS (m/min)",
@@ -1850,7 +1850,7 @@ ggplot(hotspots_peak_filtered, aes(x = ros)) +
         axis.text.y = element_text(size = 10))
 
 
-ggplot(hotspots_peak_filtered, aes(x = factor(year), y = ros)) +
+ggplot(hotspots_peak, aes(x = factor(year), y = ros)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "Rate of Spread Distribution Across Years",
        x = "Year",
@@ -1894,7 +1894,7 @@ ggplot(monthly_avg, aes(x = avg_fwi, y = avg_ros)) +
   theme_minimal()
 
 # Calculate correlations between ROS, ISI, BUI, and FWI
-correlation_ros_indices <- hotspots_peak_filtered %>%
+correlation_ros_indices <- hotspots_peak %>%
   select(ros, isi, bui, fwi) %>%
   cor(use = "complete.obs")
 
@@ -2047,7 +2047,7 @@ ggplot(hotspots_peak_BFC, aes(x = bfc)) +
 # Helps predict fire destructiveness, allocate resources, warn or evacuate public.
 
 # Plot histogram for HFI
-ggplot(hotspots_peak_filtered, aes(x = hfi)) +
+ggplot(hotspots_peak, aes(x = hfi)) +
   geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
   labs(title = "Distribution of HFI Values",
        x = "HFI (kW/m)",
@@ -2056,7 +2056,7 @@ ggplot(hotspots_peak_filtered, aes(x = hfi)) +
   scale_x_continuous(breaks = seq(0, 75000, 10000)) +
   theme_minimal()
 
-ggplot(hotspots_peak_filtered, aes(x = factor(year), y = hfi)) +
+ggplot(hotspots_peak, aes(x = factor(year), y = hfi)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
   labs(title = "HFI Distribution Across Years",
        x = "Year",
@@ -2319,7 +2319,7 @@ zero_estarea
 # The only year with values present is 2014
 # The more resent hotspots have stopped recording this variable altogether.
 # There has probable been a change in reporting teckniques with this variable,
-# it may be not suitable for meaningfull analyses for the 10 year period
+# it may be not suitable for meaningful analyses for the 10 year period
 
 
 "polyid"   
@@ -2360,14 +2360,16 @@ zero_polyid
 
 # Initially the variable was used to identify specific event,
 # but recently the reporting process has changed
-# Only meaningfull information in 2014 2015 and 2016, 
-# it may be not suitable for meaningfull analyses for the 10 year period
+# Only meaningful information in 2014 2015 and 2016, 
+# it may be not suitable for meaningful analyses for the 10 year period
 
 
 
 
 
 "pcuring" # percent curing
+
+
 "cfactor" # curing factor
 "greenup" # – phenological state of deciduous trees (0=leafless, 1=green)
 "elev" # elevation above sea level (meters)
@@ -2569,42 +2571,56 @@ hotspots %>%
 
 
 # Count missing values in the estarea
-sum(is.na(hotspots_peak$polyid))
+sum(is.na(hotspots_peak$pcuring))
 
 
 # Identify years with the most missing values
-missing_polyid <- hotspots_peak %>%
+missing_pcuring <- hotspots_peak %>%
   group_by(year) %>%
   summarise(
     total_count = n(),
-    missing_count = sum(is.na(polyid)),
+    missing_count = sum(is.na(pcuring)),
     missing_percentage = (missing_count / total_count) * 100
   ) %>%
   arrange(desc(year))
 
-missing_polyid
+missing_pcuring
 
-# 2018-2023 do not have this variable.
+# 2023 does not have this variable.
+
+ggplot(hotspots_peak, aes(x = fwi)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of FWI Values", x = "FWI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "FWI Distribution Across Years",
+       x = "Year",
+       y = "FWI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "FWI by Month",
+       x = "Month",
+       y = "FWI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# This histogram is dominated by zero values, making it difficult to identify clear trends.
 
 
 
-zero_polyid <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    zero_count = sum(polyid == 0, na.rm = TRUE),
-    zero_percentage = (zero_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-zero_polyid
-
-# Additionally 2017 has almost all zero values
-
-# Initially the variable was used to identify specific event,
-# but recently the reporting process has changed
-# Only meaningfull information in 2014 2015 and 2016, 
-# it may be not suitable for meaningfull analyses for the 10 year period
 
 
 
