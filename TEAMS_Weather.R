@@ -287,19 +287,29 @@ monthly_avg <- weather_peak %>%
 
 print(monthly_avg)
 
+
+# Analyze the distribution of mean temperature
+
 # Plot histogram for mean_temp
-ggplot(weather_peak, aes(x = mean_temp)) +
+ggplot(weather_peak %>%
+         filter(!is.na(mean_temp)),
+       aes(x = mean_temp)) +
   geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of mean_temp Values", x = "mean_temp", y = "Frequency") +
+  labs(title = "Distribution of Mean Temperature Values", 
+       x = "Mean Temperature (°C)", 
+       y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
+
 # Plot boxplot for mean_temp
-ggplot(weather_peak, aes(x = factor(year), y = mean_temp)) +
+ggplot(weather_peak %>%
+         filter(!is.na(mean_temp)),
+       aes(x = factor(year), y = mean_temp)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "mean_temp Distribution Across Years",
+  labs(title = "Mean Temperature Distribution Across Years",
        x = "Year",
-       y = "mean_temp") +
+       y = "Mean Temperature (°C)") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 15),
         axis.title.x = element_text(size = 12),
@@ -307,18 +317,34 @@ ggplot(weather_peak, aes(x = factor(year), y = mean_temp)) +
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
+# The distribution is approximately bell-shaped, normal distribution of mean temperature values.
+# Most temperatures are centered around 10-15°C.
+# The temperatures range from approximately -15°C to 35°C, with the majority falling between 0°C and 25°C.
+# There are several outliers each year, with some extreme low values (around -10°C) and high values (above 30°C).
+# The boxplot shows the distribution of mean temperature values
+
+# No significant changes in median temperatures over the years,
+# there are stable temperature trends within the dataset.
+
 # Line plot for mean_temp over time
 ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
-  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
   geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
-  labs(title = "mean_temp by Month",
+  labs(title = "Average Monthly Mean Temperature Over Years",
        x = "Month",
-       y = "mean_temp",
+       y = "Average Mean Temperature (°C)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8))
 
-
+# The plot shows that the mean temperature generally peaks around July (07) and August (08) for most years.
+# General pattern of temperature rise and fall is consistent across the years, similar seasonal temperature trends.
+# The average mean temperature ranges from about 10°C in the earlier and later months (May and October) to around 20°C at the peak (July and August).
 
 ########
 
