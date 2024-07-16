@@ -346,33 +346,32 @@ ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = y
 # General pattern of temperature rise and fall is consistent across the years, similar seasonal temperature trends.
 # The average mean temperature ranges from about 10°C in the earlier and later months (May and October) to around 20°C at the peak (July and August).
 
-########
 
-# WINDSPEED
-names(weather_peak)
-monthly_avg <- weather_peak %>%
-  group_by(year, month) %>%
-  summarise(avg_temp = mean(mean_temp, na.rm = TRUE),
-            avg_ws = mean(spd_max_gust, na.rm = TRUE),
-            avg_pcp = mean(total_precip, na.rm = TRUE),
-            avg_rain = mean(total_rain, na.rm = TRUE),
-            .groups = 'drop') 
 
-print(monthly_avg)
+# Windspeed ####
+
+# Analyze the distribution of Wind Speed
 
 # Plot histogram for spd_max_gust
-ggplot(weather_peak, aes(x = spd_max_gust)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of spd_max_gust Values", x = "spd_max_gust", y = "Frequency") +
+ggplot(weather_peak %>%
+         filter(!is.na(spd_max_gust)),
+       aes(x = spd_max_gust)) +
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Max Wind Speed Gust Values", 
+       x = "Max Wind Speed Gust (km/h)", 
+       y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
+
 # Plot boxplot for spd_max_gust
-ggplot(weather_peak, aes(x = factor(year), y = spd_max_gust)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "spd_max_gust Distribution Across Years",
+ggplot(weather_peak %>%
+         filter(!is.na(spd_max_gust)),
+       aes(x = factor(year), y = spd_max_gust)) +
+  geom_boxplot(fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Max Wind Speed Gust Distribution Across Years",
        x = "Year",
-       y = "spd_max_gust") +
+       y = "Max Wind Speed Gust (km/h)") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 15),
         axis.title.x = element_text(size = 12),
@@ -380,16 +379,23 @@ ggplot(weather_peak, aes(x = factor(year), y = spd_max_gust)) +
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
-# Line plot for spd_max_gust over time
+
+# Line plot for avg_ws over time
 ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
-  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
   geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
-  labs(title = "avg_ws by Month",
+  labs(title = "Average Monthly Wind Speed Over Years",
        x = "Month",
-       y = "avg_ws",
+       y = "Average Wind Speed (km/h)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8))
+
 
 
 # PCP
