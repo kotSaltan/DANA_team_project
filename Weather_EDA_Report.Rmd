@@ -1,0 +1,535 @@
+---
+title: "Weather_EDA_Report"
+output: html_document
+date: "2024-07-16"
+---
+
+
+```{r}
+
+# Load the necessary packages ####
+
+library(readr)
+library(readxl)
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(corrplot)
+library(gridExtra)
+library(reshape2)
+library(GGally)
+library(caret)
+library(ggbreak)
+
+```
+
+```{r}
+# Create a new RProject, create data folder with the datasets, set working directory.
+# Get the name of working directory in RProject
+proj.path <- getwd()
+```
+
+```{r}
+weather <- read_csv(file.path(proj.path,'weather.csv'))
+```
+
+```{r}
+# Details of dataset
+names(weather) 
+range(weather$date)
+str(weather)
+```
+
+#### Subset the peak period to be consistent with period of analysis from hotspot
+
+```{r}
+# Ensure the date column is in Date format
+weather <- weather %>%
+  mutate(date = as.Date(date, format = "%Y-%m-%d"),
+         month = format(date, "%m"))
+
+# Set range of dates to analyze (1 decade started from 2014-2023)
+start_date <- as.Date('2014-01-01')
+end_date <- as.Date('2023-12-31')
+
+# Subset the data by date range
+weather_peak <- weather %>%
+  filter(date >= start_date & date <= end_date)
+
+```
+
+***In this stage, the data has filtered to 10 years period from 2014-2023 and consistent with period of analysis in hotspots dataset***
+
+#### Select date range and variables to focus on
+
+```{r}
+# Subset the data for May to October (consistent with period of analysis from hotspot)
+weather_peak <- weather_peak %>%
+  filter(month %in% c("05", "06", "07", "08", "09", "10"))
+
+# Convert numeric month to ordered factor with month names
+weather_peak$month <- factor(weather_peak$month, 
+                             levels = c("05", "06", "07", "08", "09", "10"),
+                             labels = c("May", "Jun", "Jul", "Aug", "Sep", "Oct"),
+                             ordered = TRUE)
+
+# Check the structure to confirm the change
+str(weather_peak$month)
+
+# Select only the specified variables
+weather_peak <- weather_peak %>%
+  select(station_name, station_id, lat, lon, date, year, month, day, 
+         mean_temp, spd_max_gust, total_precip, total_rain)
+```
+
+#### Describe the numerical variables
+
+```{r}
+# Function to describe each numerical column
+describe_numerical <- function(df, cols) {
+  summary_list <- list()
+  
+  for (col in cols) {
+    summary_stats <- data.frame(
+      Variable = col,
+      Min = round(min(df[[col]], na.rm = TRUE), 2),
+      Median = round(median(df[[col]], na.rm = TRUE), 2),
+      Mean = round(mean(df[[col]], na.rm = TRUE), 2),
+      Max = round(max(df[[col]], na.rm = TRUE), 2),
+      Missing_Values = sum(is.na(df[[col]])),
+      NA_Percentage = round(sum(is.na(df[[col]])) / nrow(df) * 100, 2)
+    )
+    summary_list[[col]] <- summary_stats
+  }
+  
+  summary_table <- bind_rows(summary_list)
+  return(summary_table)
+}
+```
+
+#### Statistical summary for numerical variables
+
+```{r}
+# Get the summary for each numerical column
+summary_weather_peak <- describe_numerical(weather_peak, c("mean_temp", "spd_max_gust", "total_precip", "total_rain"))
+
+# Print the summary table
+print(summary_weather_peak)
+```
+
+***Table shows NA values in spd_max_gust (80%) and total_rain (54%)***
+
+#### Create average table for numerical variables
+
+```{r}
+# Monthly averages 
+monthly_avg <- weather_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(mean_temp, na.rm = TRUE),
+            avg_ws = mean(spd_max_gust, na.rm = TRUE),
+            avg_pcp = mean(total_precip, na.rm = TRUE),
+            avg_rain = mean(total_rain, na.rm = TRUE),
+            
+            .groups = 'drop') 
+
+print(monthly_avg)
+```
+
+# Handle Missing Values
+
+#### Missing value in "Temperature"
+
+```{r}
+missing_temp <- weather_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),  # Total number of records for the year
+    missing_count = sum(is.na(mean_temp)),  # Count of missing values in mean_temp
+    missing_percentage = (missing_count / total_count) * 100  # Percentage of missing values
+  ) %>%
+  arrange(desc(year))  # Arrange in descending order of year
+
+missing_temp
+```
+
+```{r}
+# See missing values of Mean Temperature by month
+
+missing_temp <- weather_peak %>%
+  group_by(month) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(mean_temp)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(month))
+
+missing_temp
+```
+
+***The missing values range from 16.0% to 23.0% per year.\
+The year with the highest percentage of missing values is 2018 with 23.0%.***
+
+#### Missing value in "Speed Gust"
+
+```{r}
+# See missing values of Max Speed Gust by year
+
+missing_ws <- weather_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(spd_max_gust)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_ws
+
+```
+
+```{r}
+# See missing values of Max Speed Gust by month
+
+missing_ws <- weather_peak %>%
+  group_by(month) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(spd_max_gust)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(month))
+
+missing_ws
+```
+
+***The missing values range from 76.3% to 84.2% per year.\
+The year with the highest percentage of missing values is 2014 with 84.2%.***
+
+#### Missing value in "Total Precipitation"
+
+```{r}
+# See missing values of Total Precipitation by year
+
+missing_pcp <- weather_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(total_precip)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_pcp
+```
+
+```{r}
+# See missing values of Total Precipitation by month
+
+missing_pcp <- weather_peak %>%
+  group_by(month) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(total_precip)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(month))
+
+missing_pcp
+```
+
+***The missing values range from 16.0% to 28.0% per year.\
+The year with the highest percentage of missing values is 2019 with 28.0%.***
+
+#### Missing value in "Total Rain"
+
+```{r}
+# See missing values of Total Rain by year
+
+missing_rain <- weather_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(total_rain)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_rain
+```
+
+```{r}
+# See missing values of Total Rain by month
+
+missing_rain <- weather_peak %>%
+  group_by(month) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(total_rain)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(month))
+
+missing_rain
+```
+
+***The missing values range from 44.8% to 61.2% per year.\
+The year with the highest percentage of missing values is 2023 with 61.2%.***
+
+#### Quality check of Flag column on "speed gust"
+
+```{r}
+# Cross-reference missing values for spd_max_gust with the flag column
+missing_ws_flag <- weather %>%
+  group_by(spd_max_gust_flag) %>%
+  summarise(
+    total_count = n(),
+    missing_ws_count = sum(is.na(spd_max_gust)),
+    missing_ws_percentage = (missing_ws_count / total_count) * 100
+  ) %>%
+  arrange(desc(missing_ws_percentage))
+
+print(missing_ws_flag)
+```
+
+***The M flag is a clear indicator of missing values for spd_max_gust, as all entries with this flag have missing values.The NA flag is linked to missing spd_max_gust values.***
+
+***When the flag is NA, 78.4% of the time the spd_max_gust value is also missing.\
+Only 2 of the E flagged entries have missing values for spd_max_gust. This is a estimation flag.***
+
+# Data visualization of weather variables
+
+#### Mean temperature
+
+```{r}
+# Plot histogram for mean_temp
+ggplot(weather_peak %>%
+         filter(!is.na(mean_temp)),
+       aes(x = mean_temp)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Mean Temperature Values", 
+       x = "Mean Temperature (°C)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+```
+
+***The distribution is approximately bell-shaped, normal distribution of mean temperature values.Most temperatures are centered around 10-15°C.***
+
+```{r}
+# Plot boxplot for mean_temp
+ggplot(weather_peak %>%
+         filter(!is.na(mean_temp)),
+       aes(x = factor(year), y = mean_temp)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Mean Temperature Distribution Across Years",
+       x = "Year",
+       y = "Mean Temperature (°C)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+***The boxplot shows the distribution of mean temperature values with consistent temperature every year***
+
+```{r}
+# Line plot for mean_temp over time
+ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "Average Monthly Mean Temperature Over Years",
+       x = "Month",
+       y = "Average Mean Temperature (°C)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8))
+```
+
+***The plot shows that the mean temperature generally peaks around July (07) and August (08) for most years.General pattern of temperature rise and fall is consistent across the years, similar seasonal temperature trends.***
+
+#### Wind speed
+
+```{r}
+# Plot histogram for spd_max_gust
+ggplot(weather_peak %>%
+         filter(!is.na(spd_max_gust)),
+       aes(x = spd_max_gust)) +
+  geom_histogram(binwidth = 2, fill = "lightgreen", color = "black", alpha = 0.7) + # The bin width is set to 2 km/h.
+  labs(title = "Distribution of Max Wind Speed Gust Values", 
+       x = "Max Wind Speed Gust (km/h)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+```
+
+***The histogram shows a right-skewed distribution,that lower wind speeds are more frequent than higher wind speeds.\
+Most max wind speed gust values are centered around 20-40 km/h.***
+
+```{r}
+# Plot boxplot for spd_max_gust
+ggplot(weather_peak %>%
+         filter(!is.na(spd_max_gust)),
+       aes(x = factor(year), y = spd_max_gust)) +
+  geom_boxplot(fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Max Wind Speed Gust Distribution Across Years",
+       x = "Year",
+       y = "Max Wind Speed Gust (km/h)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+***Despite some variations, the general pattern of wind speed is somewhat consistent across the years,indicating similar seasonal wind speed trends.***
+
+```{r}
+# Line plot for avg_ws over time
+ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "Average Monthly Wind Speed Over Years",
+       x = "Month",
+       y = "Average Wind Speed (km/h)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8))
+```
+
+***The plot shows that wind speed generally increases from May to October for most years.\
+Despite some variations, the pattern of wind speed rise and fall is consistent across the years,there are similar seasonal wind speed trends.***
+
+#### Precipitation
+
+```{r}
+# Plot histogram for total_precip
+ggplot(weather_peak %>%
+         filter(!is.na(total_precip)),
+       aes(x = total_precip)) +
+  geom_histogram(binwidth = 1, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Total Precipitation Values", 
+       x = "Total Precipitation (mm)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+```
+
+***The histogram shows many days with little or no precipitation, mainly around zero.\
+There are a few days with very high rainfall, as the distribution has a long tail to the right.***
+
+```{r}
+# Plot boxplot for total_precip
+ggplot(weather_peak %>%
+         filter(!is.na(total_precip)),
+       aes(x = factor(year), y = total_precip)) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
+  labs(title = "Total Precipitation Distribution Across Years",
+       x = "Year",
+       y = "Total Precipitation (mm)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+***Total precipitation is generally low with numerour outliers every year. In 2017, appears higher number of outliers compare to others and 2023 with slightly higher but still low in overall distribution.***
+
+## Clear visualization of precipitation histogram
+
+```{r}
+# To create a cleared visualization and to see how the data can be cleaned,
+# create the histogram plot with a gap using ggbreak
+
+ggplot(weather_peak %>%
+                      filter(!is.na(total_precip)),
+                    aes(x = total_precip)) +
+  geom_histogram(binwidth = 2, fill = "lightblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Total Precipitation Values", 
+       x = "Total Precipitation (mm)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 20, face = "bold"),
+    axis.title.x = element_text(size = 15),
+    axis.title.y = element_text(size = 15),
+    axis.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12)
+  ) +
+  scale_x_break(c(30, 100), scales = 1) +
+  theme(axis.ticks.y.right = element_blank(),
+        axis.text.y.right = element_blank(),
+        axis.title.y.right = element_blank())
+```
+
+***There are a few very high precipitation values (100 mm and above) that appear to be outliers. These extreme values could be significant weather events that impact the distribution, skewing the analysis.***
+
+### Identify extreme values
+
+```{r}
+# Identify extreme values
+extreme_values <- weather_peak %>%
+  filter(total_precip > 200)
+
+# Display extreme values
+print(extreme_values)
+ 
+# These values range from 208.2 mm to 286.6 mm.
+# The dates of these extreme events are in the years 2017 and 2019.
+# These high values likely correspond to significant weather events, such as heavy rainstorms.
+
+# Identify heavy rains
+rain_values <- weather_peak %>%
+  filter(total_precip > 100)
+
+# Count heavy rain events by year
+heavy_rain_count <- rain_values %>%
+  group_by(year) %>%
+  summarise(count = n())
+
+# Display the count of heavy rain events by year
+print(heavy_rain_count)
+
+```
+
+***There are a total of 76 events in the overall 10 year dataset suggesting that the heavy rains occur few times a year.***
+
+```{r}
+# Line plot for avg_pcp over time
+ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "Average Monthly Precipitation Over Years",
+       x = "Month",
+       y = "Average Precipitation (mm)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        plot.title = element_text(size = 15, hjust = 0.5),
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 8))
+
+```
+
+***Precipitation generally increases towards the end of the season,with peaks in September and October.***
+
+#### END OF WEATHER EDA REPORT
