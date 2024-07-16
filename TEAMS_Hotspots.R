@@ -2603,7 +2603,61 @@ ggplot(hotspots_peak, aes(x = elev)) +
 
 "sfl"  
 
-"ecozone"# – ecozone in which hotspot is located
+"ecozone"# – Ecozone in which hotspot is located
+
+# Identify years with the most missing values
+missing_ecozone <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(ecozone)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_ecozone
+
+# For the years 2019-2023 there are only 24+4 missing entries.
+
+
+# Count the number of hotspots in each ecozone
+ecozone_counts <- hotspots_peak %>% filter(year >= 2019) %>% 
+  group_by(ecozone) %>%
+  summarise(count = n())
+
+# Print the ecozone counts
+print(ecozone_counts)
+
+# Convert ecozone to a factor
+ecozone_counts$ecozone <- factor(ecozone_counts$ecozone, levels = c(14, 4, 9, 12, 13, "NA"))
+
+# Define custom colors and labels for the selected ecozones (Statistics Canada site)
+# https://www.statcan.gc.ca/en/subjects/standard/environment/elc/2017-map
+custom_colors <- c("14" = "#B5D79F", "4" = "#989898", "9" = "#36C48E", 
+                   "12" = "#ACC32D", "13" = "#05734D", "NA" = "#000000")
+
+custom_labels <- c("14" = "Montane Cordillera", "4" = "Taiga Plains", "9" = "Boreal Plains",
+                   "12" = "Boreal Cordillera", "13" = "Pacific Maritime")
+
+# Visualize the distribution of hotspots by ecozone with custom legend
+ggplot(ecozone_counts, aes(x = reorder(ecozone, -count), y = count, fill = ecozone)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Distribution of Hotspots by Ecozone (2019 onwards)",
+       x = "Ecozone",
+       y = "Number of Hotspots",
+       fill = "Ecozone") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_manual(values = custom_colors, labels = custom_labels) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "right", 
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10))
+
+
+# The plot shows distribution of ecozones in the hotspot dataset.
+# The plot shows that the Montane Cordillera ecozone has the highest number of hotspots, 
+# indicating it is the most fire-prone ecozone in the dataset from 2019 onwards.
 
 "sfc0"     
 
@@ -2689,30 +2743,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 # more variables####
 
 
-
-
-
-
-# cfactor: Curing Factor
-
-# ???????????????
-# -1 to 1 with mean of 0.1
-1037089/t # 58%
-
-
-# greenup: Green-up factor
-
-# ?????????????
-# -1 to 1527 with mean of 0.8
-698045/t # 39%
-
-
-# elev: Elevation (m)
-
-# -1 to 3129 mean of 1007
-# CHECK WITH THE DATA FOR BC _ MAYBE THE AREAS AFFECTED BY FIRE ARE HIGHER UP
-
-
 # cfl: Crown Fire Load (kg/m²)
 
 # The fraction of the crown layer involved in the fire
@@ -2733,18 +2763,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 # -1 to 37 with mean of 9
 750818/t # 42 %
 
-
-# ecozone: Ecozone classification
-
-# BC HAS SPECIFIC ECOZONES 
-# THIS VARIABLE CAN BE TURNED INTO CATEGORICAL
-# DEPENDS ON FLORA/FOUNA OF THE AREA
-# CAN IMPUTE MISSING VALUES BASED ON COORDINATES
-
-hotspots %>% 
-  select(ecozone) %>% 
-  count(ecozone)
-# Ecozones are 4 9 12 13 14
 
 
 # sfc0: Initial Surface Fuel Consumption (kg/m²)
@@ -2777,57 +2795,6 @@ hotspots %>%
 
 ############## draft####
 
-
-
-sum(is.na(hotspots_peak$greenup))
-
-# Identify years with the most missing values
-missing_greenup <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(greenup)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-missing_greenup
-
-# 2023 does not have this variable.
-
-# Count the number of observations in each greenup state
-greenup_count <- hotspots_peak %>%
-  group_by(greenup) %>%
-  summarise(count = n())
-greenup_count
-
-# There are invalid values present in the dataset. This variable is only 0 or 1
-
-# Filter out invalid values in the greenup variable
-hotspots_peak_greenup <- hotspots_peak %>%
-  filter(greenup %in% c(0, 1))
-
-# Check the summary of the filtered data
-summary(hotspots_peak_greenup$greenup)
-
-greenup_by_year <- hotspots_peak_greenup %>%
-  group_by(year, greenup) %>%
-  summarise(count = n(), .groups = 'drop') %>%
-  arrange(desc(year), greenup)
-
-# Visualize the count of observations in each greenup state
-ggplot(greenup_by_year, aes(x = factor(greenup), y = count, fill = factor(greenup))) +
-  geom_bar(stat = "identity") +
-  labs(title = "Count of Observations by Greenup State",
-       x = "Greenup State",
-       y = "Count",
-       fill = "Greenup State") +
-  scale_fill_manual(values = c("0" = "bisque3", "1" = "lightgreen")) +
-  theme_minimal()+
-  scale_y_continuous(labels = scales::comma) 
-  
-# There are significantly more observations for greenup state 1 (trees with green leaves) compared to state 0 (leafless trees).
-# The greenup state alone may not provide significant insights into fire behavior or risks.
 
 # quick load####
 
