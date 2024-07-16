@@ -2864,15 +2864,60 @@ summary_hotspots <- describe_numerical(hotspots, numerical_columns)
 summary_hotspots_peak <- describe_numerical(hotspots, numerical_columns)
 
 
-monthly_avg <- hotspots_peak %>%  group_by(year, month) %>%
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
   summarise(avg_temp = mean(temp, na.rm = TRUE),
             avg_rh = mean(rh, na.rm = TRUE),
             avg_ws = mean(ws, na.rm = TRUE),
             avg_pcp = mean(pcp, na.rm = TRUE),
             avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            avg_bui = mean(bui, na.rm = TRUE),
+            avg_fwi = mean(fwi, na.rm = TRUE),
+            avg_sfc = mean(sfc, na.rm = TRUE),
+            avg_tfc = mean(tfc, na.rm = TRUE),
+            avg_bfc = mean(bfc, na.rm = TRUE),
+            avg_hfi = mean(hfi, na.rm = TRUE),
+            
             .groups = 'drop') 
 
 
+
+
+
+
+event_details <- hotspots %>%  filter(event_cluster != 0) %>%  group_by(year) %>%  summarise(    first_cluster = first(event_cluster),    start_date_hotspot = min(rep_date),    end_date_hotspot = max(rep_date),    events_count = length(unique(event_cluster))  )
+fire_events_per_month <- hotspots %>%  group_by(month) %>%  summarise(n_events = n())
+fire_events_wide <- fire_events_per_month %>%  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
+
+
+
+fire_events_per_month_subset <- hotspots_peak %>%  filter(event_cluster != 0) %>%  group_by(year, month) %>%  summarise(n_events = n()) %>%  ungroup()
+fire_events_subset_wide <- fire_events_per_month_subset %>%  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
+
+events_count <- event_details %>%  select(year, events_count)
+
+
+
+
+
+monthly_data <- merge(monthly_avg, fire_events_per_month, by = c("year", "month"))
+monthly_data$month <- as.numeric(monthly_data$month)
+monthly_data$Date <- as.Date(paste(monthly_data$year, monthly_data$month, "01", sep = "-"))
+
+max_events <- max(monthly_data$n_events, na.rm = TRUE)
+
+monthly_data <- monthly_data %>% mutate(norm_n_events = n_events / max_events)
+
+max_ffmc <- max(monthly_data$avg_ffmc, na.rm = TRUE)
+max_dmc <- max(monthly_data$avg_dmc, na.rm = TRUE)
+max_dc <- max(monthly_data$avg_dc, na.rm = TRUE)
+
+
+str(hotspots_peak$month)
+str(hotspots_peak$year)
 
 #####
 #
