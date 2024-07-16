@@ -234,53 +234,41 @@ missing_rain
 
 
 # Quality check of FLAG columns####
-# Include the flag variables to see if it has info about the NA
 
-# Select only the specified variables
-weather_peak_flag <- weather %>%
-  filter(month %in% c("05", "06", "07", "08", "09", "10"))
 
-weather_peak_flag <- weather_peak_flag %>%
-  select(station_name, station_id, lat, lon, date, year, month, day, 
-         spd_max_gust, spd_max_gust_flag, total_rain, total_rain_flag)
-
-unique(weather_peak_flag$spd_max_gust_flag)
-unique(weather_peak_flag$total_rain_flag)
-
-# Count flag types by month
-flag_counts_by_month <- weather_peak_flag %>%
-  group_by(month) %>%
-  summarize(
-    NA_total_rain = sum(total_rain_flag == "M", na.rm = TRUE),
-    NA_spd_max_gust = sum(spd_max_gust_flag == "M", na.rm = TRUE),
-    T_total_rain = sum(total_rain_flag == "T", na.rm = TRUE),
-    L_total_rain = sum(total_rain_flag == "L", na.rm = TRUE),
-    E_spd_max_gust = sum(spd_max_gust_flag == "E", na.rm = TRUE)
+# Cross-reference missing values for spd_max_gust with the flag column
+missing_ws_flag <- weather %>%
+  group_by(spd_max_gust_flag) %>%
+  summarise(
+    total_count = n(),
+    missing_ws_count = sum(is.na(spd_max_gust)),
+    missing_ws_percentage = (missing_ws_count / total_count) * 100
   ) %>%
-  arrange(desc(NA_total_rain), desc(NA_spd_max_gust))
+  arrange(desc(missing_ws_percentage))
 
-# Count flag types by year
-flag_counts_by_year <- weather_peak_flag %>%
-  group_by(year) %>%
-  summarize(
-    M_total_rain = sum(total_rain_flag == "M", na.rm = TRUE),
-    M_spd_max_gust = sum(spd_max_gust_flag == "M", na.rm = TRUE),
-    T_total_rain = sum(total_rain_flag == "T", na.rm = TRUE),
-    L_total_rain = sum(total_rain_flag == "L", na.rm = TRUE),
-    E_spd_max_gust = sum(spd_max_gust_flag == "E", na.rm = TRUE)
-  ) %>%
-  arrange(desc(M_total_rain), desc(M_spd_max_gust))
+print(missing_ws_flag)
 
-# Display the summaries
-print(flag_counts_by_month)
-print(flag_counts_by_year)
+# The M flag is a clear indicator of missing values for spd_max_gust, 
+# as all entries with this flag have missing values.
+
+# The NA flag is linked to missing spd_max_gust values.
+# When the flag is NA, 78.4% of the time the spd_max_gust value is also missing.
+
+# Only 2 of the E flagged entries have missing values for spd_max_gust. This is a estimation flag.
+
+# Missing spd_max_gust values typically indicate that wind gust data 
+# was not recorded or reported due to equipment malfunctions, maintenance periods, 
+# or conditions where instruments were not operational. 
+# It does not imply the absence of wind. 
+# Calm winds (mean wind speeds less than 2 knots) can also contribute to missing entries 
+# if the instruments do not detect significant movement
+# https://www.canada.ca/en/environment-climate-change/services/weather-manuals-documentation/manobs-surface-observations.html
+# https://www.canada.ca/en/environment-climate-change/services/climate-change/canadian-centre-climate-services/display-download/technical-documentation-hourly-data.html
+
+# To visualize the data, remove the missing spd_max_gust values when plotting. 
+# Can analyze the available data without the distortions caused by missing entries.
 
 
-
-
-
-
-#######################
 
 
 
@@ -445,3 +433,27 @@ ggplot(monthly_avg, aes(x = month, y = avg_rain, color = factor(year), group = y
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
+
+
+# DRAFT ####
+names(weather)
+
+# Cross-reference missing values for spd_max_gust with the flag column
+missing_ws_flag <- weather %>%
+  group_by(spd_max_gust_flag) %>%
+  summarise(
+    total_count = n(),
+    missing_ws_count = sum(is.na(spd_max_gust)),
+    missing_ws_percentage = (missing_ws_count / total_count) * 100
+  ) %>%
+  arrange(desc(missing_ws_percentage))
+
+print(missing_ws_flag)
+
+# The M flag is a clear indicator of missing values for spd_max_gust, 
+# as all entries with this flag have missing values.
+
+# The NA flag is linked to missing spd_max_gust values.
+# When the flag is NA, 78.4% of the time the spd_max_gust value is also missing.
+
+# Only 2 of the E flagged entries have missing values for spd_max_gust. This is a estimation flag.
