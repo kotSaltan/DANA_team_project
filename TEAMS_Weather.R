@@ -356,7 +356,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = y
 ggplot(weather_peak %>%
          filter(!is.na(spd_max_gust)),
        aes(x = spd_max_gust)) +
-  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 2, fill = "lightgreen", color = "black", alpha = 0.7) + # The bin width is set to 2 km/h.
   labs(title = "Distribution of Max Wind Speed Gust Values", 
        x = "Max Wind Speed Gust (km/h)", 
        y = "Frequency") +
@@ -379,6 +379,12 @@ ggplot(weather_peak %>%
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
+# The histogram shows a right-skewed distribution,
+# that lower wind speeds are more frequent than higher wind speeds.
+# Most max wind speed gust values are centered around 20-40 km/h.
+# The wind speeds range from 0 to over 200 km/h, the majority is below 50 km/h.
+# Despite some variations, the general pattern of wind speed is somewhat consistent across the years,
+# indicating similar seasonal wind speed trends.
 
 # Line plot for avg_ws over time
 ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
@@ -396,7 +402,9 @@ ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = yea
         legend.title = element_text(size = 10),
         legend.text = element_text(size = 8))
 
-
+# The plot shows that wind speed generally increases from May to October for most years.
+# Despite some variations, the pattern of wind speed rise and fall is consistent across the years,
+# there are similar seasonal wind speed trends.
 
 # PCP ####
 
@@ -503,22 +511,4 @@ ggplot(monthly_avg, aes(x = month, y = avg_rain, color = factor(year), group = y
 # DRAFT ####
 names(weather)
 
-# Cross-reference missing values for spd_max_gust with the flag column
-missing_ws_flag <- weather %>%
-  group_by(spd_max_gust_flag) %>%
-  summarise(
-    total_count = n(),
-    missing_ws_count = sum(is.na(spd_max_gust)),
-    missing_ws_percentage = (missing_ws_count / total_count) * 100
-  ) %>%
-  arrange(desc(missing_ws_percentage))
 
-print(missing_ws_flag)
-
-# The M flag is a clear indicator of missing values for spd_max_gust, 
-# as all entries with this flag have missing values.
-
-# The NA flag is linked to missing spd_max_gust values.
-# When the flag is NA, 78.4% of the time the spd_max_gust value is also missing.
-
-# Only 2 of the E flagged entries have missing values for spd_max_gust. This is a estimation flag.
