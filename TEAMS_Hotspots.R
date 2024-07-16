@@ -2091,6 +2091,45 @@ ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = ye
 # Weather conditions, temperature, humidity, and wind speed,  can affect how fires behave.
 
 
+# Analyze the trends of HFI and the number of fire events.
+
+# Use the previously normalized monthly_data table
+
+# Maximum values for scaling
+max_hfi <- max(monthly_data$avg_hfi, na.rm = TRUE)
+
+
+# Plot HFI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_hfi, color = "HFI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_hfi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "HFI",
+    sec.axis = sec_axis(~ . * 1000 / max_hfi * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of HFI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("HFI" = "lightblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# The HFI index shows notable peaks, particularly in the years 2015, 2018, and 2019,
+# showing periods with high fire intensity.
+# These peaks suggest severe fire conditions during these years.
+# 
+# The number of fire events is notably higher in the years with higher HFI values, such as 2018 and 2019.
+# 
+# While high HFI values indicate severe fire conditions, the actual number of fires also depends on other factors
+# like ignition sources and weather conditions.
+
+
+
+
 
 "cfb" #  Crown Fraction Burned (%) at hotspot location (modelled)
  
@@ -2315,36 +2354,53 @@ hotspots %>%
 ############## draft####
 
 
-# Remove NA values from BFC data
-hotspots_peak_BFC <- hotspots_peak %>%
-  filter(!is.na(bfc))
+
+
+# Analyze the trends of HFI and the number of fire events.
+
+# Use the previously normalized monthly_data table
+
+# Maximum values for scaling
+max_hfi <- max(monthly_data$avg_hfi, na.rm = TRUE)
+
+
+# Plot HFI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_hfi, color = "HFI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_hfi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "HFI",
+    sec.axis = sec_axis(~ . * 1000 / max_hfi * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of HFI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("HFI" = "lightblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# The HFI index shows notable peaks, particularly in the years 2015, 2018, and 2019,
+# showing periods with high fire intensity.
+# These peaks suggest severe fire conditions during these years.
+# 
+# The number of fire events is notably higher in the years with higher HFI values, such as 2018 and 2019.
+# 
+# While high HFI values indicate severe fire conditions, the actual number of fires also depends on other factors
+# like ignition sources and weather conditions.
 
 
 
-# Calculate IQR for BFC
-IQR_bfc <- IQR(hotspots_peak_BFC$bfc, na.rm = TRUE)
-Q1_bfc <- quantile(hotspots_peak_BFC$bfc, 0.25, na.rm = TRUE)
-Q3_bfc <- quantile(hotspots_peak_BFC$bfc, 0.75, na.rm = TRUE)
 
-# Define lower and upper bounds for outliers
-upper_bound_bfc <- Q3_bfc + 1.5 * IQR_bfc
+# The plots show a clear relationship between the fire indices (FFMC, DMC, and DC) and the number of fires. 
+# When the number of fires is high, the indices also show higher values.
 
-# Filter out the outliers
-hotspots_peak_BFC <- hotspots_peak_BFC %>%
-  filter(bfc <= upper_bound_bfc)
+# It's important to note that while high indices indicate conditions favorable for fires, they alone do not cause fires. 
+# Additional factors, such as human activities or lightning strikes, are necessary to ignite fires under these conditions.
 
-# Summary of filtered data
-summary(hotspots_peak_BFC$bfc)
-
-
-# Plot Histogram of BFC Data Without Handling Outliers
-ggplot(hotspots_peak_BFC, aes(x = bfc)) +
-  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Boreal Fire Consumption (BFC)",
-       x = "BFC",
-       y = "Frequency") +
-  theme_minimal() + 
-  scale_y_continuous(labels = scales::comma)
 
 
 
