@@ -2227,7 +2227,7 @@ ggplot(hotspots_peak_CFB, aes(x = cfb)) +
 
 
 
-"age"
+"age" # Age of Trees (in days)
 
 
 # Count missing values in the Age column
@@ -2568,11 +2568,45 @@ ggplot(greenup_by_year, aes(x = factor(greenup), y = count, fill = factor(greenu
 
 
 "elev" # elevation above sea level (meters)
-"cfl"      
-"tfc0"     
-"sfl"      
-"ecozone" # – ecozone in which hotspot is located
+# BC's elevation ranges from sea level to approximately 4000 meters,
+# with the highest peak being Mount Fairweather at 4663 meters.
+
+# Check for missing values
+sum(is.na(hotspots_peak$elev))
+
+# A low percentage of missing values
+
+range(hotspots_peak$elev, na.rm = TRUE)
+# -1 3129 While there is one instance of a below sea level elevation, the range is valid for BC
+# These particular entries may have been reported incorrectly due to technical issues.
+
+# Identify and analyze outliers
+elev_outliers <- hotspots_peak %>%
+  filter(elev < 0)
+print(elev_outliers)
+
+
+
+# Histogram of elevation values
+ggplot(hotspots_peak, aes(x = elev)) +
+  geom_histogram(binwidth = 100, fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Elevation Values",
+       x = "Elevation (meters)",
+       y = "Frequency") +
+  theme_minimal()
+
+# Overall the distribution of elevation levels is normal for British Columbia.
+
+"cfl"     
+
+"tfc0" 
+
+"sfl"  
+
+"ecozone"# – ecozone in which hotspot is located
+
 "sfc0"     
+
 "cbh"   
 
 
