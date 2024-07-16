@@ -1,0 +1,2339 @@
+---
+title: "Hotspot_EDA_Report"
+output: html_document
+date: "2024-07-13"
+---
+
+```{r}
+# Load libraries and set seed
+library(readr)
+library(readxl)
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(corrplot)
+library(gridExtra)
+library(reshape2)
+library(GGally)
+library(caret)
+library(dbscan)
+library(scales)
+set.seed(123)
+
+```
+
+#### Set project path and load dataset
+
+```{r}
+# Get the name of working directory in RProject
+proj.path <- getwd()
+hotspots_raw <- read_csv(file.path(proj.path,'hotspots.csv'))
+```
+
+#### Convert date format
+
+```{r}
+# Check the date format
+hotspots_raw$rep_date <- as.POSIXct(hotspots_raw$rep_date, format = "%Y-%m-%d %H:%M:%S")
+str(hotspots_raw$rep_date)
+
+# Add year and month columns
+hotspots_raw$year <- year(hotspots_raw$rep_date)
+hotspots_raw$month <- month(hotspots_raw$rep_date, label = TRUE, abbr = TRUE)  # Months as factor (and named)
+
+```
+
+#### Subset data from period 2014 - 2023 (10 years)
+
+```{r}
+# Subset the dataframe to include only data from 2014 to the end of 2023
+hotspots <- hotspots_raw %>%
+  filter(year >= 2014 & year <= 2023)
+
+# Check range of date
+range(hotspots$rep_date) # 10 years period for further observations
+```
+
+#### **To identify specific fire events, apply DBSCAN (Density-Based Spatial Clustering of Application with Noise) function and classify every data point into cluster. The number of clusters has to be close to the official information from BC Website (<https://www2.gov.bc.ca/gov/content/safety/wildfire-status/about-bcws/wildfire-statistics/wildfire-averages>)**
+
+```{r}
+# Prepare the data for clustering based on latitude, longitude, date
+event_data <- hotspots %>%
+  select(lat, lon, rep_date)
+
+# Convert date to numeric for clustering
+event_data$date_numeric <- as.numeric(as.POSIXct(event_data$rep_date))
+
+# View event_data
+head(event_data)
+```
+
+#### Scale the converted date in numeric to have similar range as latitude / longitude. 1 degree of coordinate is \~ 111 km and 20 hours \~ 72000 seconds.  Add new column named event_cluster to the hotspots dataset
+
+```{r}
+# Scale factor : 1 second ~ 0.001 degrees (approximately)
+event_data$date_scaled <- event_data$date_numeric * 0.001
+
+# Apply DBSCAN clustering
+db <- dbscan(event_data[, c("lat", "lon", "date_scaled")], eps = 0.6, minPts = 5)
+# eps value of 0.6 degrees is about 66 km
+
+# Add cluster labels to the original dataset
+hotspots$event_cluster <- db$cluster
+```
+
+#### Preview single specific event for observation
+
+```{r}
+# Filter for a specific cluster (event of fire) for sample
+event_500 <- hotspots %>%
+  filter(event_cluster == 500)# Replace with the specific cluster number
+
+event_500
+# OUTPUT 14 observations lat 53 lon -124 on 16 July 2014
+```
+
+#### Count the events without noise included
+
+```{r}
+# Count the number of unique clusters
+num_clusters <- length(unique(hotspots$event_cluster))-1 # Subtract 1 to exclude the noise cluster (label 0)
+num_clusters
+
+# Total number of fires in BC (official table)
+2293+1801+1647+670+825+2117+1353+1050+1858+1481+1861
+# 16956
+```
+
+#### Summary of the clusters
+
+```{r}
+
+# Detailed summary of the clusters
+event_details <- hotspots %>%
+  filter(event_cluster != 0) %>%
+  group_by(year) %>%
+  summarise(
+    first_cluster = first(event_cluster),
+    start_date_hotspot = min(rep_date),
+    end_date_hotspot = max(rep_date),
+    events_count = length(unique(event_cluster))
+  )
+print(event_details)
+
+# First_cluster column : Number of cluster started from 1 and increase based on the following fire cluster and grouped by year.
+# Start_date_hotspot : Start date of fire event captured by hotspot
+# End_date_hotspot : End date of fire event captured by hotspot
+# Events_count : Total number of fire event in yearly basis based on cluster.
+```
+
+#### Analyse the fire events in graphs.
+
+```{r}
+# In order to identify the time period to focus on and further yearly basis comparison purpose, summarize the number of cluster per year and month (exclude number of noise)
+
+# Summarize the number of fire events per year and month
+fire_events_per_month <- hotspots %>%
+  filter(event_cluster != 0) %>%  # Exclude noise clusters
+  group_by(year, month) %>%
+  summarise(n_events = n()) %>%
+  ungroup()
+
+# Print the summary table
+print(fire_events_per_month)
+
+# Reshape the data to a wide format
+fire_events_wide <- fire_events_per_month %>%
+  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
+
+# Print the wide format summary table
+print(fire_events_wide)
+
+```
+
+#### *The table summary shows how the clustered fire events are counted in yearly basis per monthly views.*
+
+#### Distribution of the clustered fire events in bar plot.
+
+```{r}
+# Create a bar plot to visualize the number of fire events per month
+ggplot(fire_events_per_month, aes(x = month, y = n_events)) +
+  geom_bar(stat = "identity", fill = "steelblue", color = "black") +
+  labs(title = "Number of Fire Events per Month",
+       x = "Month",
+       y = "Number of Fire Events") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The bar plot shows that the initial start of fire event is from May and significantly increased from July to September.*
+
+#### Visualize fire events with heatmap
+
+```{r}
+
+# Define the color palette
+colors <- c("gray95", "gray80", "yellow", "orange", "darkred", "black")
+
+# Define the values for the color breaks
+values <- c(0, 500, 1000, 2000, 10000, 350000)
+
+# Create a heatmap to visualize the number of fire events per month and year
+ggplot(fire_events_per_month, aes(x = month, y = factor(year), fill = n_events)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = colors, values = rescale(values), labels = scales::comma) +
+  labs(title = "Number of Fire Events per Month and Year",
+       x = "Month",
+       y = "Year",
+       fill = "Number of Events") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+```
+
+#### From the heatmap, decided to concentrate from May to October for further analysis.
+
+```{r}
+# Subset the data for the months from May to October
+hotspots_peak <- hotspots %>%
+  filter(month(rep_date) %in% c(5, 6, 7, 8, 9, 10))
+
+# MAKE A HEATMAP
+# Summarize the number of fire events per year and month
+fire_events_per_month_subset <- hotspots_peak %>%
+  filter(event_cluster != 0) %>%
+  group_by(year, month) %>%
+  summarise(n_events = n()) %>%
+  ungroup()
+
+# Print the summary table
+print(fire_events_per_month_subset)
+
+# Reshape the data to a wide format
+fire_events_wide2 <- fire_events_per_month_subset %>%
+  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
+
+# Print the wide format summary table
+print(fire_events_wide2)
+```
+
+#### Visualize the peak fire events with heatmap
+
+```{r}
+# Create a heatmap to visualize the number of fire events per month and year
+ggplot(fire_events_per_month_subset, aes(x = month, y = factor(year), fill = n_events)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = colors, values = rescale(values), labels = scales::comma) +
+  labs(title = "Number of Fire Events per Month and Year (Peak)",
+       x = "Month",
+       y = "Year",
+       fill = "Number of Events") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### Final view of subset heatmap from May - October for further analysis.
+
+### Explore and Interpretation of data variables to determine further data concentration.
+
+#### Coordinate (Latitude and Longitude)
+
+```{r}
+range(hotspots$lat, na.rm = TRUE) #range is valid
+range(hotspots$lon, na.rm = TRUE) #range is valid
+
+# British Columbia coordinate :
+# Latitude: Between 48.309789°N and 60.00065°N
+# Longitude: Between -139.058200 °W and -114.05423°W
+```
+
+#### Rep_date (Date range)
+
+```{r}
+# Extract year and number of points from event_details
+events_count <- event_details %>%
+  select(year, events_count)
+
+# Check the extracted table
+print(events_count)
+```
+
+#### *The period of data covers 10 years period started from 2014 and included the major fire events in 2023.*
+
+#### Show the summary of hotspots dataset in days count per year
+
+```{r}
+# Create summary table describing each hotspots dataset by year
+hotspots_df_summary <- hotspots %>%
+  group_by(year) %>%
+  summarise(
+    start_date = min(rep_date),
+    end_date = max(rep_date),
+    hotspots_df_day_count = as.numeric(difftime(max(rep_date), min(rep_date), units = "days"))
+  )
+
+hotspots_df_summary
+# Create summary table describing each hotspots dataset by year
+hotspots_df_summary <- hotspots_df_summary %>%
+  left_join(events_count, by = "year") %>%
+  mutate(
+    start_month_day = format(as.Date(start_date), "%m-%d"),
+    end_month_day = format(as.Date(end_date), "%m-%d")
+  )
+print(hotspots_df_summary)
+
+```
+
+#### ***This table shows the beginning and end day of data collected by yearly basis with number of fire event counts. The notable finding is started from 2021 to 2023, it shows the data recorded in full year round, making it has more data point reference and can increase accuracy of analysis.***
+
+#### UID (Identifier)
+
+```{r}
+# Display the first 10 rows as preview
+hotspots %>%
+  select(uid) %>%
+  head(10)  # Display the first 10 rows
+
+# The range of UID
+range(hotspots$uid, na.rm = TRUE)
+
+# The uid variable is present in historical datasets up to 2019 and absent for the rest of the year hence 40% value is missing.
+```
+
+#### Source (Source of hotspots)
+
+```{r}
+hotspots %>% 
+  select(source) %>% 
+  count(source)
+
+sourse_cluster_count <- hotspots %>%
+  group_by(source) %>%
+  summarise(num_clusters = n_distinct(event_cluster))
+
+# Create a bar plot of the number of clusters per satellite
+ggplot(sourse_cluster_count, aes(x = source, y = num_clusters)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Number of Events Reported by Each Source",
+       x = "Source",
+       y = "Number of Events (clusters)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### Sensor (Satellite sensor)
+
+```{r}
+hotspots %>% 
+  select(sensor) %>% 
+  count(sensor)
+
+sensor_cluster_count <- hotspots %>%
+  group_by(sensor) %>%
+  summarise(num_clusters = n_distinct(event_cluster))
+
+# Create a bar plot of the number of clusters per satellite
+ggplot(sensor_cluster_count, aes(x = sensor, y = num_clusters)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Number of Events Reported by Each Sensor",
+       x = "Sensor",
+       y = "Number of Events (clusters)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Advanced Very High Resolution Radiometer (AVHRR) imagery, courtesy of the NOAA
+#Moderate Resolution Imaging Spectroradiometer (MODIS) imagery, courtesy of the NASA
+#Visible Infrared Imaging Radiometer Suite (VIIRS) imagery, courtesy of NASA LANCE FIRMS
+```
+
+#### Agency (indicate province)
+
+```{r}
+hotspots %>% 
+  select(agency) %>% 
+  count(agency)
+# only output is BC as the main area of concentration
+
+```
+
+#### Variables with numerical columns
+
+```{r}
+# Identify numerical columns to work with
+numerical_columns <- c('temp',
+                       'rh',
+                       'ws',
+                       'wd',
+                       'pcp',
+                       'ffmc',
+                       'dmc',
+                       'dc',
+                       'isi',
+                       'bui',
+                       'fwi',
+                       'ros',
+                       'sfc',
+                       'tfc',
+                       'bfc',
+                       'hfi',
+                       'cfb',
+                       'age',
+                       'estarea',
+                       'pcuring',
+                       'cfactor',
+                       'greenup',
+                       'elev',
+                       'cfl',
+                       'tfc0',
+                       'sfl',
+                       'ecozone',
+                       'sfc0',
+                       'cbh')
+```
+
+#### Statistical summary of numerical variables in hotspots dataset.
+
+```{r}
+# Function to describe each numerical column 
+describe_numerical <- function(df, cols) {
+  summary_list <- list()
+  
+  for (col in cols) {
+    summary_stats <- data.frame(
+      Variable = col,
+      Missing_Values = sum(is.na(df[[col]])),
+      Min = round(min(df[[col]], na.rm = TRUE), 2),
+      Median = round(median(df[[col]], na.rm = TRUE), 2),
+      Mean = round(mean(df[[col]], na.rm = TRUE), 2),
+      Max = round(max(df[[col]], na.rm = TRUE), 2)
+    )
+    summary_list[[col]] <- summary_stats
+  }
+  
+  summary_table <- bind_rows(summary_list)
+  return(summary_table)
+}
+
+# Describe numerical columns for hotspots 
+summary_hotspots <- describe_numerical(hotspots, numerical_columns)
+
+# Print the summary table
+print(summary_hotspots)
+```
+
+#### Statistical summary of numerical variables in peak period from the hotspots dataset
+
+```{r}
+# Describe numerical columns for hotspots_peak
+summary_hotspots_peak <- describe_numerical(hotspots_peak, numerical_columns)
+
+# Print the summary table
+print(summary_hotspots_peak)
+```
+
+#### ***The statistical summary of the hotspots_peak dataset shows that there are no missing values in key variables, used by Canadian Forest Fire Weather Index (FWI) System, therefore we can continue with visual analysis and provide detailed description.***
+
+#### Summarize table with mean values for plots.
+
+```{r}
+# Create a table with mean values for plots
+
+# Monthly averages for numerical variables
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            avg_sfc = mean(sfc, na.rm = TRUE),
+            avg_tfc = mean(tfc, na.rm = TRUE),
+            avg_bfc = mean(bfc, na.rm = TRUE),
+            avg_hfi = mean(hfi, na.rm = TRUE),
+            avg_bui = mean(bui, na.rm = TRUE),
+            avg_fwi = mean(fwi, na.rm = TRUE),
+            avg_ros = mean(ros, na.rm = TRUE),
+            .groups = 'drop') 
+
+print(monthly_avg)
+
+```
+
+#### Temp (Temperature)
+
+```{r}
+# This variable shows temperature in Celsius at the specific location, at the fire event
+par(mfrow=c(1,2))
+
+# Histogram to show distribution of temperatures
+ggplot(hotspots, aes(x = temp)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Temperature at Fire Hotspots",
+       x = "Temperature (°C)",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) +  # Adjust y-axis labels to numeric format (scales package)
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# Histogram to show distribution of temp for hotspots_peak
+ggplot(hotspots_peak, aes(x = temp)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Temperature at Fire Hotspots (Peak)",
+       x = "Temperature (°C)",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+```
+
+#### Average temperature by year
+
+```{r}
+# Creat a summary table with mean temperature by year
+mean_temp_by_year <- hotspots_peak %>% 
+  group_by(year) %>% 
+  summarise(mean_temp = mean(temp, na.rm = TRUE))
+
+# Create a line plot to show temperature trends over years
+ggplot(mean_temp_by_year, aes(x = year, y = mean_temp)) +
+  geom_line(color = "steelblue", size = 1) +
+  geom_point(color = "black", size = 2) +
+  labs(title = "Average Temperature Over Years (Peak)",
+       x = "Year",
+       y = "Average Temperature (°C)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+```
+
+```{r}
+# Create a line plot for temperature in 2019 for closer look of drop temperature.
+ggplot(hotspots_peak %>% filter(year == 2019), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Year 2019",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+#### ***The line plot shows that temperature gradually drop from \~20 degree to 0 degree started from July to October indicated the end of dry season.***
+
+#### **Closer look for the temperature comparison from 4 major different years with most case of fires. 2014 : started of hotspot dataset 2018 : the historical year of wildfire in BC 2020 : the global pandemic year where not much fires recorded 2023 : the largest wildfire events.**
+
+```{r}
+# Define common axis limits
+y_limits <- range(hotspots_peak$temp[hotspots_peak$year %in% c(2014, 2018, 2020, 2023)])
+
+# Create plots with common axis limits
+plot_2014 <- ggplot(hotspots_peak %>% filter(year == 2014), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Peak Season 2014",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2018 <- ggplot(hotspots_peak %>% filter(year == 2018), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Peak Season 2018",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2020 <- ggplot(hotspots_peak %>% filter(year == 2020), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Peak Season 2020",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2023 <- ggplot(hotspots_peak %>% filter(year == 2023), aes(x = rep_date, y = temp)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Temperature Over the Peak Season 2023",
+       x = "Date",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+# Create Line Plots for 4 different years to compare temp
+grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
+
+
+# Trend on temperature drop in October from different years, showing consistent trend and considered common because its beginning of Fall season in BC
+```
+
+#### RH (Relative Humidity)
+
+```{r}
+# The amount of moisture in the air as a percentage
+# 0 to 100 with a mean 36
+
+# Create Line Plots for 4 different years to compare RH
+
+# Define common axis limits
+y_limits <- range(hotspots_peak$rh[hotspots_peak$year %in% c(2014, 2018, 2020, 2023)])
+# Create plots with common axis limits
+plot_2014 <- ggplot(hotspots_peak %>% filter(year == 2014), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Humidity Over the Peak Season 2014",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2018 <- ggplot(hotspots_peak %>% filter(year == 2018), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Humidity Over the Peak Season 2018",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2020 <- ggplot(hotspots_peak %>% filter(year == 2020), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Humidity Over the Peak Season 2020",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+plot_2023 <- ggplot(hotspots_peak %>% filter(year == 2023), aes(x = rep_date, y = rh)) +
+  geom_line(color = "steelblue") +
+  labs(title = "Humidity Over the Peak Season 2023",
+       x = "Date",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(limits = y_limits)
+
+# Arrange the plots side by side
+grid.arrange(plot_2014, plot_2018, plot_2020, plot_2023, ncol = 2)
+
+# The variability in relative humidity makes it difficult to establish a consistent trend. 
+```
+
+#### Comparison between temperature and humidity (RH) in monthly perspective
+
+```{r}
+# Plot monthly temperature averages
+temp_plot <- ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
+  geom_line() +
+  labs(title = "Average Temperature by Month",
+       x = "Month",
+       y = "Average Temperature (°C)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+# Plot monthly humidity averages
+humidity_plot <- ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(year), group = year)) +
+  geom_line() +
+  labs(title = "Average Humidity by Month",
+       x = "Month",
+       y = "Average Humidity (%)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+grid.arrange(temp_plot, humidity_plot, ncol = 1)
+
+
+```
+
+#### Comparison between temperature and humidity (RH) from 4 different years.
+
+```{r}
+# Filter for specific years
+monthly_avg_filtered <- monthly_avg %>% 
+  filter(year %in% c(2014, 2018, 2020, 2023))
+
+# Plot monthly temperature averages
+temp_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
+  geom_line(size = 1) +
+  labs(title = "Average Temperature by Month",
+       x = "Month",
+       y = "Average Temperature (°C)",
+       color = "Year") +
+  scale_color_manual(values = c("2014" = "#F8766D", "2018" = "#00C19F", "2020" = "#619CFF", "2023" = "#FF61C3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot monthly humidity averages
+humidity_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_rh, color = factor(year), group = year)) +
+  geom_line(size = 1) +
+  labs(title = "Average Humidity by Month",
+       x = "Month",
+       y = "Average Humidity (%)",
+       color = "Year") +
+  scale_color_manual(values = c("2014" = "#F8766D", "2018" = "#00C19F", "2020" = "#619CFF", "2023" = "#FF61C3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Arrange the plots side by side
+grid.arrange(temp_plot_filtered, humidity_plot_filtered, ncol = 1)
+```
+
+#### ***There is a combination of high temperatures and low humidity during the peak fire months (June to September). 2018 and 2023 had higher temperatures and lower humidity, meaning more fires. When humidity rises sharply in October, fire activity goes down,indicating the end of the peak fire season.***
+
+#### Wind speed (in km/h)
+
+```{r}
+# 0 to 59 with mean of 9
+# Higher wind speeds in peak fire months can make fire more intense and make it spread faster.
+
+# Common wind speed scale used is the Beaufort scale (in m/s)
+# Convert wind speed from km/h to m/s (t) - to plot wd later
+hotspots_peak$ws <- hotspots_peak$ws * 0.27778
+
+# Plot monthly wind speed averages with custom colors
+ws_plot_filtered <- ggplot(monthly_avg_filtered, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
+  geom_line(size = 1) +
+  labs(title = "Average Wind Speed by Month",
+       x = "Month",
+       y = "Average Wind Speed (m/s)",
+       color = "Year") +
+  scale_color_manual(values = c("2014" = "#F8766D", "2018" = "#00C19F", "2020" = "#619CFF", "2023" = "#FF61C3")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Arrange the plots side by side
+grid.arrange(temp_plot_filtered, humidity_plot_filtered, ws_plot_filtered, ncol = 1)
+
+```
+
+#### *Wind speed shows significant variability*
+
+#### "wd" (Wind direction)
+
+```{r}
+# Wind exploration with openair() package.
+# Visualise with Wind Rose to see most common wind direction
+library(openair)
+
+windRose(mydata = hotspots_peak, ws = "ws", wd = "wd", 
+         main = "Wind Rose", paddle = FALSE)
+
+# Most of the wind comes from the west (W) and southwest (SW). 
+# Regions east and north of areas with strong western, southern and southwestern winds
+# should be careful, as these winds can quickly spread fires.
+# Wind patterns have are important for wildfire management.
+
+```
+
+#### ***Most of the wind comes from the west (W) and southwest (SW).Regions east and north of areas with strong western, southern and southwestern wind should be careful, as these winds can quickly spread fires.***
+
+#### ***Wind patterns have are important for wildfire management. Higher wind speeds in peak fire months can make fire more intense and make it spread faster.Wind speed shows significant variability.***
+
+## "pcp" (Precipitation)
+
+```{r}
+# 0 to 651 with mean of 0.2
+# So the amount is very low generally
+
+# Plot monthly precipitation averages
+ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "Average Precipitation by Month",
+       x = "Month",
+       y = "Average Precipitation (mm)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+#### ***The plot indicates a clear seasonal variation in precipitation, with a noticeable peak in July for most years.***
+
+## Fire Weather Index System indices
+
+#### FFMC (Fine Fuel Moisture Code)
+
+```{r}
+# A numeric rating of the moisture content of litter and other cured fine fuels.
+# This code is an indicator of the relative ease of ignition and the flammability of fine fuel.
+
+# The FFMC scale ranges from 0 to 101.
+# 0-30: Very wet conditions; ignition is difficult.
+# 30-70: Damp conditions; moderate difficulty for ignition.
+# 70-85: Dry conditions; fuels are easily ignitable.
+# 85-101: Very dry conditions; fuels are highly ignitable and fires can spread rapidly.
+
+# Plot histogram for FFMC
+ggplot(hotspots_peak, aes(x = ffmc)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of FFMC Values", x = "FFMC", y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal()
+```
+
+#### *The histogram reveals that most FFMC values from 2014 to 2023 are between 85 and 99,confirming consistently dry conditions.*
+
+```{r}
+# Plot boxplot for FFMC
+ggplot(hotspots_peak, aes(x = factor(year), y = ffmc)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "FFMC Distribution Across Years",
+       x = "Year",
+       y = "FFMC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The boxplots show that most years have high FFMC values above 90,meaning conditions are very dry and prone to fires. Year of 2020 and 2019 are 2 years of less drought conditions for fine fuels*
+
+```{r}
+# Line plot for FFMC over time
+ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "FFMC by Month",
+       x = "Month",
+       y = "FFMC",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+#### *The line plot shows that FFMC values peak every year during the fire season,indicating drier conditions that make it easier for fires to start.*
+
+#### DMC (Duff Moisture Code)
+
+```{r}
+# A numeric rating of the average moisture content
+# of loosely compacted organic layers of moderate depth. 
+# This code gives an indication of fuel consumption in moderate duff layers 
+# and medium-size woody material.
+
+# Values below 20: Low fire danger, duff layers are wet, and ignition is unlikely.
+# Values between 21 and 40: Moderate fire danger, duff layers start drying.
+# Values between 41 and 100: High fire danger, the duff layer is dry, prone to ignition.
+# Values above 100: Extreme fire danger, the duff layer is very dry, and ignition is very likely with the potential for intense fires.
+
+# Plot histogram for DMC
+ggplot(hotspots_peak, aes(x = dmc)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of DMC Values", x = "DMC", y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal()
+
+```
+
+#### *The histogram shows that most DMC values range between 0 and 100,with a peak around 50-100. Values above 200 are less common but indicate long dry periods.*
+
+```{r}
+# Plot boxplot for DMC
+ggplot(hotspots_peak, aes(x = factor(year), y = dmc)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "DMC Distribution Across Years",
+       x = "Year",
+       y = "DMC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+```
+
+#### *The boxplot for each year reveals that 2017 and 2018 had particularly high outliers,indicating extremely dry conditions that could lead to fires.*
+
+#### *On the other hand, 2016 and 2019 had lower DMC values, showing less severe drought.*
+
+```{r}
+# Line plot for DMC over time
+ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "DMC by Month",
+       x = "Month",
+       y = "DMC",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+#### *The line plot indicates that DMC values peak in late summer (July-August) and decrease in autumn.*
+
+#### *This shows that mid to late summer is typically drier,the risk of fire ignition and spread is high during these months.*
+
+#### DC (Drought Code)
+
+```{r}
+# A numeric rating of the average moisture content of deep, compact organic layers.
+# This code is a useful indicator of seasonal drought effects on forest fuels
+# and the amount of smoldering in deep duff layers and large logs.
+
+# 0-100: Indicates wet conditions with low fire potential.
+# 100-300: Moderate drought conditions with increasing fire potential.
+# 300-500: High drought conditions, leading to high fire risk.
+# 500+: Indicates extreme drought, posing a very high fire risk and potential for intense, prolonged burning.
+
+# Plot histogram for DC
+ggplot(hotspots_peak, aes(x = dc)) +
+  geom_histogram(binwidth = 20, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of DC Values", x = "DC", y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal()
+
+```
+
+#### *The histogram of DC values from 2014 to 2023 shows most values are between 300 and 600,peaking around 500. This means BC often has conditions that can lead to deep-burning fires.*
+
+```{r}
+# Plot boxplot for DC
+ggplot(hotspots_peak, aes(x = factor(year), y = dc)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "DC Distribution Across Years",
+       x = "Year",
+       y = "DC") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The boxplot of DC values across years show the variability and trends in drought conditions over time.*
+
+#### *2017 and 2018: These years have higher median and upper whisker values, meaning very dry conditions, likely leading to severe fire seasons.*
+
+#### *2016 and 2019: These years show lower DC values, suggesting wetter conditions and potentially less severe fire activity.*
+
+```{r}
+# Line plot for DC over time
+ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
+  labs(title = "DC by Month",
+       x = "Month",
+       y = "DC",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+#### *The line plot of DC values by month shows a clear seasonal trend, DC values increase during the summer months (July to August) and decrease in the autumn. This occurs at the time of the peak fire season. There are a lot of high DC values, more than 500, it shows conditions for deep-burning fires.*
+
+#### Compare indices trends to timeline of fire events
+
+```{r}
+# Normalize the number of fire events to allow for a meaningful comparison with the indices. 
+# Merge the dataframes
+monthly_data <- merge(monthly_avg, fire_events_per_month, by = c("year", "month"))
+
+# Convert 'month' column from ordered factor to numeric
+monthly_data$month <- as.numeric(monthly_data$month)
+
+# Create the 'Date' column using 'year' and 'month'
+monthly_data$Date <- as.Date(paste(monthly_data$year, monthly_data$month, "01", sep = "-"))
+
+# Normalize the fire numbers data 
+max_events <- max(monthly_data$n_events, na.rm = TRUE)
+
+monthly_data <- monthly_data %>%
+  mutate(norm_n_events = n_events / max_events)
+
+# Maximum values for scaling
+max_ffmc <- max(monthly_data$avg_ffmc, na.rm = TRUE)
+max_dmc <- max(monthly_data$avg_dmc, na.rm = TRUE)
+max_dc <- max(monthly_data$avg_dc, na.rm = TRUE)
+
+```
+
+#### Visualization between Fire Indices with fire counts (FFMC, DMC, DC)
+
+```{r}
+# Plot FFMC and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_ffmc, color = "FFMC"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_ffmc, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "FFMC",
+    sec.axis = sec_axis(~ . * 1000 / max_ffmc * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of FFMC and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("FFMC" = "lightblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# Plot DMC and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_dmc, color = "DMC"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_dmc, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "DMC",
+    sec.axis = sec_axis(~ . * 1000 / max_dmc * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of DMC and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("DMC" = "lightblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# Plot DC and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_dc, color = "DC"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_dc, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "DC",
+    sec.axis = sec_axis(~ . * 1000 / max_dc * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of DC and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("DC" = "lightblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### *The plots show a clear relationship between the fire indices (FFMC, DMC, and DC) and the number of fires. When the number of fires is high, the indices also show higher values.*
+
+####  ISI (Initial Spread Index)
+
+```{r}
+# A numerical rating of the expected rate of fire spread
+# based on wind speed, temperature, and fine fuel moisture content. 
+# ISI is crucial for understanding how quickly a fire can spread once it has ignited.
+
+# 0-3: Low spread potential. Fires will spread slowly and are relatively easy to control.
+# 4-7: Moderate spread potential. Fires spread more quickly and may require more effort to control.
+# 8-12: High spread potential. Fires spread rapidly and can be difficult to control.
+# 13-19: Very high spread potential. Fires spread very rapidly and are challenging to control.
+# 20+: Extreme spread potential. Fires spread uncontrollably and can be extremely dangerous.
+
+# Plot histogram for ISI
+ggplot(hotspots_peak, aes(x = isi)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of ISI Values", x = "ISI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+```
+
+#### *The histogram indicates that most ISI values are low to moderate.*
+
+```{r}
+# Plot boxplot for ISI
+ggplot(hotspots_peak, aes(x = factor(year), y = isi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "ISI Distribution Across Years",
+       x = "Year",
+       y = "ISI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The boxplot shows variability in ISI values across years, with notable outliers in 2014 and 2020.*
+
+```{r}
+# Line plot for ISI over time
+ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "ISI by Month",
+       x = "Month",
+       y = "ISI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### *The graphs illustrate that ISI values tend to peak during the summer months,indicating higher fire spread potential during this period.*
+
+#### Analyze extreme outlier of ISI
+
+```{r}
+# To improve the clarity of these insights,
+# removing NA values and extreme outliers from the dataset is necessary.
+# Remove extreme outliers
+hotspots_peak_filtered <- hotspots_peak%>%
+  filter(isi < 60)
+dim(hotspots_peak_filtered)
+
+# Filter out entries with ISI values greater than 60
+event_outliers <- hotspots_peak %>%
+  filter(isi >= 60)
+
+# Check single event
+dim(event_outliers)
+view(event_outliers)
+```
+
+#### Sample of one specific event with FWI index
+
+```{r}
+# The data from July 19, 2014, shows very high ISI values at a specific location in British Columbia.
+# This matches the date of the Mount McAllister fire, a large wildfire that burned over 20,000 hectares.
+# The weather that day included high temperatures, low humidity, and strong winds, which made the fire spread quickly.
+# These conditions explain the high ISI values, indicating a high potential for severe fire behavior.
+# The data points from July 19, 2014, are all in the same cluster, showing that the clustering algorithm grouped them correctly.
+
+
+# Filter the specific event cluster and near events
+event_McAllister <- hotspots %>%
+  filter(event_cluster %in% 370:372) 
+
+# Calculate monthly averages for July 2014
+monthly_avg_july <- monthly_avg %>%
+  filter(year == 2014 & month == "Jul")
+
+# Plot the weather conditions with average lines
+ggplot(event_McAllister, aes(x = rep_date)) +
+  geom_point(aes(y = temp, color = "Temperature"), size = 3) +
+  geom_point(aes(y = rh, color = "Relative Humidity"), size = 3) +
+  geom_point(aes(y = ws, color = "Wind Speed"), size = 3) +
+  geom_hline(aes(yintercept = monthly_avg_july$avg_temp, color = "Avg Temperature"), linetype = "dashed") +
+  geom_hline(aes(yintercept = monthly_avg_july$avg_rh, color = "Avg Relative Humidity"), linetype = "dashed") +
+  geom_hline(aes(yintercept = monthly_avg_july$avg_ws, color = "Avg Wind Speed"), linetype = "dashed") +
+  labs(title = "Weather Conditions on July 19, 2014 with Monthly Averages",
+       x = "Date",
+       y = "Value",
+       color = "Variable") +
+  scale_color_manual(values = c("Temperature" = "red3", "Relative Humidity" = "steelblue2", "Wind Speed" = "green",
+                                "Avg Temperature" = "red3", "Avg Relative Humidity" = "steelblue2", "Avg Wind Speed" = "green")) +
+  theme_minimal()
+
+
+# Create a summary table of the weather conditions
+weather_summary <- event_McAllister %>%
+  select(lat, lon, rep_date, temp, rh, ws, wd, pcp, ffmc, dmc, dc, isi, bui, fwi, ros)
+
+# Print the summary table
+print(weather_summary)
+
+```
+
+#### *This graph shows the weather conditions at McAllister Creek on July 19, 2014,including temperature, relative humidity, and wind speed. It compares these values to the average conditions for July 2014.*
+
+#### *The wind speed during this event is notably higher than the monthly average,suggesting stronger winds that could help spread the fire.*
+
+####  Visualization of ISI after removing extreme value
+
+```{r}
+# Plot histogram for ISI
+ggplot(hotspots_peak, aes(x = isi)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of ISI Values", x = "ISI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+```
+
+#### *The histogram now shows a more typical range of ISI values, removing the extreme values that distorted the original plot.*
+
+```{r}
+# Plot boxplot for ISI
+ggplot(hotspots_peak_filtered, aes(x = factor(year), y = isi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "ISI Distribution Across Years",
+       x = "Year",
+       y = "ISI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The boxplot shows a clearer, more consistent ISI distribution across the years after removing high outliers.*
+
+```{r}
+# Line plot for ISI over time
+ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "ISI by Month",
+       x = "Month",
+       y = "ISI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### *The seasonal pattern plot still peaks in mid-summer but appears smoother without the extreme values.*
+
+#### Correlation of ISI and Weather Indices
+
+```{r}
+# Using monthly averages instead of individual observations for quicker plotting
+
+ggplot(monthly_avg, aes(x = avg_ws, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Average ISI vs Average Wind Speed", x = "Average Wind Speed (km/h)", y = "Average ISI") +
+  theme_minimal()
+```
+
+#### *Average ISI vs. Average Wind Speed: Shows that higher wind speeds are linked to higher ISI values.*
+
+```{r}
+ggplot(monthly_avg, aes(x = avg_temp, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average ISI vs Average Temperature", x = "Average Temperature (°C)", y = "Average ISI") +
+  theme_minimal()
+```
+
+#### *Average ISI vs. Average Temperature: Shows that higher temperatures are associated with higher ISI values.*
+
+```{r}
+ggplot(monthly_avg, aes(x = avg_rh, y = avg_isi)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, color = "green") +
+  labs(title = "Average ISI vs Average Relative Humidity", x = "Average Relative Humidity (%)", y = "Average ISI") +
+  theme_minimal()
+```
+
+#### *Average ISI vs. Average Relative Humidity: Shows that as relative humidity increases, ISI decreases.*
+
+#### Correlation matrix between ISI and weather variables (WS, temp, RH)
+
+```{r}
+# Select columns 
+data_corr <- hotspots_peak %>%
+  select(isi, ws, temp, rh)
+
+# Calculate the correlation matrix
+corr_matrix <- cor(data_corr)
+
+# Plot the correlation matrix
+corrplot(corr_matrix, method = "circle", type = "lower",
+         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of ISI and Weather Variables",
+         mar = c(0, 0, 1, 0))
+```
+
+#### *Strong negative correlation between ISI and relative humidity. Strong positive correlation between ISI and temperature. Moderate positive correlation between ISI and wind speed.*
+
+#### BUI (Buildup Index)
+
+```{r}
+# A numerical rating of the total amount of fuel available for combustion.
+# It is derived from the Duff Moisture Code (DMC) and the Drought Code (DC)
+
+# Low: 0-40
+# Moderate: 41-80
+# High: 81-120
+# Extreme: 121 and above
+
+ggplot(hotspots_peak, aes(x = bui)) +
+  geom_histogram(binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of BUI Values", x = "BUI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+```
+
+#### *The histogram shows that BUI values mostly range from 60 to 100. This means the fire potential is moderate to high for most of the dataset.*
+
+```{r}
+
+ggplot(hotspots_peak, aes(x = factor(year), y = bui)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "BUI Distribution Across Years",
+       x = "Year",
+       y = "BUI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *Boxplots show BUI values vary year to year. Some years have higher values, which means drier conditions and a higher chance of intense fires.*
+
+```{r}
+
+ggplot(monthly_avg, aes(x = month, y = avg_bui, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "BUI by Month",
+       x = "Month",
+       y = "BUI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+#### *BUI peaks in mid-summer, which matches the time when fire activity is usually the highest.*
+
+```{r}
+
+# Scatter plots to visualize relationships using average values
+ggplot(monthly_avg, aes(x = avg_dmc, y = avg_bui)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average BUI vs Average DMC", x = "Average DMC", y = "Average BUI") +
+  theme_minimal()
+```
+
+#### *BUI and DMC have a very strong positive correlation, indicating that they are closely related (fire potential and moisture of layer).*
+
+```{r}
+ggplot(monthly_avg, aes(x = avg_dc, y = avg_bui)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Average BUI vs Average DC", x = "Average DC", y = "Average BUI") +
+  theme_minimal()
+
+```
+
+#### *BUI and DC also show a positive correlation,though it is slightly weaker.*
+
+#### Correlation matrix of BUI, DMC and FC
+
+```{r}
+# Select columns
+data_corr <- hotspots_peak %>%
+  select(bui, dmc, dc)
+
+# Calculate the correlation matrix
+corr_matrix <- cor(data_corr)
+
+# Plot the correlation matrix
+corrplot(corr_matrix, method = "circle", type = "lower",
+         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of BUI, DMC, and DC",
+         mar = c(0, 0, 1, 0))
+```
+
+#### *BUI, DMC, and DC are all indicators of fire potential. High values in these indices suggest drier conditions, which can lead to higher fire.*
+
+#### FWI (Fire Weather Index)
+
+```{r}
+# A numeric rating of fire intensity. It is based on the ISI and the BUI, 
+# and is used as a general index of fire danger throughout the forested areas of Canada.
+
+# Low (0-5): Minimal fire danger.
+# Moderate (6-12): Fires can start from most accidental causes, but the spread is slow.
+# High (13-20): Fires can start easily and spread rapidly.
+# Very High (21-30): Fires will start very easily, spread rapidly, and burn intensely.
+# Extreme (31+): Fires start and spread quickly, and are intense and challenging to control.
+
+ggplot(hotspots_peak, aes(x = fwi)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of FWI Values", x = "FWI", y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+```
+
+#### *The histogram shows that most FWI values are between 10 and 30, fire danger is from moderate to very high. Many values are above 30, severe fire weather conditions are frequent.*
+
+```{r}
+ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "FWI Distribution Across Years",
+       x = "Year",
+       y = "FWI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The boxplot shows the distribution of FWI values for different years.The line plot shows that FWI peaks in mid-summer, peak fire activity period.The data shows significant variability in fire danger, summer months and certain years have extreme outliers.*
+
+```{r}
+ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "FWI by Month",
+       x = "Month",
+       y = "FWI",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+#### *The line plot shows that FWI peaks in mid-summer, peak fire activity period. The data shows significant variability in fire danger, summer months and certain years have extreme outliers.*
+
+#### Analyze the trends of key indices (ISI BUI FWI) and the number of fire events.
+
+```{r}
+# Maximum values for scaling
+max_isi <- max(monthly_data$avg_isi, na.rm = TRUE)
+max_bui <- max(monthly_data$avg_bui, na.rm = TRUE)
+max_fwi <- max(monthly_data$avg_fwi, na.rm = TRUE)
+
+```
+
+```{r}
+# Plot ISI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_isi, color = "ISI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_isi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "ISI",
+    sec.axis = sec_axis(~ . * 1000 / max_isi * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of ISI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("ISI" = "steelblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+
+# Plot BUI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_bui, color = "BUI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_bui, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "BUI",
+    sec.axis = sec_axis(~ . * 1000 / max_bui * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of BUI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("BUI" = "steelblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+# Plot FWI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_fwi, color = "FWI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_fwi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "FWI",
+    sec.axis = sec_axis(~ . * 1000 / max_fwi * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of FWI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("FWI" = "steelblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### *The plots show a clear link between indices and the number of fires.When there are more fires, the FWI is also higher.*
+
+#### Fuel (Fuel Type)
+
+```{r}
+# D1: Deciduous trees (leafless, early spring to fall)
+# C2, C3, C4, C5, C7: Various types of coniferous trees
+# O1, O1a, O1b: Grass or herbaceous vegetation
+# M1, M1M2, M2, M2_25, M2_35, M2_50, M2_65: Mixedwood or transitional vegetation
+# bog: Wetland areas with peatland vegetation
+# water: Water bodies
+# urban: Urban areas
+# non_fuel: Areas with no significant vegetation (rock, gravel)
+# low_veg: Areas with low vegetation (possibly recently burned or cleared)
+# farm: Agricultural areas
+# D2: Deadfall or downed wood
+
+# Group by fuel and summarize
+fuel_counts <- hotspots_peak %>%
+  group_by(fuel) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count)) 
+
+# Print the fuel counts
+print(fuel_counts)
+```
+
+```{r}
+# Create a bar plot for the fuel column
+ggplot(hotspots_peak, aes(x = fuel)) +
+  geom_bar(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Fuel Types", x = "Fuel Type", y = "Count") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### *The dataset shows a variety of fuel types, with "C2" (566,651 records) and "C3" (383,781 records) being the most common. Other significant fuel types include "D1" (187,803 records) and "C7" (149,801 records).*
+
+#### "ros" (Rate of Spread)
+
+```{r}
+# The predicted speed of the fire at the front or head of the fire (where the fire moves fastest),and takes into account both crowning and spotting. 
+# The scale ranges from 0 to over 20 m/min in the dataset.
+
+ggplot(hotspots_peak, aes(x = ros)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution Rate of Spread at Fire Hotspots",
+       x = "ROS (m/min)",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+```
+
+```{r}
+ggplot(hotspots_peak, aes(x = factor(year), y = ros)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Rate of Spread Distribution Across Years",
+       x = "Year",
+       y = "ROS (m/min)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The plot shows that the ROS can vary significantly year to year, with some years experiencing more extreme fire spread conditions.*
+
+```{r}
+# Scatter plot for average ROS vs average ISI
+ggplot(monthly_avg, aes(x = avg_isi, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Average ROS vs Average ISI",
+       x = "Average ISI",
+       y = "Average ROS") +
+  theme_minimal()
+
+```
+
+```{r}
+# Scatter plot for average ROS vs average BUI
+ggplot(monthly_avg, aes(x = avg_bui, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(title = "Average ROS vs Average BUI",
+       x = "Average BUI",
+       y = "Average ROS") +
+  theme_minimal()
+```
+
+```{r}
+
+ # Scatter plot for average ROS vs average FWI
+ggplot(monthly_avg, aes(x = avg_fwi, y = avg_ros)) +
+  geom_point(alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "green") +
+  labs(title = "Average ROS vs Average FWI",
+       x = "Average FWI",
+       y = "Average ROS") +
+  theme_minimal()
+```
+
+#### *The scatter plots for ROS vs FWI, ROS vs BUI, and ROS vs ISI all show a clear upward trend.This means that as the values of FWI, BUI, and ISI increase, the Rate of Spread also increases.  Higher values indicate more severe fire conditions,more available fuel, and faster initial fire spread. This means the fire spreads faster.*
+
+#### Correlation matrix between ROS, ISI, BUI and FWI
+
+```{r}
+# Calculate correlations between ROS, ISI, BUI, and FWI
+correlation_ros_indices <- hotspots_peak %>%
+  select(ros, isi, bui, fwi) %>%
+  cor(use = "complete.obs")
+
+# Print the correlation matrix
+print(correlation_ros_indices)
+
+# Plot the correlation matrix
+corrplot(correlation_ros_indices, method = "circle", type = "lower",
+         tl.col = "black", tl.srt = 45, title = "Correlation Matrix of ROS and Other Indices",
+         mar = c(0, 0, 1, 0))
+```
+
+#### *The matrix shows strong positive correlations between ROS and ISI, ROS and FWI,and a moderate positive correlation between ROS and BUI.*
+
+#### "sfc" (Surface Fuel Consumption)
+
+```{r}
+# SFC represents the amount of fuel consumed by surface fires, 
+# including organic soil (duff), surface litter, dead and downed woody debris.
+# Calculated using indices of the FWI System (BUI and DC).
+
+print(monthly_avg)
+
+ggplot(hotspots_peak, aes(x = sfc)) +
+  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Surface Fuel Consumption (SFC)",
+       x = "SFC (kg/m²)",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = comma)
+
+```
+
+#### "tfc" (Total Fuel Consumption)
+
+```{r}
+# TFC is the total amount of fuel consumed by both surface and crown fires. 
+# It includes all components in SFC plus the consumption of overstory fuels (canopy).
+# Estimates the overall carbon emissions from a fire event.
+# Range varies widely based on the intensity and spread of the fire, as well as the initial fuel load and moisture content.
+
+ggplot(hotspots_peak, aes(x = tfc)) +
+  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Total Fuel Consumption (TFC)",
+       x = "TFC (kg/m²)",
+       y = "Frequency") +
+  theme_minimal() +
+  scale_y_continuous(labels = comma)
+```
+
+#### "bfc" (Bonfire Fuel Consumption)
+
+```{r}
+# BFC refers to a specific component of the BORFIRE model focused on estimating carbon emissions from boreal forest fires.
+
+summary(hotspots_peak$bfc)
+
+# Explore huge bfc values
+huge_bfc <- hotspots_peak %>%
+  filter(bfc > 1000)
+
+# Print the resulting data frame to inspect the entries with huge bfc values
+
+huge_bfc %>%
+  group_by(year, month) %>%
+  summarise(n_entries = n()) %>%
+  arrange(year, month)
+
+summary(huge_bfc$bfc)
+
+# Remove NA values from BFC data
+hotspots_peak_BFC <- hotspots_peak %>%
+  filter(!is.na(bfc))
+```
+
+```{r}
+# Calculate IQR for BFC
+IQR_bfc <- IQR(hotspots_peak_BFC$bfc, na.rm = TRUE)
+Q1_bfc <- quantile(hotspots_peak_BFC$bfc, 0.25, na.rm = TRUE)
+Q3_bfc <- quantile(hotspots_peak_BFC$bfc, 0.75, na.rm = TRUE)
+
+# Define lower and upper bounds for outliers
+upper_bound_bfc <- Q3_bfc + 1.5 * IQR_bfc
+
+# Filter out the outliers
+hotspots_peak_BFC <- hotspots_peak_BFC %>%
+  filter(bfc <= upper_bound_bfc)
+
+# Summary of filtered data
+summary(hotspots_peak_BFC$bfc)
+
+# Plot Histogram of BFC Data Without Handling Outliers
+ggplot(hotspots_peak_BFC, aes(x = bfc)) +
+  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Boreal Fire Consumption (BFC)",
+       x = "BFC",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::comma)
+```
+
+#### "hfi" (Head Fire Intensity)
+
+```{r}
+# Measures the intensity or energy output of a fire at its front (head).
+# HFI is measured in kilowatts per metre (kW/m) of the fire front and is calculated based on the Rate of Spread (ROS)
+# and the Total Fuel Consumption (TFC).
+
+# Low (0-500 kW/m): Fires are relatively easy to control and generally cause limited damage.
+# Moderate (500-2000 kW/m): Fires can be challenging to control, requiring more resources and effort.
+# High (2000-4000 kW/m): Fires are intense and difficult to manage, often requiring aerial firefighting resources.
+# Very High (4000-10,000 kW/m): Fires are extremely intense and nearly impossible to control, posing significant risk to life and property.
+# Extreme (10,000+ kW/m): Fires exhibit explosive behavior and can cause catastrophic damage.
+
+# Plot histogram for HFI
+ggplot(hotspots_peak, aes(x = hfi)) +
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
+  labs(title = "Distribution of HFI Values",
+       x = "HFI (kW/m)",
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  scale_x_continuous(breaks = seq(0, 75000, 10000)) +
+  theme_minimal()
+
+```
+
+#### *The histogram shows the frequency distribution of HFI values.Most HFI values are concentrated at the lower end of the scale, as values increase there are fewer.*
+
+#### *Very high HFI values are outliers they show occasional extremely intense fires. While most fires are less intense, the few high-intensity fires can be significant and impactful.*
+
+```{r}
+ggplot(hotspots_peak, aes(x = factor(year), y = hfi)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "HFI Distribution Across Years",
+       x = "Year",
+       y = "HFI (kW/m)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The boxplots show the distribution of HFI across different years.The median value varies yearly, there are fluctuations in fire intensity.There are significant outliers in almost all years, there are some fires with extremely high intensities.*
+
+```{r}
+ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "HFI by Month",
+       x = "Month",
+       y = "HFI (kW/m)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### *Different years show a lot of differences in HFI values. For example, 2014 and 2021 had higher peaks, meaning there was more intense fire activity in those years.*
+
+#### *2020 had lower HFI values, there were milder fire conditions or better fire control efforts.The plots also show how HFI can change from month to month within a single fire season.Weather conditions, temperature, humidity, and wind speed, can affect how fires behave.*
+
+#### Analyze the trends of HFI and the number of fire events.
+
+```{r}
+# Maximum values for scaling
+max_hfi <- max(monthly_data$avg_hfi, na.rm = TRUE)
+
+# Plot HFI and Fire Counts
+ggplot(monthly_data, aes(x = Date)) +
+  geom_line(aes(y = avg_hfi, color = "HFI"), size = 1) +
+  geom_bar(aes(y = norm_n_events * max_hfi, fill = "Fire Occurrences"), stat = "identity", color = "black", alpha = 0.6) +
+  scale_y_continuous(
+    name = "HFI",
+    sec.axis = sec_axis(~ . * 1000 / max_hfi * max(monthly_data$n_events) / 1000, 
+                        name = "Number of Fire Occurrences", labels = comma)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  labs(title = "Monthly Trends of HFI and Fire Occurrences",
+       x = "Year",
+       color = "Index",
+       fill = "Index") +
+  scale_color_manual(values = c("HFI" = "lightblue")) +
+  scale_fill_manual(values = c("Fire Occurrences" = "red")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
+
+#### *The HFI index shows notable peaks, particularly in the years 2015, 2018, and 2019, showing periods with high fire intensity.These peaks suggest severe fire conditions during these years.*
+
+#### *The number of fire events is notably higher in the years with higher HFI values, such as 2018 and 2019.*
+
+#### "cfb" (Crown Fraction Burned)
+
+```{r}
+# CFB is the predicted fraction of the tree crowns consumed by the fire.
+# 0 to 100 with a mean of 33
+# It ranges from 0 to 100%, 
+# where 0% means no crown fire activity and 100% indicates 
+# that the entire tree crowns in the area have been burned.
+
+ggplot(hotspots_peak, aes(x = cfb)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of CFB at Fire Hotspots",
+       x = "CFB",
+       y = "Frequency") +
+  scale_y_continuous(labels = comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *This histogram is dominated by zero values, making it difficult to identify clear trends.*
+
+```{r}
+# Count missing values in the CFB column
+sum(is.na(hotspots_peak$cfb))
+
+# Identify years with the most missing values
+missing_cfb <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(cfb)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(missing_percentage))
+
+missing_cfb
+
+```
+
+#### *2015 has the highest percentage of missing values at 56.1%. 2017 has 54.9%. 2016 has 46.8%. 2018-2024 and 2014 have no missing values*
+
+```{r}
+zero_cfb <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(cfb == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(zero_percentage))
+
+zero_cfb
+```
+
+#### *2019 has the highest percentage of zero values at 92.7%. 2020, 2021, 2022, and 2023 also have high values ranging from 65.4% to 77.8%. 2015-2018, and 2024 have almost no zero values.*
+
+#### Visualization of CFB after removing NA value
+
+```{r}
+# Filter out zero and na values to check the CFB values when it was properly recorded.
+
+hotspots_peak_CFB <- hotspots_peak %>%
+  filter(cfb > 0 & !is.na(cfb))
+
+# Create the histogram for CFB
+ggplot(hotspots_peak_CFB, aes(x = cfb)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Crown Fraction Burned (CFB) at Fire Hotspots",
+       x = "CFB",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::comma)
+```
+
+#### "age" (Age of the Tree)
+
+```{r}
+# The age is indicated the age of tree were burned
+# Count missing values in the Age column
+sum(is.na(hotspots_peak$age))
+
+# Identify years with the most missing values
+missing_age <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(age)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(missing_percentage))
+
+missing_age
+```
+
+```{r}
+zero_age <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(age == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(zero_percentage))
+
+zero_age
+```
+
+#### *The years with valid amount of observations are 2014 2015 2016. The variable almost doesnt have meaningfull values in 2017 and 2018. The more recent hotspots have stopped recording this variable altogether.*
+
+#### Visualization of age variable
+
+```{r}
+hotspots_peak_age <- hotspots_peak %>%
+  filter(age > 0 & !is.na(age))
+
+# Create the histogram for Age
+ggplot(hotspots_peak_age, aes(x = age)) +
+  geom_histogram(binwidth = 100, fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Tree Age at Fire Hotspots",
+       x = "Age",
+       y = "Frequency") +
+  theme_minimal() + 
+  scale_y_continuous(labels = scales::comma)
+```
+
+#### "est area" (Estimated Area Burned )
+
+```{r}
+# approximate burned area based on historical average area burned per hotspot by agency and fuel type
+# Count missing values in the estarea
+sum(is.na(hotspots_peak$estarea))
+
+# Identify years with the most missing values
+
+missing_estarea <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(estarea)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_estarea
+```
+
+#### *2023 2022 and 2021 do not have this variable. 2015 2016 2018 2019 has around 50% missing values 2020 85 % missing values*
+
+#### Summary of zero value in estarea variable
+
+```{r}
+zero_estarea <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(estarea == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+zero_estarea
+```
+
+#### *Additionally to the missing values already described, 2017 has almost 50% zero values The only year with values present is 2014 The recent hotspots have stopped recording this variable altogether.*
+
+#### "polyid" variable
+
+```{r}
+# Count missing values in the estarea
+sum(is.na(hotspots_peak$polyid))
+
+# Identify years with the most missing values
+missing_polyid <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(polyid)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_polyid
+```
+
+#### *There is no polyid variable in year 2018-2023.*
+
+```{r}
+zero_polyid <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(polyid == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+zero_polyid
+```
+
+#### *Additionally 2017 has almost all zero value.*
+
+#### *Initially the variable was used to identify specific event, but recently the reporting process has changed Only meaningful information in 2014 2015 and 2016, it may be not suitable for meaningful analyses for the 10 year period*
+
+#### "pcuring" (Percent Curing)
+
+```{r}
+# This indicates the proportion of grass and other fuels (non-woody) that are in a cured (dried) state, ready to burn.
+# For example, if pcuring is 80%, it means that 80% of the vegetation is dead or dry enough to ignite and sustain fire.
+
+# Count missing values in the pcuring
+sum(is.na(hotspots_peak$pcuring))
+
+# Identify years with the most missing values
+missing_pcuring <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(pcuring)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_pcuring
+
+```
+
+#### *2023 does not have this variable.*
+
+#### Analyse pcuring without year of 2023
+
+```{r}
+# Exclude the year 2023 where pcuring is missing
+hotspots_peak_pcuring <- hotspots_peak %>%
+  filter(!(year == 2023)) %>%
+  filter(!is.na(pcuring))
+
+# Check the summary of the filtered data
+summary(hotspots_peak_pcuring$pcuring)
+
+# Checking for values greater than 100%
+pcuring_above_100 <- hotspots_peak %>% filter(pcuring > 100)
+summary(pcuring_above_100)
+```
+
+#### *4 entries with values above 100% - out of range values, possible mistake in reporting*
+
+#### Visualization of curing percentage
+
+```{r}
+zero_pcuring <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(pcuring == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+zero_pcuring
+sum(zero_pcuring$zero_count)
+# 62239 zero values
+```
+
+#### Distribution of curing percentage
+
+```{r}
+# Create the histogram for pcuring
+ggplot(hotspots_peak_pcuring, aes(x = pcuring)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Percentage (pcuring) Values", 
+       x = "Curing Percentage (pcuring)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+```
+
+```{r}
+# Create the boxplot for pcuring across years
+ggplot(hotspots_peak_pcuring, aes(x = factor(year), y = pcuring)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Percentage (pcuring) Across Years",
+       x = "Year",
+       y = "Curing Percentage (pcuring)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+```
+
+#### *The median pcuring values for these years range between 30% and 50%.There are many entries with pcuring at 0%, possibly indicating periods with no drying or data recording issues.*
+
+#### "cfactor"(Curing Factor)
+
+```{r}
+# The amount of curing, or drying, of vegetation.
+
+# Count missing values in the cfactor
+sum(is.na(hotspots_peak$cfactor))
+
+# Identify years with the most missing values
+missing_cfactor <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(cfactor)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_cfactor
+
+```
+
+#### *2019 - 2023 does not have this variable.*
+
+#### Analyse of Curing factor after years removal
+
+```{r}
+# Exclude the years where cfactor is missing
+hotspots_peak_cfactor <- hotspots_peak %>%
+  filter((year < 2019)) %>%
+  filter(!is.na(cfactor))
+
+# Check the summary of the filtered data
+summary(hotspots_peak_cfactor$cfactor)
+
+```
+
+#### *Represents the curing factor as a proportion rather than a percentage.*
+
+#### Visualization of Curing Factor
+
+```{r}
+# Create the histogram for cfactor
+ggplot(hotspots_peak_cfactor, aes(x = cfactor)) +
+  geom_histogram(binwidth = 0.1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Factor (cfactor) Values", 
+       x = "Curing Factor (cfactor)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+```
+
+```{r}
+# Create the boxplot for cfactor across years
+ggplot(hotspots_peak_cfactor, aes(x = factor(year), y = cfactor)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Factor (cfactor) Across Years",
+       x = "Year",
+       y = "Curing Factor (cfactor)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+#### *The variable has stopped being recorded recently. It may be not suitable for meaningful analyses for the 10 year period*
+
+####  "greenup" (phenological state of deciduous trees)
+
+```{r}
+# phenological state of deciduous trees (0=leafless, 1=green)
+sum(is.na(hotspots_peak$greenup))
+
+# Identify years with the most missing values
+missing_greenup <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(greenup)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_greenup
+
+```
+
+#### *2023 does not have this variable.*
+
+```{r}
+# Count the number of observations in each greenup state
+greenup_count <- hotspots_peak %>%
+  group_by(greenup) %>%
+  summarise(count = n())
+greenup_count
+```
+
+#### *There are invalid values present in the dataset. This variable is only 0 or 1*
+
+#### Summary of greenup variable
+
+```{r}
+# Filter out invalid values in the greenup variable
+hotspots_peak_greenup <- hotspots_peak %>%
+  filter(greenup %in% c(0, 1))
+
+# Check the summary of the filtered data
+summary(hotspots_peak_greenup$greenup)
+
+greenup_by_year <- hotspots_peak_greenup %>%
+  group_by(year, greenup) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(desc(year), greenup)
+```
+
+#### Visualization of Greenup variable
+
+```{r}
+# Visualize the count of observations in each greenup state
+ggplot(greenup_by_year, aes(x = factor(greenup), y = count, fill = factor(greenup))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Count of Observations by Greenup State",
+       x = "Greenup State",
+       y = "Count",
+       fill = "Greenup State") +
+  scale_fill_manual(values = c("0" = "bisque3", "1" = "lightgreen")) +
+  theme_minimal()+
+  scale_y_continuous(labels = scales::comma) 
+
+```
+
+#### *There are significantly more observations for greenup state 1 (trees with green leaves) compared to state 0 (leafless trees).The greenup state alone may not provide significant insights into fire behavior or risks.*
+
+#### "elev" (Elevation above sea level)
+
+```{r}
+# BC's elevation ranges from sea level to approximately 4000 meters,
+# with the highest peak being Mount Fairweather at 4663 meters.
+# The elev can influencing local weather pattern, fuel moisture
+
+# Check for missing values
+sum(is.na(hotspots_peak$elev))
+```
+
+#### *A low percentage of missing values*
+
+```{r}
+range(hotspots_peak$elev, na.rm = TRUE)
+
+```
+
+#### *-1 3129 While there is one instance of a below sea level elevation, the range is valid for BC*
+
+```{r}
+# Identify and analyze outliers
+elev_outliers <- hotspots_peak %>%
+  filter(elev < 0)
+print(elev_outliers)
+```
+
+```{r}
+# Histogram of elevation values
+ggplot(hotspots_peak, aes(x = elev)) +
+  geom_histogram(binwidth = 100, fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Elevation Values",
+       x = "Elevation (meters)",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+#### *Overall the distribution of elevation levels is normal for British Columbia.*
+
+#### "ecozone" Ecozone in which hotspot is located
+
+```{r}
+# Identify years with the most missing values
+missing_ecozone <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(ecozone)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_ecozone
+```
+
+#### *For the years 2019-2023 there are only 24+4 missing entries.*
+
+```{r}
+# Count the number of hotspots in each ecozone
+ecozone_counts <- hotspots_peak %>% filter(year >= 2019) %>% 
+  group_by(ecozone) %>%
+  summarise(count = n())
+
+# Print the ecozone counts
+print(ecozone_counts)
+
+# Convert ecozone to a factor
+ecozone_counts$ecozone <- factor(ecozone_counts$ecozone, levels = c(14, 4, 9, 12, 13, "NA"))
+```
+
+```{r}
+# Define custom colors and labels for the selected ecozones (Statistics Canada site)
+# https://www.statcan.gc.ca/en/subjects/standard/environment/elc/2017-map
+custom_colors <- c("14" = "#B5D79F", "4" = "#989898", "9" = "#36C48E", 
+                   "12" = "#ACC32D", "13" = "#05734D", "NA" = "#000000")
+
+custom_labels <- c("14" = "Montane Cordillera", "4" = "Taiga Plains", "9" = "Boreal Plains",
+                   "12" = "Boreal Cordillera", "13" = "Pacific Maritime")
+
+# Visualize the distribution of hotspots by ecozone with custom legend
+ggplot(ecozone_counts, aes(x = reorder(ecozone, -count), y = count, fill = ecozone)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Distribution of Hotspots by Ecozone (2019 onwards)",
+       x = "Ecozone",
+       y = "Number of Hotspots",
+       fill = "Ecozone") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma) +
+  scale_fill_manual(values = custom_colors, labels = custom_labels) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "right", 
+        legend.title = element_text(size = 12),
+        legend.text = element_text(size = 10))
+```
+
+#### *The plot shows distribution of ecozones in the hotspot dataset.*
+
+#### *The plot shows that the Montane Cordillera ecozone has the highest number of hotspots, indicating it is the most fire-prone ecozone in the dataset from 2019 onwards.*
+
+#### *For the variables : cfl, sfl,tfc0, sfc0, cbh are not suitable for analysis of the decade as data present only in recent years*
