@@ -2318,7 +2318,7 @@ zero_estarea
 # Additionally to the missing values already described, 2017 has almost 50% zero values
 # The only year with values present is 2014
 # The more resent hotspots have stopped recording this variable altogether.
-# There has probable been a change in reporting teckniques with this variable,
+# There has probably been a change in reporting teckniques with this variable,
 # it may be not suitable for meaningful analyses for the 10 year period
 
 
@@ -2367,7 +2367,87 @@ zero_polyid
 
 
 
-"pcuring" # percent curing
+"pcuring" # Percent Curing
+# This indicates the proportion of grass and other fuels (non-woody) that are in a cured (dried) state, ready to burn.
+# For example, if pcuring is 80%, it means that 80% of the vegetation is dead or dry enough to ignite and sustain fire.
+
+# The FWI System incorporates pcuring as part of its calculations to determine indices 
+# like the Fine Fuel Moisture Code (FFMC) and the Initial Spread Index (ISI).
+# These indices are used to estimate the ease of ignition and 
+# the rate of spread for fires in grasslands and similar fuel types.
+
+# Count missing values in the pcuring
+sum(is.na(hotspots_peak$pcuring))
+
+
+# Identify years with the most missing values
+missing_pcuring <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    missing_count = sum(is.na(pcuring)),
+    missing_percentage = (missing_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+missing_pcuring
+
+# 2023 does not have this variable.
+
+
+# Exclude the year 2023 where pcuring is missing
+hotspots_peak_pcuring <- hotspots_peak %>%
+  filter(!(year == 2023)) %>%
+  filter(!is.na(pcuring))
+
+# Check the summary of the filtered data
+summary(hotspots_peak_pcuring$pcuring)
+
+# Checking for values greater than 100%
+pcuring_above_100 <- hotspots_peak %>% filter(pcuring > 100)
+summary(pcuring_above_100)
+
+# 4 entries with values above 100% - out of range values, possible mistake in reporting
+
+zero_pcuring <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(pcuring == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+zero_pcuring
+sum(zero_pcuring$zero_count)
+# 62239 zero values
+
+# Create the histogram for pcuring
+ggplot(hotspots_peak_pcuring, aes(x = pcuring)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Percentage (pcuring) Values", 
+       x = "Curing Percentage (pcuring)", 
+       y = "Frequency") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal()
+
+# Create the boxplot for pcuring across years
+ggplot(hotspots_peak_pcuring, aes(x = factor(year), y = pcuring)) +
+  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Curing Percentage (pcuring) Across Years",
+       x = "Year",
+       y = "Curing Percentage (pcuring)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+# The median pcuring values for these years range between 30% and 50%.
+# There are many entries with pcuring at 0%, 
+# possibly indicating periods with no drying or data recording issues.
 
 
 "cfactor" # curing factor
@@ -2463,26 +2543,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 
 
 
-# estarea: Estimated Area Burned (ha)
-
-# Estimated area burned by the fire in hectares
-# 0 to 39 with mean of 6
-# A LOT OF MISSING VALUES 70%
-1250009/t
-
-
-# polyid: Polygon ID (unique identifier for the fire polygon)
-# ??????????
-# A LOT OF MISSING VALUES 79%
-1424268/t
-
-
-# pcuring: Percentage of Curing (%)
-
-# ?????????????????
-# -1 to 125 with mean of 38
-598030/t # 33%
-
 
 # cfactor: Curing Factor
 
@@ -2570,7 +2630,7 @@ hotspots %>%
 
 
 
-# Count missing values in the estarea
+# Count missing values in the pcuring
 sum(is.na(hotspots_peak$pcuring))
 
 
@@ -2588,17 +2648,49 @@ missing_pcuring
 
 # 2023 does not have this variable.
 
-ggplot(hotspots_peak, aes(x = fwi)) +
+
+# Exclude the year 2023 where pcuring is missing
+hotspots_peak_pcuring <- hotspots_peak %>%
+  filter(!(year == 2023)) %>%
+  filter(!is.na(pcuring))
+
+# Check the summary of the filtered data
+summary(hotspots_peak_pcuring$pcuring)
+
+# Checking for values greater than 100%
+pcuring_above_100 <- hotspots_peak %>% filter(pcuring > 100)
+summary(pcuring_above_100)
+
+# 4 entries with values above 100% - out of range values, possible mistake in reporting
+
+zero_pcuring <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    total_count = n(),
+    zero_count = sum(pcuring == 0, na.rm = TRUE),
+    zero_percentage = (zero_count / total_count) * 100
+  ) %>%
+  arrange(desc(year))
+
+zero_pcuring
+sum(zero_pcuring$zero_count)
+# 62239 zero values
+
+# Create the histogram for pcuring
+ggplot(hotspots_peak_pcuring, aes(x = pcuring)) +
   geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of FWI Values", x = "FWI", y = "Frequency") +
+  labs(title = "Distribution of Curing Percentage (pcuring) Values", 
+       x = "Curing Percentage (pcuring)", 
+       y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
-ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
+# Create the boxplot for pcuring across years
+ggplot(hotspots_peak_pcuring, aes(x = factor(year), y = pcuring)) +
   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "FWI Distribution Across Years",
+  labs(title = "Distribution of Curing Percentage (pcuring) Across Years",
        x = "Year",
-       y = "FWI") +
+       y = "Curing Percentage (pcuring)") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 15),
         axis.title.x = element_text(size = 12),
@@ -2607,26 +2699,9 @@ ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
         axis.text.y = element_text(size = 10))
 
 
-ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = year)) +
-  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
-  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
-  labs(title = "FWI by Month",
-       x = "Month",
-       y = "FWI",
-       color = "Year") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# This histogram is dominated by zero values, making it difficult to identify clear trends.
-
-
-
-
-
-
-
-
-
+# The median pcuring values for these years range between 30% and 50%.
+# There are many entries with pcuring at 0%, 
+# possibly indicating periods with no drying or data recording issues.
 
 
 # quick load####
