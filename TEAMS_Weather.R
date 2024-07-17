@@ -100,7 +100,7 @@ print(summary_weather_peak)
 
 
 # Monthly averages 
-monthly_avg <- weather_peak %>%
+monthly_avg_weather <- weather_peak %>%
   group_by(year, month) %>%
   summarise(avg_temp = mean(mean_temp, na.rm = TRUE),
             avg_ws = mean(spd_max_gust, na.rm = TRUE),
@@ -108,7 +108,7 @@ monthly_avg <- weather_peak %>%
             
             .groups = 'drop') 
 
-print(monthly_avg)
+print(monthly_avg_weather)
 
 # Missing values ####
 
@@ -258,14 +258,14 @@ print(missing_ws_flag)
 # NEED TO MAKE ALL FOUR VARIABLES AND DESCRIBE)
 
 names(weather_peak)
-monthly_avg <- weather_peak %>%
+monthly_avg_weather <- weather_peak %>%
   group_by(year, month) %>%
   summarise(avg_temp = mean(mean_temp, na.rm = TRUE),
             avg_ws = mean(spd_max_gust, na.rm = TRUE),
             avg_pcp = mean(total_precip, na.rm = TRUE),
             .groups = 'drop') 
 
-print(monthly_avg)
+print(monthly_avg_weather)
 
 
 # Analyze the distribution of mean temperature
@@ -307,7 +307,7 @@ ggplot(weather_peak %>%
 # there are stable temperature trends within the dataset.
 
 # Line plot for mean_temp over time
-ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
+ggplot(monthly_avg_weather, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
   geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
   geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
   labs(title = "Average Monthly Mean Temperature Over Years",
@@ -367,7 +367,7 @@ ggplot(weather_peak %>%
 # indicating similar seasonal wind speed trends.
 
 # Line plot for avg_ws over time
-ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
+ggplot(monthly_avg_weather, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
   geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
   geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
   labs(title = "Average Monthly Wind Speed Over Years",
@@ -485,7 +485,7 @@ print(heavy_rain_count)
 
 
 # Line plot for avg_pcp over time
-ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
+ggplot(monthly_avg_weather, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
   geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # Raw data as dotted lines
   geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
   labs(title = "Average Monthly Precipitation Over Years",
