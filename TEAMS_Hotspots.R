@@ -2776,18 +2776,11 @@ monthly_avg <- hotspots_peak %>%
 
 
 
-event_details <- hotspots %>%  filter(event_cluster != 0) %>%  group_by(year) %>%  summarise(    first_cluster = first(event_cluster),    start_date_hotspot = min(rep_date),    end_date_hotspot = max(rep_date),    events_count = length(unique(event_cluster))  )
-fire_events_per_month <- hotspots %>%  group_by(month) %>%  summarise(n_events = n())
-fire_events_wide <- fire_events_per_month %>%  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
-
-
-
-fire_events_per_month_subset <- hotspots_peak %>%  filter(event_cluster != 0) %>%  group_by(year, month) %>%  summarise(n_events = n()) %>%  ungroup()
-fire_events_subset_wide <- fire_events_per_month_subset %>%  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
-
-events_count <- event_details %>%  select(year, events_count)
-
-
+# Summarize the number of fire events per year and month
+fire_events_per_month <- hotspots %>%
+  filter(event_cluster != 0) %>%  # Exclude noise clusters
+  group_by(year, month) %>%
+  summarise(n_events = n(), .groups = 'drop') 
 
 
 
