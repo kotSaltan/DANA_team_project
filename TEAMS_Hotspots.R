@@ -2856,4 +2856,24 @@ str(hotspots_peak$month)
 str(hotspots_peak$year)
 
 #####
-#
+### T TEST ####
+
+# Top Event
+cluster_counts <- hotspots_peak %>%
+  group_by(event_cluster) %>%
+  summarise(event_count = n()) %>%
+  arrange(desc(event_count))
+
+
+max_cluster <- cluster_counts %>%
+  slice(2)
+
+
+
+31404
+
+event_31404 <- hotspots %>%
+  filter(event_cluster == 31404) 
+
+summary(event_31404)
+
