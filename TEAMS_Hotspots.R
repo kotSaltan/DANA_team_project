@@ -2679,55 +2679,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
 # more variables####
 
 
-# cfl: Crown Fire Load (kg/m²)
-
-# The fraction of the crown layer involved in the fire
-# -1 to 8.2 with mean of 1.1
-# ????????????????????????
-379340/t # 21%
-
-
-# tfc0: Initial Total Fuel Consumption (kg/m²)
-
-# ????????
-# 0 to 6 with mean of 3
-381683/t # 21%
-
-
-# sfl: Surface Fire Load (kg/m²)
-
-# -1 to 37 with mean of 9
-750818/t # 42 %
-
-
-
-# sfc0: Initial Surface Fuel Consumption (kg/m²)
-
-# ?????????????????
-# 0 to 4.9 with mean of 2.5
-747535/t # 41%
-
-
-# cbh: Canopy Base Height (m)
-# ???????????????/
-# -1 to 17 with mean of 7
-1447512/t # 81%
-
-# Essential Variables:
-
-# temp: Influences fire behavior
-# rh: Affects moisture content in fuels
-# ws: Influences fire spread
-# wd: Determines fire spread direction
-# pcp: Can help in estimating fire suppression needs
-# ffmc, dmc, dc: Measure fuel moisture content
-# isi, bui, fwi: Indices for predicting fire behavior
-# ros, hfi: Rate of fire spread and intensity
-
-
-# Specialized Variables:
-
-#   cfb, cfl, tfc, bfc: Advanced metrics for detailed fire behavior analysis
 
 ############## draft####
 
@@ -2747,6 +2698,7 @@ library(caret)
 library(dbscan)
 library(scales)
 set.seed(123)
+
 proj.path <- getwd()
 hotspots_raw <- read_csv(file.path(proj.path,'data', 'hotspots.csv'))
 hotspots_raw$rep_date <- as.POSIXct(hotspots_raw$rep_date, format = "%Y-%m-%d %H:%M:%S")
@@ -2856,24 +2808,3 @@ str(hotspots_peak$month)
 str(hotspots_peak$year)
 
 #####
-### T TEST ####
-
-# Top Event
-cluster_counts <- hotspots_peak %>%
-  group_by(event_cluster) %>%
-  summarise(event_count = n()) %>%
-  arrange(desc(event_count))
-
-
-max_cluster <- cluster_counts %>%
-  slice(2)
-
-
-
-31404
-
-event_31404 <- hotspots %>%
-  filter(event_cluster == 31404) 
-
-summary(event_31404)
-
