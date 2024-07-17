@@ -62,6 +62,10 @@ ggplot(event_5017, aes(x = temp)) +
 
 
 ###################### 
+
+Mann-Whitney U Test: A non-parametric test if the temperature data does not follow a normal distribution.
+Chi-Square Test: For categorical data (e.g., number of wildfire incidents per temperature range).
+
  
 # Formulating Hypotheses
 
@@ -73,42 +77,71 @@ ggplot(event_5017, aes(x = temp)) +
 # Example Hypotheses:
 
 
-#   Testing Temperature Effect:
+# Testing Temperature Effect:
 
-# H0: Mean temperature during wildfires is equal to the mean temperature during non-wildfire periods.
-# H1: Mean temperature during wildfires is different from the mean temperature during non-wildfire periods.
+# H0: Mean temperature during wildfires in 2023 is equal to the mean temperature during the 10-year period of wildfires.
+# H1: Mean temperature during wildfires in 2023 is different from the mean temperature during the 10-year period of wildfires.
+
+# This test aims to see if mean temperature during wildfires of 2023 is different from the average temperature during wildfires over the 10 year period.
+# It can help identify if 2023 was an anomalous year in terms of temperature during wildfires.
+# Values to take - mean temperature of 2023, mean temperature of 10 y period
 
 
-
-# Comparing Fire Weather Index (FWI) Across Years:
+# Comparing Fire Weather Index Across Years:
 
 # H0: Mean FWI is the same across different years.
 # H1: Mean FWI differs across different years.
 
-# Selecting Variables
-# Choose variables that could logically be influenced by or influence wildfires.
+
+
+# Variables that could be influenced by or influence wildfires.
 
 # Temperature (temp)
 # Relative Humidity (rh)
 # Wind Speed (ws)
+
 # Fire Weather Index (FWI)
 # Drought Code (DC)
+# Head Fire Intencity (HFI)
 
-# Data Manipulation
-# Calculating Means: Calculate mean values for the selected variables within specific groups (e.g., wildfire vs. non-wildfire periods).
-# Subsetting Data: Create subsets of data based on conditions (e.g., periods with wildfires and without wildfires).
-
-
+# Calculate mean values for the selected variables within specific groups.
+# Create subsets of data based on conditions.
 
 
-############# # Subsetting data by year
-data_2023 <- subset(hotspots_peak, year == 2023)
-data_2020 <- subset(hotspots_peak, year == 2020)
+
+
+#############
+
+# Prepare subsets for tests
+names(hotspots_peak)
+hotspots_peak$month
+data_2023 <- subset(hotspots_peak, year == 2023) # year with some historical fires
+data_2020 <- subset(hotspots_peak, year == 2020) # year with lower overall fires
+
+event_31404 # the most number of entries in one cluster (September of 2023)
+summary(event_31404)
+
+data_sep_all <- subset(hotspots_peak, month == "Sep") # Septembers of all 10 years
+summary(data_sep_all)
+
+data_sep_2023 <- subset(data_sep_all, year == 2023) # September in the year 2023
+summary(data_sep_2023)
+
+hotspots_peak # the dataset on the whole
+
+
+
 
 # Calculating mean values
+
 mean_fwi_2023 <- mean(data_2023$fwi, na.rm = TRUE)
 mean_fwi_2020 <- mean(data_2020$fwi, na.rm = TRUE)
-# Repeat for other years and variables as needed
+
+
+
+
+
+
 
 # Performing t-test between two years
 t_test_fwi <- t.test(data_2023$fwi, data_2020$fwi)
@@ -132,36 +165,20 @@ print(t_test_fwi)
 
 ######
  
-# Subset Data by Clusters:
-# Create subsets for each cluster.
-
-# Calculate Mean Values:
-# Calculate mean values of your variables of interest (e.g., FWI, temperature) for each cluster.
-
-# Perform t-Tests:
-# Compare the mean values between clusters using pairwise t-tests.
 
 
-# Example: Subsetting for event_5017 and event_31404
-cluster_5017 <- subset(hotspots_peak, event_cluster == 5017)
-cluster_31404 <- subset(hotspots_peak, event_cluster == 31404)
-# Repeat for other clusters as needed
-
-# Example: Calculating mean FWI for cluster 5017 and cluster 31404
+# Calculating mean FWI for cluster 5017 and cluster 31404
 mean_fwi_cluster_5017 <- mean(cluster_5017$fwi, na.rm = TRUE)
 mean_fwi_cluster_31404 <- mean(cluster_31404$fwi, na.rm = TRUE)
-# Repeat for other variables and clusters as needed
 
-# Example: t-test for FWI between cluster 5017 and cluster 31404
+# t-test for FWI between cluster 5017 and cluster 31404
 t_test_fwi_clusters <- t.test(cluster_5017$fwi, cluster_2$fwi)
 print(t_test_fwi_clusters)
-# Repeat for other pairs of clusters and variables as needed
 
-# Interpretation:
 # p-value < 0.05: Indicates a significant difference in the mean values between the clusters.
 # p-value >= 0.05: Indicates no significant difference.
 
-# Example Hypotheses:
+# Hypotheses:
 # H0: Mean FWI in Cluster 5017 is equal to mean FWI in Cluster 31404.
 # H1: Mean FWI in Cluster 5017 is different from mean FWI in Cluster 31404.
 
@@ -176,10 +193,12 @@ print(t_test_fwi_clusters)
 
 # Interpretation:
 #   p-value: The extremely small p-value (< 2.2e-16) indicates a highly significant difference in the mean FWIs between the two clusters.
+
 # Confidence Interval (CI): The 95% CI for the difference in means is from -10.319140 to -7.861541. This interval does not include 0, indicating a significant difference.
 # Sample Means: The mean FWI for Cluster 5017 is 27.31252, and for Cluster 31404, it is 36.40286.
-# Conclusion:
-#   There is a statistically significant difference in the mean FWIs between Cluster 5017 and Cluster 31404. Cluster 5017 has a significantly lower mean FWI compared to Cluster 31404. 
+
+# There is a statistically significant difference in the mean FWIs between Cluster 5017 and Cluster 31404. 
+# Cluster 5017 has a significantly lower mean FWI compared to Cluster 31404. 
 # This suggests that the wildfire events in Cluster 5017 had lower FWI values on average compared to those in Cluster 31404.
 
 
