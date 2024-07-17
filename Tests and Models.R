@@ -1,6 +1,6 @@
 
 
-
+# Find out how many individual entries each event has
 # Top Event
 cluster_counts <- hotspots_peak %>%
   group_by(event_cluster) %>%
