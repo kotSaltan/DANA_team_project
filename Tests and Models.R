@@ -1,4 +1,4 @@
-
+# Cluseters to work with ####
 
 # Find out how many individual entries each event has
 # Top Event
@@ -8,6 +8,18 @@ cluster_counts <- hotspots_peak %>%
   arrange(desc(event_count))
 
 cluster_counts
+
+cluster_summary <- hotspots_peak %>% 
+  group_by(event_cluster) %>% 
+  summarise(
+    mean_fwi = mean(fwi, na.rm = TRUE),
+    mean_temp = mean(temp, na.rm = TRUE),
+    mean_rh = mean(rh, na.rm = TRUE),
+    
+    
+    entries_count = n()
+  )
+
 
 
 
@@ -35,8 +47,6 @@ ggplot(event_31404, aes(x = hfi)) +
         axis.text.y = element_text(size = 10))
 
 
-# report  and 2nd report application of the for presentation (5th aug)
-
 
 # 5017 there are 60 events in this cluster
 
@@ -61,17 +71,34 @@ ggplot(event_5017, aes(x = temp)) +
 
 
 
-###################### 
 
-Mann-Whitney U Test: A non-parametric test if the temperature data does not follow a normal distribution.
-Chi-Square Test: For categorical data (e.g., number of wildfire incidents per temperature range).
 
- 
-# Formulating Hypotheses
 
-# Null Hypothesis (H0): Assumes no effect or no difference between groups.
 
-# Alternative Hypothesis (H1): Assumes an effect or a difference.
+
+
+# One-Sample t-Test:####
+
+# To determine if the mean of a single sample is significantly different
+# from a known or hypothesized population mean.
+
+# Sample Mean (mean of a sample)
+# Population Mean (the value comparing against)
+# Sample Size (number of observations in the sample)
+# Sample Standard Deviation
+# The sample should be continuous and approximately normally distributed.
+# The sample should be randomly selected.
+
+# The histogram should show a bell-shaped curve.
+# The Q-Q plot should show points roughly following the straight line.
+# Shapiro-Wilk Test: If p-value > 0.05, the data is normally distributed.
+# Kolmogorov-Smirnov Test: If p-value > 0.05, the data is normally distributed.
+
+# Output:
+# t-value: The test statistic.
+# p-value: Probability of observing the data if the null hypothesis is true.
+# Confidence Interval: Range where the true mean is likely to fall.
+# Sample Mean: Average of the sample data.
 
 
 # Example Hypotheses:
@@ -94,6 +121,107 @@ Chi-Square Test: For categorical data (e.g., number of wildfire incidents per te
 
 
 
+
+
+
+
+
+
+
+
+# Independent Two-Sample t-Test####
+
+# To determine if the means of two independent samples are significantly different.
+
+# Two independent samples.
+# Each sample should be continuous and approximately normally distributed.
+# The samples should be randomly selected.
+
+# Output:
+# t-value: The test statistic.
+# p-value: Probability of observing the data if the null hypothesis is true.
+# Confidence Interval: Range where the true difference in means is likely to fall.
+# Sample Means: Averages of the two sample data sets.
+
+# Hypotheses:
+
+# H0: The means of the two groups are equal.
+# H1: The means of the two groups are different.
+
+
+# Example Hypotheses:
+# H0: Mean FWI in 2023 is equal to mean FWI in 2020.
+# H1: Mean FWI in 2023 is different from mean FWI in 2020.
+
+
+# H0: Mean FWI in Cluster 5017 is equal to mean FWI in Cluster 31404.
+# H1: Mean FWI in Cluster 5017 is different from mean FWI in Cluster 31404.
+
+
+# Interpretation:
+# p-value < 0.05: Indicates a significant difference in the mean values between the groups.
+# p-value >= 0.05: Indicates no significant difference.
+
+
+
+# Comparing temperatures in 2023 vs. 2020
+t_test_result <- t.test(data_2023$temp, data_2020$temp)
+print(t_test_result)
+
+
+ 
+
+# Paired t-Test: ####
+# To determine if the mean difference between paired observations is significantly different from zero.
+
+
+# Paired samples (values before and after event).
+# The differences between paired observations should be approximately normally distributed.
+# The samples should be randomly selected.
+
+# Histogram of Differences: Should show a bell-shaped curve.
+# Q-Q Plot of Differences: Points should roughly follow the straight line.
+# Shapiro-Wilk Test on Differences: If p-value > 0.05, the differences are normally distributed.
+
+# Output:   
+# t-value: The test statistic.
+# p-value: Probability of observing the data if the null hypothesis is true.
+# Confidence Interval: Range where the true mean difference is likely to fall.
+# Sample Mean of Differences: Average of the differences between paired observations.
+
+
+# Example Hypotheses:
+
+# H0: The mean difference between paired observations is zero.
+# H1: The mean difference between paired observations is not zero.
+
+
+
+
+
+
+
+
+
+# Other tests to perform:
+# Mann-Whitney U Test: A non-parametric test if the temperature data does not follow a normal distribution.
+# Chi-Square Test: For categorical data (e.g., number of wildfire incidents per temperature range).
+
+ 
+
+
+
+
+
+
+
+
+
+
+# Compare temperature ####
+
+# Prepare data for tests
+
 # Variables that could be influenced by or influence wildfires.
 
 # Temperature (temp)
@@ -104,17 +232,12 @@ Chi-Square Test: For categorical data (e.g., number of wildfire incidents per te
 # Drought Code (DC)
 # Head Fire Intencity (HFI)
 
-# Calculate mean values for the selected variables within specific groups.
 # Create subsets of data based on conditions.
+# Calculate mean values for the selected variables within specific groups.
 
-
-
-
-#############
-
-# Prepare subsets for tests
 names(hotspots_peak)
 hotspots_peak$month
+
 data_2023 <- subset(hotspots_peak, year == 2023) # year with some historical fires
 data_2020 <- subset(hotspots_peak, year == 2020) # year with lower overall fires
 
@@ -130,41 +253,79 @@ summary(data_sep_2023)
 hotspots_peak # the dataset on the whole
 
 
-
-
 # Calculating mean values
-
-mean_fwi_2023 <- mean(data_2023$fwi, na.rm = TRUE)
-mean_fwi_2020 <- mean(data_2020$fwi, na.rm = TRUE)
-
-
-
-
-
-
-
-# Performing t-test between two years
-t_test_fwi <- t.test(data_2023$fwi, data_2020$fwi)
-print(t_test_fwi)
-
-# Repeat the t-test for other pairs of years as needed
-
-# Interpretation:
-# p-value < 0.05: Indicates a significant difference in the mean values between the years.
-# p-value >= 0.05: Indicates no significant difference.
-
-# Example Hypotheses:
-# H0: Mean FWI in 2023 is equal to mean FWI in 2020.
-# H1: Mean FWI in 2023 is different from mean FWI in 2020.
+#Temp
+mean_temp_sep_all <- mean(data_sep_all$temp, na.rm = TRUE)
+mean_temp_sep_all
+mean_temp_sep_2023 <- mean(data_sep_2023$temp, na.rm = TRUE)
+mean_temp_sep_2023
+mean_temp_event_31404 <- mean(event_31404$temp,na.rm = TRUE)
+mean_temp_event_31404
 
 
+# Check for normal distribution
+
+# Temp
+# Histograms
+hist(data_2023$temp, main="Temperature Distribution in 2023", xlab="Temperature")
+hist(data_2020$temp, main="Temperature Distribution in 2020", xlab="Temperature")
+hist(event_31404$temp, main="Temperature Distribution in Event 31404", xlab="Temperature")
+hist(data_sep_all$temp, main="Temperature Distribution in Septembers (2014-2023)", xlab="Temperature")
+hist(data_sep_2023$temp, main="Temperature Distribution in September 2023", xlab="Temperature")
+
+# Q-Q Plots
+qqnorm(data_2023$temp); qqline(data_2023$temp, col = "red")
+qqnorm(data_2020$temp); qqline(data_2020$temp, col = "red")
+qqnorm(event_31404$temp); qqline(event_31404$temp, col = "red")
+qqnorm(data_sep_all$temp); qqline(data_sep_all$temp, col = "red")
+qqnorm(data_sep_2023$temp); qqline(data_sep_2023$temp, col = "red")
+
+# Shapiro-Wilk Test
+
+set.seed(123)
+options(scipen = 999) # numeric format
+
+sample_2023 <- sample(data_2023$temp, 5000)
+shapiro.test(sample_2023)
+# W = 0.98352, p-value < 0.00000000000000022
+
+
+sample_2020 <- sample(data_2020$temp, 5000)
+shapiro.test(sample_2020)
+# W = 0.94733, p-value < 0.00000000000000022
+
+
+sample_event_31404 <- sample(event_31404$temp, 5000)
+shapiro.test(sample_event_31404)
+# W = 0.87, p-value < 0.00000000000000022
+
+
+sample_sep_all <- sample(data_sep_all$temp, 5000)
+shapiro.test(sample_sep_all)
+# W = 0.97818, p-value < 0.00000000000000022
+
+
+sample_sep_2023 <- sample(data_sep_2023$temp,5000)
+shapiro.test(sample_sep_2023)
+# W = 0.96513, p-value < 0.00000000000000022
+
+# All samples are not normally distributed.
+# Low W values and extremely small p-values
 
 
 
 
 
-######
+
+
+
+######################## DRAFT ####
+
+
+
  
+wilcox.test(data_2023$temp, data_2020$temp)
+kruskal.test(list(data_2023$temp, data_2020$temp, event_31404$temp))
 
 
 # Calculating mean FWI for cluster 5017 and cluster 31404
@@ -175,45 +336,8 @@ mean_fwi_cluster_31404 <- mean(cluster_31404$fwi, na.rm = TRUE)
 t_test_fwi_clusters <- t.test(cluster_5017$fwi, cluster_2$fwi)
 print(t_test_fwi_clusters)
 
-# p-value < 0.05: Indicates a significant difference in the mean values between the clusters.
-# p-value >= 0.05: Indicates no significant difference.
-
-# Hypotheses:
-# H0: Mean FWI in Cluster 5017 is equal to mean FWI in Cluster 31404.
-# H1: Mean FWI in Cluster 5017 is different from mean FWI in Cluster 31404.
 
 
-
-
-# The Welch Two Sample t-test results for comparing the Fire Weather Index (FWI) between Cluster 5017 and Cluster 31404 show:
-
-#   t-value: -14.757
-# Degrees of Freedom (df): 69.406
-# p-value: < 2.2e-16
-
-# Interpretation:
-#   p-value: The extremely small p-value (< 2.2e-16) indicates a highly significant difference in the mean FWIs between the two clusters.
-
-# Confidence Interval (CI): The 95% CI for the difference in means is from -10.319140 to -7.861541. This interval does not include 0, indicating a significant difference.
-# Sample Means: The mean FWI for Cluster 5017 is 27.31252, and for Cluster 31404, it is 36.40286.
-
-# There is a statistically significant difference in the mean FWIs between Cluster 5017 and Cluster 31404. 
-# Cluster 5017 has a significantly lower mean FWI compared to Cluster 31404. 
-# This suggests that the wildfire events in Cluster 5017 had lower FWI values on average compared to those in Cluster 31404.
-
-
-
-
-
-
-cluster_summary <- hotspots_peak %>% 
-  group_by(event_cluster) %>% 
-  summarise(
-    mean_fwi = mean(fwi, na.rm = TRUE),
-    mean_temp = mean(temp, na.rm = TRUE),
-    mean_rh = mean(rh, na.rm = TRUE),
-    entries_count = n()
-  )
 
 
 
