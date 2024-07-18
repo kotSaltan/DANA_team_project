@@ -204,10 +204,132 @@ print(t_test_result)
 
 
 # Other tests to perform:
-# Mann-Whitney U Test: A non-parametric test if the temperature data does not follow a normal distribution.
-# Chi-Square Test: For categorical data (e.g., number of wildfire incidents per temperature range).
 
+# Mann-Whitney U Test: ####
+# A non-parametric test if the temperature data does not follow a normal distribution.
+# See if there is a significant difference between the distributions of two independent samples.
+# Unlike t-tests, which compare means, the Mann-Whitney U Test compares medians.
+
+
+# Example Hypotheses:
+
+# H0: The distributions (medians) of the two groups are equal.
+# H1: The distributions (medians) of the two groups are different.
+
+# p-value < 0.05: Significant difference between the distributions.
+# p-value >= 0.05: No significant difference between the distributions.
+
+
+
+
+# Subsetting data for June and July
+data_june <- subset(hotspots_peak, month == "Jun" & year == 2023)
+data_july <- subset(hotspots_peak, month == "Jul" & year == 2023)
+
+# Visual inspection
+hist(data_june$temp, main="June Temperature Distribution", xlab="Temperature", col="blue", breaks=20)
+hist(data_july$temp, main="July Temperature Distribution", xlab="Temperature", col="red", breaks=20)
+boxplot(data_june$temp, data_july$temp, names=c("June", "July"), main="Temperature Comparison")
+
+# Perform Mann-Whitney U Test
+wilcox_test_result <- wilcox.test(data_june$temp, data_july$temp)
+print(wilcox_test_result)
+# a significant difference between the distributions of temperatures in June and July.
+# test shows that the temperature distributions in June and July are significantly different, 
+# meaning that one month had systematically higher or lower temperatures than the other. 
+
+# So if visually there is already a difference in means, the test will confirm it by rejection the H0
+
+
+
+# ANOVA (Analysis of Variance) Test: ####
+# To determine if there are significant differences between the means of three or more independent groups.
+
+# Multiple independent groups.
+# Each group should be normally distributed.
+# Homogeneity of variances (similar variances across groups).
+
+# Histograms: For each group to check normality.
+# Boxplots: To compare medians and variability.
+# Levene’s Test: To check for homogeneity of variances.
+
+
+# Output:
  
+# F-value: The test statistic.
+# p-value: Probability of observing the data if the null hypothesis is true.
+# Group Means: Averages of each group’s data.
+
+# Example Hypotheses:
+
+# H0: All group means are equal.
+# H1: At least one group mean is different.
+
+
+# Subsetting data for June, July, and August
+data_june <- subset(hotspots_peak, month == "Jun" & year == 2023)
+data_july <- subset(hotspots_peak, month == "Jul" & year == 2023)
+data_august <- subset(hotspots_peak, month == "Aug" & year == 2023)
+
+# Combining data into a single data frame with a group identifier
+data_combined <- rbind(
+  data.frame(temp=data_june$temp, month="June"),
+  data.frame(temp=data_july$temp, month="July"),
+  data.frame(temp=data_august$temp, month="August")
+)
+
+# Visual inspection
+hist(data_june$temp, main="June Temperature Distribution", xlab="Temperature", col="blue", breaks=20)
+hist(data_july$temp, main="July Temperature Distribution", xlab="Temperature", col="red", breaks=20)
+hist(data_august$temp, main="August Temperature Distribution", xlab="Temperature", col="green", breaks=20)
+boxplot(temp ~ month, data=data_combined, main="Temperature Comparison")
+
+# Perform ANOVA
+anova_result <- aov(temp ~ month, data=data_combined)
+summary(anova_result)
+# The p-value is extremely small (<0.05), 
+# indicating a significant difference between at least one pair of group means.
+
+
+
+# Chi-Square Test: ####
+# For categorical data (e.g., number of wildfire incidents per temperature range).
+# To determine if there is a significant association between two categorical variables.
+  
+# Two categorical variables.
+# Observations should be independent.
+# Expected frequency in each category should be at least 5.
+ 
+# Contingency Table: Shows the frequency distribution of categorical variables.
+ 
+# Output:
+# Chi-Square Statistic (X^2): Measures the discrepancy between observed and expected frequencies.
+# p-value: Probability of observing the data if the null hypothesis is true.
+ 
+# Example Hypotheses:
+ 
+# H0: There is no association between the categorical variables.
+# H1: There is an association between the categorical variables.
+
+# p-value < 0.05: Reject H0, significant association between variables.
+# p-value >= 0.05: Fail to reject H0, no significant association between variables.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -324,6 +446,11 @@ shapiro.test(sample_sep_2023)
 
 
  
+
+
+
+
+
 wilcox.test(data_2023$temp, data_2020$temp)
 kruskal.test(list(data_2023$temp, data_2020$temp, event_31404$temp))
 
