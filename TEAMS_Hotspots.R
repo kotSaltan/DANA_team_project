@@ -1,39 +1,40 @@
+# Loading Libraries and Reading Data ####
 
-# Load the necessary packages ####
-
-
-library(readr)
-library(readxl)
-library(tidyverse)
-library(lubridate)
-library(ggplot2)
-library(corrplot)
+# Load necessary libraries
+library(readr)      # For reading CSV files
+library(dplyr)      # For data manipulation
+library(lubridate)  # For date-time manipulation
+library(ggplot2)    # For data visualization
+library(dbscan)     # For DBSCAN clustering
+library(ggmap)      # For mapping
+library(geosphere)  # For geographic calculations
+library(scales)     # For scaling functions in ggplot2
+library(tidyr)      # For data tidying 
 library(gridExtra)
-library(reshape2)
-library(GGally)
-library(caret)
-library(dbscan)
-library(scales)
+library(corrplot)
+
+
+# Set seed for reproducibility
 set.seed(123)
 
-# Create a new RProject, create data folder with the datasets, set working directory.
+# Register Stadia Maps API key
+api_key <- "45381642-ef1c-4009-90a4-e54942f742c7"
+register_stadiamaps(key = api_key)
 
 # Get the name of working directory in RProject
 proj.path <- getwd()
 
-# Read the weather datasets
-hotspots_raw <- read_csv(file.path(proj.path,'data', 'hotspots.csv'))
+# Read the raw hotspots data from the data folder in the RProject directory
+hotspots_raw <- read_csv(file.path(proj.path, 'data', 'hotspots.csv'))
 
-
-
-# Check the date format
+# Convert rep_date to POSIXct format
 hotspots_raw$rep_date <- as.POSIXct(hotspots_raw$rep_date, format = "%Y-%m-%d %H:%M:%S")
-str(hotspots_raw$rep_date)
-# Add year and month columns
-hotspots_raw$year <- year(hotspots_raw$rep_date)
-hotspots_raw$month <- month(hotspots_raw$rep_date, label = TRUE, abbr = TRUE)  # Months as factor (and named)
 
-# Subset the dataframe to include only data from 2014 to the end of 2023
+# Add year and month columns to the data
+hotspots_raw$year <- year(hotspots_raw$rep_date)
+hotspots_raw$month <- month(hotspots_raw$rep_date, label = TRUE, abbr = TRUE)
+
+# Filter the data to include only records from 2014 to 2023
 hotspots <- hotspots_raw %>%
   filter(year >= 2014 & year <= 2023)
 
@@ -43,30 +44,16 @@ str(hotspots)
 # Check the variable names
 names(hotspots)
 
-
-
-# write.csv(hotspots, file = "hotspots.csv", row.names = FALSE)
-
-
-
-
-# Heatmap of Events####
-
-
-
-# To see on what time period to focus on 
-# and be able to compare year to year
-
+# Visualizing and Focusing on Specific Time Periods ####
 
 # Summarize the number of fire events per year and month
+# This helps us understand the distribution of fire events over time
 fire_events_per_month <- hotspots %>%
   group_by(year, month) %>%
   summarise(n_events = n(), .groups = 'drop') 
 
-# Print the summary table
+# Print the summary table to examine the data
 print(fire_events_per_month)
-
-
 
 # Create a bar plot to visualize the number of fire events per month
 ggplot(fire_events_per_month, aes(x = month, y = n_events)) +
@@ -82,18 +69,14 @@ ggplot(fire_events_per_month, aes(x = month, y = n_events)) +
         axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 10))
 
-
-
-# Reshape the data to a wide format
+# Reshape the data to a wide format for easier visualization and comparison
 fire_events_wide <- fire_events_per_month %>%
   pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
 
-# Print the wide format summary table
+# Print the wide format summary table to inspect the reshaped data
 print(fire_events_wide)
 
-
-
-# Define the color palette
+# Define the color palette for the heatmap
 colors <- c("gray95", "gray80", "yellow", "orange", "darkred", "black")
 
 # Define the values for the color breaks
@@ -114,46 +97,27 @@ ggplot(fire_events_per_month, aes(x = month, y = factor(year), fill = n_events))
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
-
-
-
-# subset for May-Oct####
-
-# FROM THE PLOT AND SUMMARY TABLE WE CAN CHOOSE TO FOCUS ON EVENTS FROM MAY TO OCTOBER
-
-# Subset the data for the months from May to October
+# Focus on the peak fire season: May to October
+# Filter the data to include only these months
 hotspots_peak <- hotspots %>%
   filter(month(rep_date) %in% c(5, 6, 7, 8, 9, 10))
 
-# write.csv(hotspots_peak, "hotspots_May_Oct.csv", row.names = FALSE)
-
-
-# MAKE A HEATMAP
-# Summarize the number of fire events per year and month
+# Summarize the number of fire events per year and month for the peak season
 fire_events_per_month_subset <- hotspots_peak %>%
   group_by(year, month) %>%
-  summarise(n_events = n()) %>%
-  ungroup()
+  summarise(n_events = n(), .groups = 'drop')
 
-# Print the summary table
+# Print the summary table to examine the peak season data
 print(fire_events_per_month_subset)
 
-
-# Reshape the data to a wide format
+# Reshape the data to a wide format for the peak season
 fire_events_subset_wide <- fire_events_per_month_subset %>%
   pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
 
-# Print the wide format summary table
+# Print the wide format summary table for the peak season
 print(fire_events_subset_wide)
 
-
-# Define the color palette
-colors <- c("gray95", "gray80", "yellow", "orange", "darkred", "black")
-
-# Define the values for the color breaks
-values <- c(0, 500, 1000, 2000, 10000, 350000)
-
-# Create a heatmap to visualize the number of fire events per month and year
+# Create a heatmap to visualize the number of fire events per month and year for the peak season
 ggplot(fire_events_per_month_subset, aes(x = month, y = factor(year), fill = n_events)) +
   geom_tile(color = "white") +
   scale_fill_gradientn(colors = colors, values = rescale(values), labels = scales::comma) +
@@ -168,103 +132,212 @@ ggplot(fire_events_per_month_subset, aes(x = month, y = factor(year), fill = n_e
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
+# Iteration Process to Find Best Parameters ####
 
 
-
-
-
-# Clustering using DBSCAN ####
-
-
-
-# Identify specific events using dbscan by clustering based on latitude, longitude and date
 
 # Prepare the data for clustering (latitude, longitude, date)
 event_data <- hotspots_peak %>%
-  select(lat, lon, rep_date)
-
-# Convert date to numeric (Unix timestamp)
-# POSIXct shows the number of seconds since January 1, 1970 (the Unix epoch).
-# Transforms the date into a continuous numeric variable that can be used for clustering.
-event_data$date_numeric <- as.numeric(as.POSIXct(event_data$rep_date))
-
-# Adjust temporal scaling
-# Multiply by 0.0001 to be in a similar range as the latitude and longitude values,
-# for clustering algorithm to work with them together.
-event_data$date_scaled <- event_data$date_numeric * 0.0001  # Adjusted scaling factor
+  select(lat, lon, rep_date) %>%  # Select necessary columns
+  mutate(
+    lat_km = lat * 111,  # Convert latitude from degrees to kilometers (1 degree ~ 111 km)
+    lon_km = lon * 111,  # Convert longitude from degrees to kilometers (1 degree ~ 111 km)
+    time_hours = as.numeric(difftime(rep_date, min(rep_date), units = "hours"))  # Calculate time in hours from the first recorded event
+    # Note: time_hours is used to include the time component in clustering
+    # This ensures events occurring within a certain time frame (20 hours) are considered together
+  ) %>%
+  select(lat_km, lon_km, time_hours)  # Reassign event_data to include only the necessary columns
 
 
+# # Function to apply DBSCAN and count clusters
+# apply_dbscan <- function(data, eps_value, minPts_value) {
+#   db <- dbscan(data, eps = eps_value, minPts = minPts_value)  # Apply DBSCAN
+#   data$event_cluster <- db$cluster  # Add cluster labels
+#   num_clusters <- length(unique(data$event_cluster)) - 1  # Count clusters excluding noise (0)
+#   num_noise <- sum(data$event_cluster == 0)  # Count noise points
+#   cat("eps =", eps_value, ", minPts =", minPts_value, ": Number of clusters =", num_clusters, ", Number of noise points =", num_noise, "\n")
+#   return(num_clusters)
+# }
+#
+# # Parameters for the loop
+# desired_clusters <- 16956  # Official number of fires
+# best_eps <- NA  # Placeholder for best eps value
+# best_minPts <- NA  # Placeholder for best minPts value
+# best_diff <- Inf  # Placeholder for the smallest difference
+# 
+# # Iterate over eps and minPts values to find the best match
+# for (eps_val in seq(5, 15, by = 1)) {  # Adjust range and step size as needed
+#   for (minPts_val in seq(1, 5, by = 1)) {  # Adjust range and step size as needed
+#     num_clusters <- apply_dbscan(event_data, eps_val, minPts_val)
+#     diff <- abs(num_clusters - desired_clusters)
+#     if (diff < best_diff) {  # Check if this is the best match so far
+#       best_eps <- eps_val
+#       best_minPts <- minPts_val
+#       best_diff <- diff
+#     }
+#   }
+# }
+# 
+# # Print out the best parameters found
+# cat("Best eps value:", best_eps, "\n")  # Best eps value: 12
+# cat("Best minPts value:", best_minPts, "\n")  # Best minPts value: 1
 
-# First need to find what parameters of dbscan best match the data
+# The best parameters found mean that fire events within a 12 km radius are grouped into clusters, 
+# and even a single event can form a cluster if it occurs alone within that distance during the given time span.
 
-# Function to apply DBSCAN and count clusters to find the best match
-apply_dbscan <- function(data, eps_value) {
-  db <- dbscan(data[, c("lat", "lon", "date_scaled")], eps = eps_value, minPts = 5)
-  
-  # Add cluster labels to the original dataset
-  data$event_cluster <- db$cluster
-  
-  # Count the number of unique clusters
-  num_clusters <- length(unique(data$event_cluster)) - 1  # Excluding noise (cluster 0)
-  
-  # Count the number of noise points
-  num_noise <- sum(data$event_cluster == 0)
-  
-  # Print the number of clusters and noise points
-  cat("eps =", eps_value, ": Number of clusters =", num_clusters, ", Number of noise points =", num_noise, "\n")
-  
-  return(num_clusters)
-}
+# Final Clustering and Analysis ####
 
+# Apply DBSCAN with the best parameters found
+best_eps <- 12
+best_minPts <- 1
+best_db <- dbscan(event_data, eps = best_eps, minPts = best_minPts)
 
-# Experiment with different eps values
-best_eps <- 0.3  # set the initial guess for the eps parameter in the DBSCAN algorithm
-best_diff <- Inf # to see smallest change from cluster numbers to desired_clusters number
-desired_clusters <- 16956 # information from official source
-
-# Iterate over eps values to find best match
-for (eps_val in seq(0.1, 1, by = 0.1)) {
-  num_clusters <- apply_dbscan(event_data, eps_val)
-  diff <- abs(num_clusters - desired_clusters)
-  
-  if (diff < best_diff) {
-    best_eps <- eps_val
-    best_diff <- diff
-  }
-}
-
-
-# Print out the best value of eps for clustering
-cat("Best eps value:", best_eps, "\n")
-
-
-# Apply DBSCAN with the best eps to the prepared subset
-best_db <- dbscan(event_data[, c("lat", "lon", "date_scaled")], eps = best_eps, minPts = 5)
-
-# Create a new variable - cluster
+# Add cluster labels to the original dataset
 hotspots_peak$event_cluster <- best_db$cluster
 
-# Filter out noise
+# Filter out noise (cluster 0)
+# Cluster 0 represents noise points, which are outliers that do not belong to any cluster.
 hotspots_peak <- hotspots_peak %>%
   filter(event_cluster != 0)
 
-
-# Count the number of unique clusters
+# Number of clusters identified by DBSCAN
 cat("Number of clusters identified by DBSCAN:", length(unique(hotspots_peak$event_cluster)), "\n")
 
+# Output: Number of clusters identified by DBSCAN: 17400
+# This tells us that there are 17,400 clusters identified in the dataset after removing noise.
+
+# Summary of clusters
+cluster_summary <- hotspots_peak %>%
+  group_by(event_cluster) %>%
+  summarise(
+    start_date = min(rep_date),  # Get the earliest date in the cluster
+    end_date = max(rep_date),  # Get the latest date in the cluster
+    num_events = n(),  # Count the number of events in the cluster
+    latitude = mean(lat),  # Calculate the average latitude of events in the cluster
+    longitude = mean(lon)  # Calculate the average longitude of events in the cluster
+  )
+
+# Print the summary of clusters
+print(cluster_summary)
+
+
+# The 'cluster_summary' table provides a detailed summary of each cluster:
+# - event_cluster: The ID of the cluster
+# - start_date: The earliest date of an event in the cluster
+# - end_date: The latest date of an event in the cluster
+# - num_events: The total number of events in the cluster
+# - latitude: The average latitude of the events in the cluster
+# - longitude: The average longitude of the events in the cluster
+
+# Get the top 5 largest clusters directly from the cluster_summary
+top_clusters <- cluster_summary %>%
+  arrange(desc(num_events)) %>%
+  slice_head(n = 5)  # Get the top 5 clusters
+
+# Print the top clusters
+print(top_clusters)
+
+# Output:
+#   event_cluster start_date          end_date            num_events latitude longitude
+# 1          4792 2018-08-04 16:56:00 2018-08-25 07:15:00      66933     53.0     -126.
+# 2          3120 2017-07-28 20:57:00 2017-08-13 02:04:00      61666     52.7     -124.
+# 3         14487 2023-09-14 03:57:00 2023-09-24 04:08:00      56406     58.7     -121.
+# 4          4790 2018-08-05 12:20:00 2018-08-22 20:06:00      34712     54.2     -125.
+# 5          3125 2017-07-23 02:47:00 2017-08-13 05:00:00      30241     51.0     -121.
+
+# Plot the events in the largest clusters 
+ggplot(hotspots_peak %>% filter(event_cluster %in% top_clusters$event_cluster), 
+       aes(x = lon, y = lat, color = factor(event_cluster))) +
+  geom_point(alpha = 0.5, size = 2) +
+  labs(title = "Top 5 Largest Fire Clusters",
+       x = "Longitude",
+       y = "Latitude",
+       color = "Cluster ID") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
 
 
 
+# Function to plot multiple clusters on the same map with predefined colors
+plot_clusters_on_map <- function(cluster_ids, data, zoom_level = 10) {
+  # Filter data for the specific clusters
+  cluster_data <- data %>% filter(event_cluster %in% cluster_ids)
+  
+  # Define the bounding box for the map based on the clusters' coordinates
+  bbox <- c(left = min(cluster_data$lon) - 0.3, 
+            bottom = min(cluster_data$lat) - 0.3, 
+            right = max(cluster_data$lon) + 0.3, 
+            top = max(cluster_data$lat) + 0.3)
+  
+  # Get the map from Stadia Maps API
+  map <- get_stadiamap(bbox = bbox, zoom = zoom_level, maptype = "stamen_terrain")
+  
+  
+  
+  # Plot the clusters data on the map
+  print(ggmap(map) +
+          geom_point(data = cluster_data, aes(x = lon, y = lat, color = factor(event_cluster)), size = 1, alpha = 0.5, shape = 21) +  
+          labs(title = "Clusters of Fire Events", 
+               x = "Longitude", 
+               y = "Latitude", 
+               color = "Cluster ID") +
+          theme_minimal() +
+          theme(legend.position = "bottom") +
+          scale_color_manual(values = c("darkred", "orange", "yellow")) # Custom colours
+  ) 
+}
 
-# Filter for a specific cluster (event of fire)
-event_500 <- hotspots_peak %>%
-  filter(event_cluster == 500) # Replace with the specific cluster number
-# OUTPUT 27 observations lat 53 lon -125 on 02 August 2014
 
 
-event_2000 <- hotspots_peak %>%
-  filter(event_cluster == 2000)
-# OUTPUT 5 observations lat 49 lon -119 on 3 July 2015
+# Plot the top 5 clusters individually
+plot_clusters_on_map(top_clusters$event_cluster[1], hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(top_clusters$event_cluster[2], hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(top_clusters$event_cluster[3], hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(top_clusters$event_cluster[4], hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(top_clusters$event_cluster[5], hotspots_peak, zoom_level = 10)
+
+# The plots show large areas affected by fires.
+# Each fire cluster covers a big region, indicating major fire events.
+# Fire events within clusters are closely packed, showing high fire activity.
+# The fires follow the terrain, influenced by vegetation and topography.
+
+# Kelowna Fire Event Analysis ####
+
+# Known fire near Kelowna in 2023
+kelowna_fire <- data.frame(
+  fire_name = "McDougall Creek Fire",
+  start_date = as.POSIXct("2023-08-16"),
+  end_date = as.POSIXct("2023-08-30"),
+  latitude = 49.8821,
+  longitude = -119.4370
+)
+
+# Calculate the distance from each cluster to Kelowna fire
+cluster_summary <- cluster_summary %>%
+  mutate(
+    distance_to_kelowna_fire = distHaversine(
+      matrix(c(longitude, latitude), ncol = 2),
+      matrix(c(kelowna_fire$longitude, kelowna_fire$latitude), ncol = 2)
+    ) / 1000  # Convert meters to kilometers
+  )
+
+# Filter clusters that are within 50 km and have suitable dates
+kelowna_clusters <- cluster_summary %>%
+  filter(
+    distance_to_kelowna_fire < 50 &  # Check if within 50 km
+      start_date <= kelowna_fire$end_date &  # Check if cluster starts before the known fire ends
+      end_date >= kelowna_fire$start_date    # Check if cluster ends after the known fire starts
+  )
+
+# Print the matching clusters
+print(kelowna_clusters)
+
+
+# Plot the matching clusters on the map
+plot_clusters_on_map(kelowna_clusters$event_cluster, hotspots_peak, zoom_level = 10)
+
+
+
 
 
 
@@ -375,7 +448,8 @@ hotspots %>%
   select(source) %>% 
   count(source)
 
-sourse_cluster_count <- hotspots %>%
+
+sourse_cluster_count <- hotspots_peak %>%
   group_by(source) %>%
   summarise(num_clusters = n_distinct(event_cluster))
 
@@ -395,7 +469,7 @@ hotspots %>%
   select(sensor) %>% 
   count(sensor)
 
-sensor_cluster_count <- hotspots %>%
+sensor_cluster_count <- hotspots_peak %>%
   group_by(sensor) %>%
   summarise(num_clusters = n_distinct(event_cluster))
 
@@ -415,7 +489,7 @@ hotspots %>%
   select(satellite) %>% 
   count(satellite)
 
-satellite_cluster_count <- hotspots %>%
+satellite_cluster_count <- hotspots_peak %>%
   group_by(satellite) %>%
   summarise(num_clusters = n_distinct(event_cluster))
 
@@ -1245,7 +1319,7 @@ event_outliers <- hotspots_peak %>%
 
 # Check single event
 dim(event_outliers)
-# view(event_outliers)
+View(event_outliers)
 
 
 
@@ -1256,12 +1330,13 @@ dim(event_outliers)
 # The data points from July 19, 2014, are all in the same cluster, showing that the clustering algorithm grouped them correctly.
 
 # Filter the specific event cluster and near events
-event_McAllister <- hotspots %>%
-  filter(event_cluster %in% 370:372) 
+event_McAllister <- hotspots_peak %>%
+  filter(event_cluster == 130) 
 
 # Calculate monthly averages for July 2014
 monthly_avg_july <- monthly_avg %>%
   filter(year == 2014 & month == "Jul")
+
 
 # Plot the weather conditions with average lines
 ggplot(event_McAllister, aes(x = rep_date)) +
@@ -1287,6 +1362,8 @@ weather_summary <- event_McAllister %>%
 # Print the summary table
 print(weather_summary)
 
+# Plot a specific cluster, e.g., cluster 130
+plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
 
 # This graph shows the weather conditions at McAllister Creek on July 19, 2014,
 # including temperature, relative humidity, and wind speed.
