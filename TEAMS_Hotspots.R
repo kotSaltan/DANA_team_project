@@ -639,17 +639,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = y
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-# The boxplots display the distribution of temperature across different years during the peak season. 
-# The median temperatures for each year fall between 20°C and 25°C. 
-# The year 2019 stands out with a slightly lower median temperature compared to other years. 
-# There are significant outliers present in all years, particularly noticeable in 2014, 2017, 2018, and 2023,
-# showing days with extremely high or low temperatures.
-
-# The lineplots illustrate how temperature fluctuates over the months for different years. 
-# There is a clear seasonal pattern where temperatures peak around July and August, then decrease towards October. 
-# Some years, like 2014 and 2021, show higher peaks in temperature, indicating hotter summer months compared to other years. 
-# The overall trend remains consistent with the expected seasonal variations in temperature.
-
 
 # 4.2 Relative Humidity (%)####
 
@@ -679,12 +668,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(year), group = yea
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-# The boxplots show RH distribution across peak season years. 
-# Median RH generally falls between 30% and 40%. In 2019, median RH values are higher, indicating more humidity. 
-# All years have significant outliers, especially in 2014, 2017, and 2021, showing extremely high RH days.
-
-# The lineplots shows RH trends over months for different years. RH values typically increase from August to October. 
-# Notable peaks in RH are seen in 2014 and 2018, indicating higher humidity during those periods.
 
 # 4.3 Wind Speed (km/h) ####
 
@@ -711,16 +694,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = yea
        color = "Year") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-# The boxplots show the distribution of wind speed across different years during the peak season. 
-# The median wind speeds for each year generally fall between 2 and 3 km/h. 
-# There are significant outliers present in all years, particularly noticeable in 2014, 2017, and 2020, 
-# showing days with extremely high wind speeds.
-# 
-# The lineplots show how wind speed fluctuates over the months for different years. 
-# There is a clear seasonal pattern where wind speeds tend to be higher in the summer months and decrease towards October. 
-# Some years, like 2014 and 2020, show more pronounced peaks in wind speed, indicating periods of higher wind speeds compared to other years. 
-# The overall trend remains consistent with expected seasonal variations in wind speed.
+summary(hotspots_peak$ws)
 
 
 # 4.4 Wind direction (degrees) 
@@ -734,10 +708,7 @@ hotspots_peak <- hotspots_peak %>%
 windRose(mydata = hotspots_peak, ws = "ws_m_s", wd = "wd", 
          main = "Wind Rose", paddle = FALSE)
 
-# Most of the wind comes from the west and southwest.
-# Regions east and north of areas with strong western, southern, and southwestern winds
-# should be careful, as these winds can quickly spread fires.
-# Wind patterns are important for wildfire management.
+
 
 
 # 4.5 Precipitation (mm) ####
@@ -766,18 +737,6 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-
-
-# The boxplots display the distribution of precipitation (pcp) across different years during the peak season.
-# The median values for precipitation are consistently very low, often close to zero. 
-# Despite this, there are significant outliers in every year, particularly in 2019 and 2020, 
-# showing days with high precipitation values. These outliers indicate that certain days had much higher than average rainfall, 
-# which can affect fire behavior and the environment.
-# 
-# The lineplots illustrate how average monthly precipitation fluctuates over the years. 
-# There is a notable peak in July and August for several years, with some years, like 2019 and 2020, 
-# showing higher average precipitation during these months. 
-# This suggests that these periods experienced more rainfall, which can impact fire dynamics differently than drier periods.
 
 
 # Even after removing one extreme outlier, there are still many high precipitation values. 
@@ -848,17 +807,6 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = ws)) +
         axis.text.y = element_text(size = 10))
 
 
-# The boxplots now show a more consistent distribution of temperatures across different years.
-# The majority of the years have median temperatures between 20°C and 25°C.
-# The extreme outliers have been reduced, providing a clearer view of the central temperature tendencies.
-
-# The median RH values generally remain between 30% and 40% across the years.
-# 2019 still shows higher median RH, indicating more humid conditions.
-# Significant outliers have been reduced, giving a better understanding of the general RH trends.
-
-# Median wind speeds for each year are now clearly visible, generally falling between 7 and 10 km/h.
-# The removal of outliers helps to see typical wind speeds more accurately.
-# The boxplots show that some years, like 2019 and 2021, still have a wider range of wind speeds.
 
 
 # 5. Fire Indices ####

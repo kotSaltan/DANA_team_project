@@ -834,7 +834,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
 ```
 
 
-*The median wind speeds generally fall between 2 and 3 km/h.\
+*The median wind speeds generally fall between 7 and 9 km/h.\
 There are significant outliers in all years, particularly noticeable in 2014, 2015, and 2018,\
 there were days with extremely high wind speeds.*
 
