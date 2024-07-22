@@ -833,12 +833,6 @@ print(summary_fire_indices)
 # 70-85: Dry conditions; fuels are easily ignitable.
 # 85-101: Very dry conditions; fuels are highly ignitable and fires can spread rapidly.
 
-# The values in the dataset indicate that during the peak season,
-# the FFMC values are generally high, with a median around 91.50 and a maximum of 99.00.
-# This suggests that the fine fuels are often in a dry state,
-# making them highly ignitable and prone to rapid fire spread.
-
-
 
 # Plot histogram for FFMC
 ggplot(hotspots_peak, aes(x = ffmc)) +
@@ -871,14 +865,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = y
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-# The line plot shows that FFMC values peak every year during the fire season,
-# indicating drier conditions that make it easier for fires to start.
 
-# The boxplots show that most years have high FFMC values above 90,
-# meaning conditions are very dry and prone to fires. Only 2020 shows slightly lower dryness.
-
-# The histogram reveals that most FFMC values from 2014 to 2023 are between 85 and 99,
-# confirming consistently dry conditions.
 
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
@@ -897,10 +884,7 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = ffmc)) +
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
-# After removing outliers, the boxplots for FFMC show a more consistent distribution across the years. 
-# The median values are mostly above 90, indicating dry conditions suitable for fire spread. 
-# The removal of outliers helps in clearly highlighting the typical FFMC values, 
-# making it easier to compare yearly trends.
+
 
 
 # 5.2 Duff Moisture Code ####
@@ -951,17 +935,9 @@ ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = ye
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-# The histogram shows that most DMC values range between 0 and 100,
-# with a peak around 50-100. Values above 200 are less common but indicate long dry periods.
 
-# The boxplot for each year reveals that 2017 and 2018 had particularly high outliers,
-# indicating extremely dry conditions that could lead to fires.
-# On the other hand, 2016 and 2019 had lower DMC values, showing less severe drought.
 
-# The line plot indicates that DMC values peak in late summer (July-August)
-# and decrease in autumn.
-# This shows that mid to late summer is typically drier, 
-# the risk of fire ignition and spread is high during these months.
+
 
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
@@ -980,10 +956,7 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = dmc)) +
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
-# After removing the outliers, the DMC values became more consistent across different years. 
-# The median values now mostly fall between 50 and 100, providing a clearer picture of typical drought conditions.
-# While 2017 and 2018 still show higher values, the extremes have been reduced, 
-# offering a more accurate representation of the overall trends in drought conditions.
+
 
 
 # 5.3 Drought Code ####
@@ -1035,19 +1008,9 @@ ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = yea
 # and the chance for deep-burning fires.
 # Higher DC values usually mean longer dry periods and can show how severe fire seasons might be.
 
-# The histogram of DC values from 2014 to 2023 shows most values are between 300 and 600,
-# peaking around 500. This means BC often has conditions that can lead to deep-burning fires.
 
-# The boxplot of DC values across years show the variability and trends in drought conditions over time.
-# 2017 and 2018: These years have higher median and upper whisker values,
-# meaning very dry conditions, likely leading to severe fire seasons.
-# 2016 and 2019: These years show lower DC values, 
-# suggesting wetter conditions and potentially less severe fire activity.
 
-# The line plot of DC values by month shows a clear seasonal trend,
-# DC values increase during the summer months (July to August) and decrease in the autumn.
-# This occurs at the time of the peak fire season.
-# There are a lot of high DC values, more than 500, it shows conditions for deep-burning fires.
+
 
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
@@ -1066,12 +1029,7 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = dc)) +
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
 
-# After removing the outliers from the DC (Drought Code) data, 
-# the boxplots show a clearer distribution of the DC values across different years. 
-# The median DC values are more consistently visible, generally falling between 200 and 500. 
-# The range of the data has been reduced, with fewer extreme outliers, 
-# providing a more accurate representation of typical drought conditions. 
-# This cleaner view helps in understanding the trends and variations in drought conditions more clearly.
+
 
 # 5.4 Compare indices trends to timeline of fire events####
 
