@@ -1,0 +1,1006 @@
+---
+title: "Report on Hotspots Data from Canada BC (2014-2023)"
+author: "Team"
+date: "2024-07-22"
+output: 
+  html_document:
+    theme: flatly
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Loading Libraries and Reading Data
+
+```{r libraries, include=FALSE}
+
+# Load necessary libraries
+library(readr) 
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(dbscan) 
+library(ggmap)
+library(geosphere)
+library(scales)
+library(tidyr)
+library(gridExtra)
+library(corrplot)
+library(openair)
+```
+
+
+```{r, read data}
+# Set seed for reproducibility
+set.seed(123)
+
+# Register Stadia Maps API key
+api_key <- "45381642-ef1c-4009-90a4-e54942f742c7"
+register_stadiamaps(key = api_key)
+
+# Get the name of working directory in RProject
+proj.path <- getwd()
+
+# Read the raw hotspots data from the data folder in the RProject directory
+hotspots_raw <- read_csv(file.path(proj.path, 'data', 'hotspots.csv'))
+
+```
+
+
+### Subset for period 2014-2023, add month and day columns
+
+```{r dates}
+# Convert rep_date to POSIXct format
+hotspots_raw$rep_date <- as.POSIXct(hotspots_raw$rep_date, format = "%Y-%m-%d %H:%M:%S")
+
+# Add year and month columns to the data
+hotspots_raw$year <- year(hotspots_raw$rep_date)
+hotspots_raw$month <- month(hotspots_raw$rep_date, label = TRUE, abbr = TRUE)
+
+# Filter the data to include only records from 2014 to 2023
+hotspots <- hotspots_raw %>%
+  filter(year >= 2014 & year <= 2023)
+```
+
+
+### Visualizing and Focusing on Specific Time Periods
+
+```{r}
+# Summarize the number of fire events per year and month
+# This helps us understand the distribution of fire events over time
+fire_events_per_month <- hotspots %>%
+  group_by(year, month) %>%
+  summarise(n_events = n(), .groups = 'drop') 
+
+```
+
+
+```{r, echo=FALSE}
+# Create a bar plot to visualize the number of fire events per month
+ggplot(fire_events_per_month, aes(x = month, y = n_events)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(title = "Number of Fire Events per Month",
+       x = "Month",
+       y = "Number of Fire Events") +
+  scale_y_continuous(labels = scales::comma) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+```
+
+
+```{r, echo=FALSE}
+# Reshape the data to a wide format for easier visualization and comparison
+fire_events_wide <- fire_events_per_month %>%
+  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
+```
+
+
+```{r}
+# Print the wide format summary table to inspect the reshaped data
+print(fire_events_wide)
+```
+
+
+```{r heatmap, echo=FALSE}
+# Define the color palette for the heatmap
+colors <- c("gray95", "gray80", "yellow", "orange", "darkred", "black")
+
+# Define the values for the color breaks
+values <- c(0, 500, 1000, 2000, 10000, 350000)
+
+# Create a heatmap to visualize the number of fire events per month and year
+ggplot(fire_events_per_month, aes(x = month, y = factor(year), fill = n_events)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = colors, values = rescale(values), labels = scales::comma) +
+  labs(title = "Number of Fire Events per Month and Year",
+       x = "Month",
+       y = "Year",
+       fill = "Number of Events") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+
+### Focus on the peak fire season from May to October.
+
+### Filter the data to include only these months.
+
+```{r}
+hotspots_peak <- hotspots %>%
+  filter(month(rep_date) %in% c(5, 6, 7, 8, 9, 10))
+```
+
+
+```{r, echo=FALSE}
+# Summarize the number of fire events per year and month for the peak season
+fire_events_per_month_subset <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(n_events = n(), .groups = 'drop')
+
+# Reshape the data to a wide format for the peak season
+fire_events_subset_wide <- fire_events_per_month_subset %>%
+  pivot_wider(names_from = month, values_from = n_events, values_fill = 0)
+```
+
+
+```{r}
+# Print the wide format summary table for the peak season
+print(fire_events_subset_wide)
+```
+
+
+```{r heatmap_peak, echo=FALSE}
+# Create a heatmap to visualize the number of fire events per month and year for the peak season
+ggplot(fire_events_per_month_subset, aes(x = month, y = factor(year), fill = n_events)) +
+  geom_tile(color = "white") +
+  scale_fill_gradientn(colors = colors, values = rescale(values), labels = scales::comma) +
+  labs(title = "Number of Fire Events per Month and Year (Peak)",
+       x = "Month",
+       y = "Year",
+       fill = "Number of Events") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+
+### Clustering using DBSCAN
+
+*Prepare the data for clustering (latitude, longitude, date)\
+Convert latitude and longitude from degrees to kilometers (1 degree \~ 111 km)\
+Calculate time in hours from the first recorded event\
+Note: time_hours is a component in clustering\
+to group together events occurring within a certain time frame (20 hours).*
+
+```{r dbscan_data}
+event_data <- hotspots_peak %>%
+  select(lat, lon, rep_date) %>%
+  mutate(
+    lat_km = lat * 111,
+    lon_km = lon * 111,
+    time_hours = as.numeric(difftime(rep_date, min(rep_date), units = "hours")) 
+  ) %>%
+  select(lat_km, lon_km, time_hours)  # Reassign event_data to include only the necessary columns
+```
+
+
+```{r dbscan_itiration,  eval=FALSE, include=TRUE}
+# Function to apply DBSCAN and count clusters
+apply_dbscan <- function(data, eps_value, minPts_value) {
+  db <- dbscan(data, eps = eps_value, minPts = minPts_value)  # Apply DBSCAN
+  data$event_cluster <- db$cluster  # Add cluster labels
+  num_clusters <- length(unique(data$event_cluster)) - 1  # Count clusters excluding noise (0)
+  num_noise <- sum(data$event_cluster == 0)  # Count noise points
+  cat("eps =", eps_value, ", minPts =", minPts_value, ": Number of clusters =", num_clusters, ", Number of noise points =", num_noise, "\n")
+  return(num_clusters)
+}
+
+# Parameters for the loop
+desired_clusters <- 16956  # Official number of fires
+best_eps <- NA  # Placeholder for best eps value
+best_minPts <- NA  # Placeholder for best minPts value
+best_diff <- Inf  # Placeholder for the smallest difference
+
+# Iterate over eps and minPts values to find the best match
+for (eps_val in seq(5, 15, by = 1)) {  # Adjust range and step size as needed
+  for (minPts_val in seq(1, 5, by = 1)) {  # Adjust range and step size as needed
+    num_clusters <- apply_dbscan(event_data, eps_val, minPts_val)
+    diff <- abs(num_clusters - desired_clusters)
+    if (diff < best_diff) {  # Check if this is the best match so far
+      best_eps <- eps_val
+      best_minPts <- minPts_val
+      best_diff <- diff
+    }
+  }
+}
+
+# Print out the best parameters found
+cat("Best eps value:", best_eps, "\n")  # Best eps value: 12
+cat("Best minPts value:", best_minPts, "\n")  # Best minPts value: 1
+```
+
+
+*The best parameters found mean that fire events within a 12 km radius\
+are grouped into clusters,\
+and even a single event can form a cluster\
+if it occurs alone within that distance during the given time span.*
+
+```{r}
+# Apply DBSCAN with the best parameters found
+best_eps <- 12
+best_minPts <- 1
+best_db <- dbscan(event_data, eps = best_eps, minPts = best_minPts)
+
+# Add cluster labels to the original dataset
+hotspots_peak$event_cluster <- best_db$cluster
+
+# Filter out noise (cluster 0)
+# Cluster 0 represents noise points, which are outliers that do not belong to any cluster.
+hotspots_peak <- hotspots_peak %>%
+  filter(event_cluster != 0)
+
+# Number of clusters identified by DBSCAN
+cat("Number of clusters identified by DBSCAN:", length(unique(hotspots_peak$event_cluster)), "\n")
+```
+
+
+```{r}
+# Summary of clusters
+cluster_summary <- hotspots_peak %>%
+  group_by(event_cluster) %>%
+  summarise(
+    start_date = min(rep_date),  # Get the earliest date in the cluster
+    end_date = max(rep_date),  # Get the latest date in the cluster
+    num_events = n(),  # Count the number of events in the cluster
+    latitude = mean(lat),  # Calculate the average latitude of events in the cluster
+    longitude = mean(lon)  # Calculate the average longitude of events in the cluster
+  )
+```
+
+
+```{r}
+# Get the top 5 largest clusters from the cluster_summary
+top_clusters <- cluster_summary %>%
+  arrange(desc(num_events)) %>%
+  slice_head(n = 5) 
+
+# Print the top clusters
+print(top_clusters)
+```
+
+
+```{r, echo=FALSE}
+# Plot the events in the largest clusters 
+ggplot(hotspots_peak %>% filter(event_cluster %in% top_clusters$event_cluster), 
+       aes(x = lon, y = lat, color = factor(event_cluster))) +
+  geom_point(alpha = 0.5, size = 2) +
+  labs(title = "Top 5 Largest Fire Clusters",
+       x = "Longitude",
+       y = "Latitude",
+       color = "Cluster ID") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+
+### Visualize the clusters
+
+```{r}
+# Function to plot clusters on map
+plot_clusters_on_map <- function(cluster_ids, data, zoom_level = 10) {
+  # Filter data for the specific clusters
+  cluster_data <- data %>% filter(event_cluster %in% cluster_ids)
+  
+  # Define the bounding box for the map based on the clusters' coordinates
+  bbox <- c(left = min(cluster_data$lon) - 0.3, 
+            bottom = min(cluster_data$lat) - 0.3, 
+            right = max(cluster_data$lon) + 0.3, 
+            top = max(cluster_data$lat) + 0.3)
+  
+  # Get the map from Stadia Maps API
+  map <- get_stadiamap(bbox = bbox, zoom = zoom_level, maptype = "stamen_terrain")
+  
+  # Plot the clusters data on the map
+  print(ggmap(map) +
+          geom_point(data = cluster_data, aes(x = lon, y = lat, color = factor(event_cluster)), size = 2, alpha = 0.3, shape = 19) +  
+          labs(title = "Matched Fire Clusters", 
+               x = "Longitude", 
+               y = "Latitude", 
+               color = "Cluster ID") +
+          theme_minimal() +
+          theme(legend.position = "bottom") +
+          scale_color_manual(values = c("firebrick1", "orange", "yellow")) # Custom colours
+  ) 
+}
+```
+
+
+*ID 4792 Tweedsmuir Complex Fire (2018)*
+
+```{r maps_top, echo=FALSE, warning=FALSE}
+# Plot the top 5 clusters individually
+plot_clusters_on_map(top_clusters$event_cluster[1], hotspots_peak, zoom_level = 10)
+```
+
+
+*ID 3120 Elephant Hill Fire (2017)*
+
+```{r, echo=FALSE, warning=FALSE}
+plot_clusters_on_map(top_clusters$event_cluster[2], hotspots_peak, zoom_level = 10)
+```
+
+
+*ID 14487 Fort Nelson Fire (2023)*
+
+```{r, echo=FALSE, warning=FALSE}
+plot_clusters_on_map(top_clusters$event_cluster[3], hotspots_peak, zoom_level = 10)
+```
+
+
+*ID 4790 Shovel Lake Fire (2018)*
+
+```{r, echo=FALSE, warning=FALSE}
+plot_clusters_on_map(top_clusters$event_cluster[4], hotspots_peak, zoom_level = 10)
+```
+
+
+*ID 3125 Hanceville-Riske Creek Fire (2017)*
+
+```{r, echo=FALSE, warning=FALSE}
+plot_clusters_on_map(top_clusters$event_cluster[5], hotspots_peak, zoom_level = 10)
+```
+
+
+*The plots show large areas affected by fires.\
+Each fire cluster covers a big region, indicating major fire events.\
+Fire events within clusters are closely packed, showing high fire activity.\
+The fires follow the terrain, influenced by vegetation and topography.*
+
+
+### Kelowna Fire Event Analysis
+
+```{r}
+# Known fire near Kelowna in 2023
+kelowna_fire <- data.frame(
+  fire_name = "McDougall Creek Fire",
+  start_date = as.POSIXct("2023-08-16"),
+  end_date = as.POSIXct("2023-08-30"),
+  latitude = 49.8821,
+  longitude = -119.4370
+)
+```
+
+
+```{r}
+# Calculate the distance from each cluster to Kelowna fire
+cluster_summary <- cluster_summary %>%
+  mutate(
+    distance_to_kelowna_fire = distHaversine(
+      matrix(c(longitude, latitude), ncol = 2),
+      matrix(c(kelowna_fire$longitude, kelowna_fire$latitude), ncol = 2)
+    ) / 1000  # Convert meters to kilometers
+  )
+
+# Filter clusters that are within 50 km and have suitable dates
+kelowna_clusters <- cluster_summary %>%
+  filter(
+    distance_to_kelowna_fire < 50 &  # Check if within 50 km
+      start_date <= kelowna_fire$end_date &  # Check if cluster starts before the known fire ends
+      end_date >= kelowna_fire$start_date    # Check if cluster ends after the known fire starts
+  )
+
+# Print the matching clusters
+print(kelowna_clusters)
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+# Plot the matching clusters on the map
+plot_clusters_on_map(kelowna_clusters$event_cluster, hotspots_peak, zoom_level = 10)
+```
+
+
+### Variables
+
+*The dataset contains different variables\
+that are important to analyze fire events in British Columbia.\
+These variables can be broadly categorized into the following categories:\
+Location, Time, Data Collection Methods, Weather Data, Fire Indices, Other.*
+
+`lat`: Latitude of the fire event.\
+`lon`: Longitude of the fire event.
+
+```{r}
+# Summary of Latitude and Longitude
+lat_range <- range(hotspots$lat, na.rm = TRUE)
+lon_range <- range(hotspots$lon, na.rm = TRUE)
+
+# British Columbia coordinates:
+# Latitude: Between 48.309789°N and 60.00065°N
+# Longitude: Between -139.058200 °W and -114.05423°W
+
+cat("Latitude Range:", lat_range, "\n")
+cat("Longitude Range:", lon_range, "\n")
+```
+
+
+`rep_date`: The date and time when the fire event was reported.\
+`month` and `year` are new variables added
+
+
+### Full Dataset Analysis
+
+```{r}
+# Summary table describing each hotspots dataset by year
+hotspots_df_summary <- hotspots %>%
+  group_by(year) %>%
+  summarise(
+    start_date = min(rep_date),
+    end_date = max(rep_date),
+    hotspots_df_day_count = as.numeric(difftime(max(rep_date), min(rep_date), units = "days"))
+  )
+
+print(hotspots_df_summary)
+```
+
+
+```{r, echo=FALSE}
+# Plotting the number of days reported per year
+ggplot(hotspots_df_summary, aes(x = factor(year), y = hotspots_df_day_count)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Number of Days Reported per Year",
+       x = "Year",
+       y = "Number of Days") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+*This barplot shows, how many days each year had recorded fire events.\
+It also shows that reporting period has grown over the years.*
+
+
+### Peak Season Analysis
+
+```{r}
+# Summary table for the peak season (May to October) describing each hotspots dataset by year
+hotspots_peak_df_summary <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    start_date = min(rep_date),
+    end_date = max(rep_date),
+    hotspots_peak_day_count = as.numeric(difftime(max(rep_date), min(rep_date), units = "days")),
+    num_clusters = n_distinct(event_cluster)  # Number of clusters in the peak season for each year
+  )
+
+print(hotspots_peak_df_summary)
+```
+
+
+*The table shows the earliest and latest dates of fire event reporting,\
+the total number of days with recorded fire events,\
+and the number of unique fire clusters detected during the peak season for each year.*
+
+```{r,echo=FALSE}
+# Plotting the number of clusters per year
+ggplot(hotspots_peak_df_summary, aes(x = factor(year), y = num_clusters)) +
+  geom_bar(stat = "identity", fill = "darkorange") +
+  labs(title = "Number of Clusters per Year (Peak Season)",
+       x = "Year",
+       y = "Number of Clusters") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+*The barplot shows the number of unique fire clusters\
+detected each year during the peak fire season.\
+This number fluctuates each year,\
+with noticeable peaks in 2018, 2021, and 2023.*
+
+
+### Data Collection Methods
+
+*Different sources, satellites, and sensors are used for data collection.*
+
+```{r}
+# Summary and Visualization of Sources
+source_summary <- hotspots %>% 
+  group_by(source) %>% 
+  summarise(num_events = n())
+
+print(source_summary)
+```
+
+
+```{r, echo=FALSE}
+ggplot(source_summary, aes(x = reorder(source, -num_events), y = num_events)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Number of Fire Events Reported by Each Source",
+       x = "Source",
+       y = "Number of Events") +
+  theme_minimal() +
+  scale_y_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+# Summary and Visualization of Satellites
+satellite_summary <- hotspots %>% 
+  group_by(satellite) %>% 
+  summarise(num_events = n())
+
+print(satellite_summary)
+```
+
+
+```{r, echo=FALSE}
+ggplot(satellite_summary, aes(x = reorder(satellite, -num_events), y = num_events)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Number of Fire Events Reported by Each Satellite",
+       x = "Satellite",
+       y = "Number of Events") +
+  theme_minimal() +
+  scale_y_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+# Summary and Visualization of Sensors
+sensor_summary <- hotspots %>% 
+  group_by(sensor) %>% 
+  summarise(num_events = n())
+
+#Advanced Very High Resolution Radiometer (AVHRR) imagery, courtesy of the NOAA
+#Moderate Resolution Imaging Spectroradiometer (MODIS) imagery, courtesy of the NASA
+#Visible Infrared Imaging Radiometer Suite (VIIRS) imagery, courtesy of NASA LANCE FIRMS
+
+print(sensor_summary)
+```
+
+
+```{r, echo=FALSE}
+ggplot(sensor_summary, aes(x = reorder(sensor, -num_events), y = num_events)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Number of Fire Events Reported by Each Sensor",
+       x = "Sensor",
+       y = "Number of Events") +
+  theme_minimal() +
+  scale_y_continuous(labels = comma) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+### Example of a Specific Fire Event: Kelowna Fire Cluster (Cluster ID: 13928)
+
+```{r}
+# Filter the data for the specific cluster
+event_data <- hotspots_peak %>%
+  filter(event_cluster == 13928)
+
+# Summarize the sources, satellites, and sensors used for this event
+event_sources <- event_data %>%
+  group_by(source) %>%
+  summarise(num_events = n())
+
+event_satellites <- event_data %>%
+  group_by(satellite) %>%
+  summarise(num_events = n())
+
+event_sensors <- event_data %>%
+  group_by(sensor) %>%
+  summarise(num_events = n())
+
+# Print summaries
+print(event_sources)
+print(event_satellites)
+print(event_sensors)
+```
+
+
+*In the Kelowna fire cluster (ID: 13928),\
+data came from various sources, satellites, and sensors.\
+Most data were provided by NASA sources and the VIIRS-I sensor,\
+mainly using the S-NPP satellite.\
+The VIIRS-I sensor and S-NPP satellite are the most used\
+both for this event and the overall data.*
+
+
+### Weather Data Variables
+
+*Weather conditions are critical factors in the spread of fires.*
+
+`temp`: Temperature (°C)\
+`rh`: Relative Humidity (%)\
+`ws`: Wind Speed (km/h)\
+`wd`: Wind Direction (degrees)\
+`pcp`: Precipitation (mm)
+
+```{r}
+# Function to describe each numerical column 
+describe_numerical <- function(df, cols) {
+  summary_list <- list()
+  
+  for (col in cols) {
+    summary_stats <- data.frame(
+      Variable = col,
+      Missing_Values = sum(is.na(df[[col]])),
+      Min = round(min(df[[col]], na.rm = TRUE), 2),
+      Median = round(median(df[[col]], na.rm = TRUE), 2),
+      Mean = round(mean(df[[col]], na.rm = TRUE), 2),
+      Max = round(max(df[[col]], na.rm = TRUE), 2)
+    )
+    summary_list[[col]] <- summary_stats
+  }
+  
+  summary_table <- bind_rows(summary_list)
+  return(summary_table)
+}
+
+# Summary of weather data variables
+summary_hotspots <- describe_numerical(hotspots_peak, c('temp', 'rh', 'ws', 'wd', 'pcp'))
+print(summary_hotspots)
+```
+
+
+```{r include=FALSE}
+# Create a table with mean values for plots
+monthly_avg <- hotspots_peak %>%
+  group_by(year, month) %>%
+  summarise(avg_temp = mean(temp, na.rm = TRUE),
+            avg_rh = mean(rh, na.rm = TRUE),
+            avg_ws = mean(ws, na.rm = TRUE),
+            avg_pcp = mean(pcp, na.rm = TRUE),
+            avg_ffmc = mean(ffmc, na.rm = TRUE),
+            avg_dmc = mean(dmc, na.rm = TRUE),
+            avg_dc = mean(dc, na.rm = TRUE),
+            avg_isi = mean(isi, na.rm = TRUE),
+            avg_bui = mean(bui, na.rm = TRUE),
+            avg_fwi = mean(fwi, na.rm = TRUE),
+            avg_sfc = mean(sfc, na.rm = TRUE),
+            avg_tfc = mean(tfc, na.rm = TRUE),
+            avg_bfc = mean(bfc, na.rm = TRUE),
+            avg_hfi = mean(hfi, na.rm = TRUE),
+            avg_ros = mean(ros, na.rm = TRUE),
+            .groups = 'drop') 
+```
+
+
+*There are no missing values in the weather data.\
+The minimum temperature recorded is -9.66°C, which is unusually low for fire events.\
+The maximum temperature recorded is 43.88°C, which is expected during peak fire seasons.\
+The relative humidity ranges from 7.00% to 100.00%, there are different weather conditions.\
+Wind speeds range from 0.00 km/h to 16.47 km/h.\
+There is a full range of possible wind directions.\
+The precipitation data has a maximum value of 651.79 mm, needs further investigation.*
+
+```{r}
+# Summarize the count of subzero temperature events by year and month
+subzero_temps_summary <- hotspots_peak %>%
+  filter(temp < 0) %>%
+  group_by(year, month) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(desc(year))
+
+# Print the summary table
+print(subzero_temps_summary)
+```
+
+
+*The peak month for subzero temperature events is October,\
+even colder conditions do not stop fires from happening.*
+
+```{r}
+# Summarize the count of precipitation events > 100 mm by year and month
+high_pcp_summary <- hotspots_peak %>%
+  filter(pcp > 100) %>%
+  group_by(year, month, event_cluster) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  arrange(desc(year))
+
+# Print the summary table
+print(high_pcp_summary)
+```
+
+```{r, echo=FALSE}
+# Plot the event on map
+plot_clusters_on_map(14510, hotspots_peak, zoom_level = 10)
+```
+
+
+```{r}
+# Remove the high precipitation outlier from the dataset
+hotspots_peak <- hotspots_peak %>%
+  filter(!(event_cluster == 14510 & year == 2023 & month == "Jul"))
+
+# Re-run the descriptive statistics without the outlier
+summary_hotspots <- describe_numerical(hotspots_peak, c('temp', 'rh', 'ws', 'wd', 'pcp'))
+print(summary_hotspots)
+```
+
+
+### Temperature (°C)
+
+```{r, echo=FALSE}
+# Create a boxplot to compare temperature distributions across years
+ggplot(hotspots_peak, aes(x = factor(year), y = temp)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Temperature Distribution Across Years (Peak)",
+       x = "Year",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+```
+
+
+*The median temperatures are between 20°C and 25°C.\
+2019 stands out with a slightly lower median temperature.\
+There are significant outliers present in all years,\
+particularly in 2014, 2017, 2018, and 2023.*
+
+```{r, echo=FALSE}
+# Lineplot for temperature over time
+ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "Temperature by Month",
+       x = "Month",
+       y = "Temperature (°C)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+*There is a clear seasonal pattern,\
+temperatures peak around July and August, then decrease towards October.\
+Some years, like 2014 and 2021, show higher peaks, meaning hotter summer months.*
+
+
+### Relative Humidity (%)
+
+```{r, echo=FALSE}
+# Create a boxplot to compare relative humidity distributions across years
+ggplot(hotspots_peak, aes(x = factor(year), y = rh)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Relative Humidity Distribution Across Years (Peak)",
+       x = "Year",
+       y = "Relative Humidity") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+
+*Median relative humidity falls between 30% and 40%.\
+In 2019, median values are higher, indicating more humid season.\
+All years have significant outliers, especially 2014, 2017, and 2021, showing extremely humid days.*
+
+```{r, echo=FALSE}
+# Lineplot for relative humidity over time
+ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "Relative Humidity by Month",
+       x = "Month",
+       y = "Relative Humidity",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+*Humidity values typically increase from August to October.\
+Notable peaks in summer are seen in 2016, 2019 and 2020.*
+
+
+### Wind Speed (km/h)
+
+```{r, echo=FALSE}
+# Create a boxplot to compare wind speed distributions across years
+ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Wind Speed Distribution Across Years (Peak)",
+       x = "Year",
+       y = "Wind Speed (km/h)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+
+*The median wind speeds generally fall between 2 and 3 km/h.\
+There are significant outliers in all years, particularly noticeable in 2014, 2015, and 2018,\
+there were days with extremely high wind speeds.*
+
+```{r, echo=FALSE}
+# Lineplot for wind speed over time
+ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "Wind Speed by Month",
+       x = "Month",
+       y = "Wind Speed (km/h)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+*There is a clear seasonal pattern where wind speeds tend to be higher in the summer months and decrease towards October.\
+Some years, like 2015 and 2020, show more pronounced peaks in wind speed.\
+The overall trend remains consistent with seasonal variations.*
+
+
+### Wind direction (degrees)
+
+*Visualize with Wind Rose to see most common wind direction using converted wind speed.*
+
+```{r}
+# Convert wind speed from km/h to m/s
+hotspots_peak <- hotspots_peak %>%
+  mutate(ws_m_s = ws / 3.6)
+
+windRose(mydata = hotspots_peak, ws = "ws_m_s", wd = "wd", 
+         main = "Wind Rose", paddle = FALSE)
+```
+
+
+*Most of the wind comes from the west and southwest.\
+Regions east and north of areas with strong western, southern, and southwestern winds\
+should be careful, as these winds can quickly spread fires.*
+
+
+### Precipitation (mm)
+
+```{r, echo=FALSE}
+# Create a boxplot to compare precipitation distributions across years
+ggplot(hotspots_peak, aes(x = factor(year), y = pcp)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Precipitation Distribution Across Years (Peak)",
+       x = "Year",
+       y = "Precipitation (mm)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+```
+
+
+*The median values for precipitation are consistently very low, often close to zero.\
+Despite this, there are significant outliers in every year, particularly in 2017 and 2023.\
+These outliers indicate that certain days had much higher than average rainfall.*
+
+```{r, echo=FALSE}
+# Lineplot for precipitation over time
+ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
+  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
+  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Smoothed trend line
+  labs(title = "Precipitation by Month",
+       x = "Month",
+       y = "Precipitation (mm)",
+       color = "Year") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+*There is a notable peak in July for several years,\
+with some years, like 2018, 2019 and 2020,\
+showing higher average precipitation during these months.*
+
+
+### Outliers
+
+*Even after removing one extreme outlier, there are still many high precipitation values.  
+Since precipitation often has many zero entries,  
+need to handle these outliers carefully to ensure they don't skew our results.*
+
+```{r}
+# Define the function to remove outliers
+remove_outliers <- function(data, variable) {
+  q1 <- quantile(data[[variable]], 0.25, na.rm = TRUE)
+  q3 <- quantile(data[[variable]], 0.75, na.rm = TRUE)
+  iqr <- q3 - q1
+  lower_bound <- q1 - 1.5 * iqr
+  upper_bound <- q3 + 1.5 * iqr
+  data %>% filter(data[[variable]] >= lower_bound & data[[variable]] <= upper_bound)
+}
+```
+
+
+```{r}
+# Remove outliers for temperature, relative humidity, and wind speed
+hotspots_peak_clean <- hotspots_peak %>%
+  remove_outliers("temp") %>%
+  remove_outliers("rh") %>%
+  remove_outliers("ws")
+
+# Check the summary statistics after removing outliers
+summary_clean <- describe_numerical(hotspots_peak_clean, c('temp', 'rh', 'ws', 'wd', 'pcp'))
+print(summary_clean)
+```
+
+
+```{r, echo=FALSE}
+# Create a box plot to compare temperature distributions across years
+ggplot(hotspots_peak_clean, aes(x = factor(year), y = temp)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Temperature Distribution Across Years (Peak, Cleaned)",
+       x = "Year",
+       y = "Temperature (°C)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+# Create a box plot to compare relative humidity distributions across years
+ggplot(hotspots_peak_clean, aes(x = factor(year), y = rh)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Relative Humidity Distribution Across Years (Peak, Cleaned)",
+       x = "Year",
+       y = "Relative Humidity (%)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+
+# Create a box plot to compare wind speed distributions across years
+ggplot(hotspots_peak_clean, aes(x = factor(year), y = ws)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Wind Speed Distribution Across Years (Peak, Cleaned)",
+       x = "Year",
+       y = "Wind Speed (km/h)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+```
+
+*The boxplots now show a more consistent distribution of temperatures across different years.  
+The majority of the years have median temperatures between 20°C and 25°C.  
+The extreme outliers have been reduced, providing a clearer view of the central temperature tendencies.  
+
+The median RH values generally remain between 30% and 40% across the years.  
+2019 still shows higher median RH, indicating more humid conditions.  
+Significant outliers have been reduced, giving a better understanding of the general RH trends.  
+ 
+Median wind speeds for each year are now clearly visible, generally falling between 7 and 10 km/h.  
+The removal of outliers helps to see typical wind speeds more accurately.  
+The boxplots show that some years, like 2020 and 2021, still have a wider range of wind speeds.*
