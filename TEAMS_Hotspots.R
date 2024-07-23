@@ -2324,6 +2324,387 @@ ggplot(ecozone_counts, aes(x = reorder(ecozone, -count), y = count, fill = ecozo
 
 
 
+# Tests and models ####
+
+# After EDA on the hotspots dataset subset it to focus 
+# on specific numerical variables.
+
+# Define the numeric columns
+numeric_columns <- c("temp", "rh", "ws", "pcp", "ffmc", "dmc", "dc", "isi", "bui", "fwi", "ros", "hfi")
+
+# Subset the dataframe
+hotspots_test <- hotspots_peak_clean %>%
+  select(all_of(numeric_columns), year, month, event_cluster)
+
+
+# List of fire indices to summarize
+fire_indices <- c('ffmc', 'dmc', 'dc', 'isi', 'bui', 'fwi')
+
+# Apply the describe_numerical function to the fire indices in the hotspots_test dataset
+summary_fire_indices <- describe_numerical(hotspots_test, fire_indices)
+
+# Print the summary statistics for the fire indices
+print(summary_fire_indices)
+
+# The table shows summary statistics, 
+# showing the number of missing values, minimum, median, mean, and maximum values for each index.
+
+# During EDA we looked into distributions of six key Fire Indices across different years.
+# The distributions of these indices for a particular year, 2018, 
+# appeared to be close to the overall mean values of these indices.
+# We also found out that 2018 had some significant fire events.
+
+# Average number of observations per year
+nrow(hotspots_peak) / length(unique(hotspots_peak$year))
+# 173461.2
+
+# Average number of unique event_clusters per year
+length(unique(hotspots_peak$event_cluster)) / length(unique(hotspots_peak$year))
+# 1739.9
+
+# Number of observations in 2018
+nrow(filter(hotspots_peak_clean, year == 2018))
+# 339685
+
+# Number of unique event clusters in 2018
+length(unique(filter(hotspots_peak_clean, year == 2018)$event_cluster))
+# 2051
+
+# From these calculations, we found that 2018 had a significantly higher number of observations
+# and event clusters compared to the average over the ten-year period.
+# Despite the higher number of fire events, the main indices (FFMC, DMC, DC, ISI, BUI, FWI) 
+# remained close to their mean values across the dataset.
+
+# Therefore we wanted to test if the increased number of fires in 2018 was due to random chance
+# or if other factors were at play. 
+# We need to perform statistical tests to compare the indices for 2018 against the overall dataset.
+# A p-value greater than 0.05 would suggest that the higher number of fires could be due to chance, 
+# and a lower p-value would mean the presence of other contributing factors.
+
+
+
+# Filter data for the year 2018
+hotspots_test_2018 <- hotspots_test %>% filter(year == 2018)
+
+# Summary statistics for the overall dataset
+summary_overall <- describe_numerical(hotspots_peak, fire_indices)
+summary_overall
+
+# Summary statistics for the year 2018
+summary_2018 <- describe_numerical(hotspots_test_2018, fire_indices)
+summary_2018
+
+# Print summary statistics
+print(summary_overall)
+print(summary_2018)
+
+# Differences
+difference <- summary_2018$Mean - summary_overall$Mean
+
+# Percentage difference
+percentage_difference <- (summary_2018$Mean - summary_overall$Mean) / summary_overall$Mean * 100
+
+# Create summary table
+test_summary <- data.frame(
+  Index = summary_overall$Variable,
+  Overall_Mean = summary_overall$Mean,
+  Year_2018_Mean = summary_2018$Mean,
+  Difference = round(difference, 2),
+  Percentage_Difference = round(percentage_difference, 2)
+
+)
+
+# Print the summary table
+print(test_summary)
+
+
+
+
+
+# Calculate standard deviation for the overall dataset
+sd_overall <- sapply(fire_indices, function(index) sd(hotspots_peak_clean[[index]], na.rm = TRUE))
+
+# Calculate standard deviation for the 2018 dataset
+sd_2018 <- sapply(fire_indices, function(index) sd(hotspots_test_2018[[index]], na.rm = TRUE))
+
+# Standard deviations
+sd_summary <- data.frame(
+  Index = fire_indices,
+  Overall_SD = sd_overall,
+  Year_2018_SD = sd_2018
+)
+
+# Print the summary of standard deviations
+print(sd_summary)
+
+# Overall, the lower standard deviations for the year 2018 across all six indices 
+# compared to the overall dataset indicate 
+# that the conditions related to fire behavior and potential were more consistent in 2018. 
+
+
+
+# t-tests for each index
+t_test_results <- lapply(fire_indices, function(index) {
+  t.test(hotspots_peak_clean[[index]], hotspots_test_2018[[index]], alternative = "two.sided")
+})
+
+# p-values and other summary
+t_test_summary <- data.frame(
+  Index = fire_indices,
+  P_Value = sapply(t_test_results, function(result) result$p.value),
+  Mean_Difference = sapply(t_test_results, function(result) result$estimate[1] - result$estimate[2]),
+  Overall_Mean = sapply(t_test_results, function(result) result$estimate[1]),
+  Year_2018_Mean = sapply(t_test_results, function(result) result$estimate[2])
+)
+
+t_test_summary$Significant <- t_test_summary$P_Value < 0.05
+
+# Print the t-test summary
+print(t_test_summary)
+
+# All the p-values are extremely small, indicating that the differences in means for all six indices 
+# between the overall dataset and the year 2018 are statistically significant.
+# This suggests that the conditions in 2018 were indeed different from the overall conditions,
+# which could explain the increased number of fire events that year.
+
+
+
+
+
+# Wilcoxon tests for each fire index
+wilcox_results <- sapply(fire_indices, function(index) {
+  test_result <- wilcox.test(hotspots_peak[[index]], hotspots_test_2018[[index]], alternative = "two.sided")
+  return(test_result$p.value)
+})
+
+# Display the results
+test_summary <- data.frame(
+  Index = fire_indices,
+  Overall_Mean = summary_overall$Mean,
+  Year_2018_Mean = summary_2018$Mean,
+  P_Value = wilcox_results,
+  Significant = wilcox_results < 0.05
+)
+
+# Print the summary of test results
+print(test_summary)
+
+# All six fire indices show significant differences between the values in 2018 and the overall values across all years. 
+# This suggests that the conditions in 2018 were statistically different from the overall conditions in the dataset, 
+# meaning that there were likely specific factors in 2018 that contributed to these differences.
+
+# While the t-tests show that there are significant differences in the fire indices, 
+# they don't prove that higher values of these indices cause more fires.
+# However, the higher values of indices like FWI, DMC, and others in 2018 suggest there is a link,
+# meaning higher values of these indices likely mean conditions for more fires.
+# To find the relationship between these indices and the number of fires, need to make
+# more analysis, like regression modeling.
+
+
+
+
+# FFMC Histogram in 2018 with Normal Curve
+ggplot(hotspots_test_2018, aes(x = ffmc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$ffmc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$ffmc, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "FFMC Histogram in 2018 with Normal Curve",
+       x = "FFMC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+
+# DMC Histogram in 2018 with Normal Curve
+ggplot(hotspots_test_2018, aes(x = dmc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dmc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$dmc, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "DMC Histogram in 2018 with Normal Curve",
+       x = "DMC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+
+# DC Histogram in 2018 with Normal Curve
+ggplot(hotspots_test_2018, aes(x = dc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 50, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$dc, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "DC Histogram in 2018 with Normal Curve",
+       x = "DC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+
+# ISI Histogram in 2018 with Normal Curve
+ggplot(hotspots_test_2018, aes(x = isi)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$isi, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$isi, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "ISI Histogram in 2018 with Normal Curve",
+       x = "ISI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# BUI Histogram in 2018 with Normal Curve
+ggplot(hotspots_test_2018, aes(x = bui)) +
+  geom_histogram(aes(y = ..density..), binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$bui, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$bui, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "BUI Histogram in 2018 with Normal Curve",
+       x = "BUI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# FWI Histogram in 2018 with Normal Curve
+ggplot(hotspots_test_2018, aes(x = fwi)) +
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$fwi, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$fwi, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "FWI Histogram in 2018 with Normal Curve",
+       x = "FWI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+
+# FFMC QQ Plot
+ggplot(hotspots_test_2018, aes(sample = ffmc)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "FFMC QQ Plot",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+
+# DMC QQ Plot
+ggplot(hotspots_test_2018, aes(sample = dmc)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "DMC QQ Plot",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# DC QQ Plot
+ggplot(hotspots_test_2018, aes(sample = dc)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "DC QQ Plot",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# ISI QQ Plot
+ggplot(hotspots_test_2018, aes(sample = isi)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "ISI QQ Plot",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# BUI QQ Plot
+ggplot(hotspots_test_2018, aes(sample = bui)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "BUI QQ Plot",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# FWI QQ Plot
+ggplot(hotspots_test_2018, aes(sample = fwi)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "FWI QQ Plot",
+       x = "Theoretical Quantiles",
+       y = "Sample Quantiles") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+
+
+
+
+
+
 
 
 
