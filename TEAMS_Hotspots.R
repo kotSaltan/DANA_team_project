@@ -2609,8 +2609,12 @@ ggplot(hotspots_test_2018, aes(x = fwi)) +
 
 
 
-# FFMC QQ Plot
-ggplot(hotspots_test_2018, aes(sample = ffmc)) +
+
+
+# FFMC QQ Plot with a subset of data
+sample_data_ffmc <- hotspots_test_2018 %>% sample_n(5000)
+
+ggplot(sample_data_ffmc, aes(sample = ffmc)) +
   stat_qq() +
   stat_qq_line() +
   labs(title = "FFMC QQ Plot",
@@ -2623,10 +2627,10 @@ ggplot(hotspots_test_2018, aes(sample = ffmc)) +
         axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 10))
 
+# DMC QQ Plot with a subset of data
+sample_data_dmc <- hotspots_test_2018 %>% sample_n(5000)
 
-
-# DMC QQ Plot
-ggplot(hotspots_test_2018, aes(sample = dmc)) +
+ggplot(sample_data_dmc, aes(sample = dmc)) +
   stat_qq() +
   stat_qq_line() +
   labs(title = "DMC QQ Plot",
@@ -2640,8 +2644,10 @@ ggplot(hotspots_test_2018, aes(sample = dmc)) +
         axis.text.y = element_text(size = 10))
 
 
-# DC QQ Plot
-ggplot(hotspots_test_2018, aes(sample = dc)) +
+# DC QQ Plot with a subset of data
+sample_data_dc <- hotspots_test_2018 %>% sample_n(5000)
+
+ggplot(sample_data_dc, aes(sample = dc)) +
   stat_qq() +
   stat_qq_line() +
   labs(title = "DC QQ Plot",
@@ -2654,9 +2660,10 @@ ggplot(hotspots_test_2018, aes(sample = dc)) +
         axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 10))
 
+# ISI QQ Plot with a subset of data
+sample_data_isi <- hotspots_test_2018 %>% sample_n(5000)
 
-# ISI QQ Plot
-ggplot(hotspots_test_2018, aes(sample = isi)) +
+ggplot(sample_data_isi, aes(sample = isi)) +
   stat_qq() +
   stat_qq_line() +
   labs(title = "ISI QQ Plot",
@@ -2669,9 +2676,10 @@ ggplot(hotspots_test_2018, aes(sample = isi)) +
         axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 10))
 
+# BUI QQ Plot with a subset of data
+sample_data_bui <- hotspots_test_2018 %>% sample_n(5000)
 
-# BUI QQ Plot
-ggplot(hotspots_test_2018, aes(sample = bui)) +
+ggplot(sample_data_bui, aes(sample = bui)) +
   stat_qq() +
   stat_qq_line() +
   labs(title = "BUI QQ Plot",
@@ -2684,8 +2692,10 @@ ggplot(hotspots_test_2018, aes(sample = bui)) +
         axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 10))
 
-# FWI QQ Plot
-ggplot(hotspots_test_2018, aes(sample = fwi)) +
+# FWI QQ Plot with a subset of data
+sample_data_fwi <- hotspots_test_2018 %>% sample_n(5000)
+
+ggplot(sample_data_fwi, aes(sample = fwi)) +
   stat_qq() +
   stat_qq_line() +
   labs(title = "FWI QQ Plot",
@@ -2697,7 +2707,6 @@ ggplot(hotspots_test_2018, aes(sample = fwi)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 10))
-
 
 
 
