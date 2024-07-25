@@ -2337,6 +2337,7 @@ hotspots_test <- hotspots_peak_clean %>%
   select(all_of(numeric_columns), year, month, event_cluster)
 
 
+
 # List of fire indices to summarize
 fire_indices <- c('ffmc', 'dmc', 'dc', 'isi', 'bui', 'fwi')
 
@@ -2378,17 +2379,19 @@ length(unique(filter(hotspots_peak_clean, year == 2018)$event_cluster))
 # Therefore we wanted to test if the increased number of fires in 2018 was due to random chance
 # or if other factors were at play. 
 # We need to perform statistical tests to compare the indices for 2018 against the overall dataset.
-# A p-value greater than 0.05 would suggest that the higher number of fires could be due to chance, 
+# A p-value greater than 0.05 would suggest that the higher number of fires could be due to a chance, 
 # and a lower p-value would mean the presence of other contributing factors.
 
 
 
-# Filter data for the year 2018
-hotspots_test_2018 <- hotspots_test %>% filter(year == 2018)
+
 
 # Summary statistics for the overall dataset
 summary_overall <- describe_numerical(hotspots_peak, fire_indices)
 summary_overall
+
+# Filter data for the year 2018
+hotspots_test_2018 <- hotspots_test %>% filter(year == 2018)
 
 # Summary statistics for the year 2018
 summary_2018 <- describe_numerical(hotspots_test_2018, fire_indices)
@@ -2460,6 +2463,7 @@ t_test_summary <- data.frame(
 t_test_summary$Significant <- t_test_summary$P_Value < 0.05
 
 # Print the t-test summary
+
 print(t_test_summary)
 
 # All the p-values are extremely small, indicating that the differences in means for all six indices 

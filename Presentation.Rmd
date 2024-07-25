@@ -1246,7 +1246,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("FFMC" = "lightblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 # Plot DMC and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
@@ -1264,7 +1264,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("DMC" = "lightblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 # Plot DC and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
@@ -1282,7 +1282,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("DC" = "lightblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *The plots show a clear relationship between the fire indices (FFMC, DMC, and DC) and the number of fires.\
@@ -1591,7 +1591,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("ISI" = "skyblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 # Plot BUI and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
@@ -1609,7 +1609,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("BUI" = "skyblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 # Plot FWI and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
@@ -1627,7 +1627,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("FWI" = "skyblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *The plots show a clear link between indices and the number of fires.\
@@ -1833,7 +1833,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("HFI" = "lightblue")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *The HFI index shows notable peaks, particularly in the years 2017, 2018, 2021 and 2023.*
@@ -1894,3 +1894,301 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = hfi)) +
 ```
 
 *The median HFI values are generally below 20,000 kW/m after removing outliers.*
+
+## Tests and Models
+
+*In this section, we use statistical tests to see some meaningful patters and build models to predict fire risk.*
+
+*Subset the hotspots dataset to focus on specific numerical variables.*
+
+```{r}
+# Define the numeric columns
+numeric_columns <- c("temp", "rh", "ws", "pcp", "ffmc", "dmc", "dc", "isi", "bui", "fwi", "ros", "hfi")
+
+# Subset the dataframe
+hotspots_test <- hotspots_peak_clean %>%
+  select(all_of(numeric_columns), year, month, event_cluster)
+
+str(hotspots_test)
+```
+
+```{r}
+
+# List of fire indices to summarize
+fire_indices <- c('ffmc', 'dmc', 'dc', 'isi', 'bui', 'fwi')
+
+# Apply the describe_numerical function to the fire indices in the hotspots_test dataset
+summary_fire_indices <- describe_numerical(hotspots_test, fire_indices)
+
+# Print the summary statistics for the fire indices
+print(summary_fire_indices)
+```
+
+*The summary statistics shows the number of missing values, minimum, median, mean, and maximum values for each index.*
+
+*During EDA we looked into distributions of six key Fire Indices across different years.*
+
+*\
+The distributions of these indices for a particular year, 2018, appeared to be close to the overall mean values of these indices.*
+
+*\
+We also found out that 2018 had some significant fire events.*
+
+```{r}
+# Average number of observations per year
+nrow(hotspots_peak) / length(unique(hotspots_peak$year))
+
+# Average number of unique event_clusters per year
+length(unique(hotspots_peak$event_cluster)) / length(unique(hotspots_peak$year))
+
+# Number of observations in 2018
+nrow(filter(hotspots_peak_clean, year == 2018))
+
+# Number of unique event clusters in 2018
+length(unique(filter(hotspots_peak_clean, year == 2018)$event_cluster))
+```
+
+*From these calculations, we found that 2018 had a significantly higher number of observations and event clusters compared to the average over the ten-year period.*
+
+*Despite the higher number of fire events, the main indices (FFMC, DMC, DC, ISI, BUI, FWI) remained close to their mean values across the dataset.*
+
+*Therefore we wanted to test if the increased number of fires in 2018 was due to random chance or if other factors were at play.*
+
+*We need to perform statistical tests to compare the indices for 2018 against the overall dataset.*
+
+*A p-value greater than 0.05 would suggest that the higher number of fires could be due to a chance,\
+and a lower p-value would mean the presence of other contributing factors.*
+
+```{r}
+# Summary statistics for the overall dataset
+summary_overall <- describe_numerical(hotspots_peak, fire_indices)
+summary_overall
+```
+
+```{r}
+# Filter data for the year 2018
+hotspots_test_2018 <- hotspots_test %>% filter(year == 2018)
+
+# Summary statistics for the year 2018
+summary_2018 <- describe_numerical(hotspots_test_2018, fire_indices)
+summary_2018
+```
+
+```{r, echo=FALSE}
+# Differences
+difference <- summary_2018$Mean - summary_overall$Mean
+
+# Percentage difference
+percentage_difference <- (summary_2018$Mean - summary_overall$Mean) / summary_overall$Mean * 100
+
+# Create summary table
+test_summary <- data.frame(
+  Index = summary_overall$Variable,
+  Overall_Mean = summary_overall$Mean,
+  Year_2018_Mean = summary_2018$Mean,
+  Difference = round(difference, 2),
+  Percentage_Difference = round(percentage_difference, 2)
+
+)
+
+# Print the summary table
+print(test_summary)
+```
+
+We also calculated the standard deviations for the fire indices to see the variability of these indices in 2018 compared to the overall dataset.
+
+```{r}
+# Calculate standard deviation for the overall dataset
+sd_overall <- sapply(fire_indices, function(index) sd(hotspots_peak_clean[[index]], na.rm = TRUE))
+
+# Calculate standard deviation for the 2018 dataset
+sd_2018 <- sapply(fire_indices, function(index) sd(hotspots_test_2018[[index]], na.rm = TRUE))
+
+# Standard deviations
+sd_summary <- data.frame(
+  Index = fire_indices,
+  Overall_SD = round(sd_overall, 2),
+  Year_2018_SD = round(sd_2018, 2)
+)
+
+# Print the summary of standard deviations
+print(sd_summary)
+```
+
+*Overall, the lower standard deviations for the year 2018 across all six indices compared to the overall dataset indicate that the conditions related to fire behavior and potential were more consistent in 2018.*
+
+*Check the histograms if they follow the normal distribution.*
+
+```{r, echo=FALSE}
+# FFMC Histogram in 2018 with Normal Curve
+ffmc_plot <- ggplot(hotspots_test_2018, aes(x = ffmc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$ffmc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$ffmc, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "FFMC Histogram in 2018",
+       x = "FFMC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# DMC Histogram in 2018 with Normal Curve
+dmc_plot <- ggplot(hotspots_test_2018, aes(x = dmc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dmc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$dmc, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "DMC Histogram in 2018",
+       x = "DMC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# DC Histogram in 2018 with Normal Curve
+dc_plot <- ggplot(hotspots_test_2018, aes(x = dc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 50, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$dc, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "DC Histogram in 2018",
+       x = "DC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# ISI Histogram in 2018 with Normal Curve
+isi_plot <- ggplot(hotspots_test_2018, aes(x = isi)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$isi, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$isi, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "ISI Histogram in 2018",
+       x = "ISI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# BUI Histogram in 2018 with Normal Curve
+bui_plot <- ggplot(hotspots_test_2018, aes(x = bui)) +
+  geom_histogram(aes(y = ..density..), binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$bui, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$bui, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "BUI Histogram in 2018",
+       x = "BUI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# FWI Histogram in 2018 with Normal Curve
+fwi_plot <- ggplot(hotspots_test_2018, aes(x = fwi)) +
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$fwi, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$fwi, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "FWI Histogram in 2018",
+       x = "FWI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# Arrange in a 2x3 grid
+grid.arrange(ffmc_plot, dmc_plot, dc_plot, isi_plot, bui_plot, fwi_plot, ncol = 2)
+
+
+```
+
+```{r, echo=FALSE}
+# Function to format p-values
+format_p_value <- function(p) {
+  if (p < 1e-6) {
+    return("<0.000001")
+  } else {
+    return(format(round(p, 6), nsmall = 6))
+  }
+}
+
+# Function to create the summary table
+create_summary_table <- function(test_results) {
+  test_summary <- data.frame(
+    Index = fire_indices,
+    Overall_Mean = round(summary_overall$Mean, 2),
+    Year_2018_Mean = round(summary_2018$Mean, 2),
+    Mean_Difference = round(summary_overall$Mean - summary_2018$Mean, 2),
+    P_Value = sapply(test_results, function(x) format_p_value(x$p.value)),
+    Significant = sapply(test_results, function(x) ifelse(x$p.value < 0.05, "Yes", "No"))
+  )
+  
+  return(test_summary)
+}
+
+```
+
+#### One Sample T Test
+
+```{r}
+# Perform t-tests
+test_results_t_test <- lapply(fire_indices, function(index) {
+  t.test(hotspots_peak_clean[[index]], hotspots_test_2018[[index]])
+})
+
+# Print summary table for t-test
+summary_table_t_test <- create_summary_table(test_results_t_test)
+print(summary_table_t_test)
+```
+
+*All the p-values are extremely small, indicating that the differences in means for all six indices between the overall dataset and the year 2018 are statistically significant.*
+
+*This suggests that the conditions in 2018 were indeed different from the overall conditions, which could explain the increased number of fire events that year.*
+
+#### Wilcoxon test
+
+*During our normality checks, some of the variables did not show a smooth bell curve, meaning that they do not follow a normal distribution. We decided to perform nonparametric tests, which do not assume a normal distribution of the data, to compare the results.*
+
+```{r}
+# Perform Wilcoxon tests
+test_results_wilcoxon <- lapply(fire_indices, function(index) {
+  wilcox.test(hotspots_peak_clean[[index]], hotspots_test_2018[[index]])
+})
+
+# Print summary table for Wilcoxon test
+summary_table_wilcoxon <- create_summary_table(test_results_wilcoxon)
+print(summary_table_wilcoxon)
+```
+
+*All six fire indices show significant differences between the values in 2018 and the overall values across all years.*
+
+*This suggests that the conditions in 2018 were statistically different from the overall conditions in the dataset.*
+
+*There were likely specific factors in 2018 that contributed to these differences.*
+
+*While the t-tests show that there are significant differences in the fire indices, they don't prove that higher values of these indices cause more fires.*
+
+*However, the higher values of indices like FWI, DMC, and others in 2018 suggest there is a link, meaning higher values of these indices likely mean conditions for more fires.*
+
+*To find the relationship between these indices and the number of fires, need to make more analysis, like regression modeling.*
