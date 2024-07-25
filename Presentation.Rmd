@@ -310,32 +310,32 @@ plot_clusters_on_map <- function(cluster_ids, data, zoom_level = 10) {
 
 *ID 4792 Tweedsmuir Complex Fire (2018)*
 
-```{r maps_top, echo=FALSE, warning=FALSE}
+```{r maps_top, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
 # Plot the top 5 clusters individually
 plot_clusters_on_map(top_clusters$event_cluster[1], hotspots_peak, zoom_level = 10)
 ```
 
 *ID 3120 Elephant Hill Fire (2017)*
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
 plot_clusters_on_map(top_clusters$event_cluster[2], hotspots_peak, zoom_level = 10)
 ```
 
 *ID 14487 Fort Nelson Fire (2023)*
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
 plot_clusters_on_map(top_clusters$event_cluster[3], hotspots_peak, zoom_level = 10)
 ```
 
 *ID 4790 Shovel Lake Fire (2018)*
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
 plot_clusters_on_map(top_clusters$event_cluster[4], hotspots_peak, zoom_level = 10)
 ```
 
 *ID 3125 Hanceville-Riske Creek Fire (2017)*
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
 plot_clusters_on_map(top_clusters$event_cluster[5], hotspots_peak, zoom_level = 10)
 ```
 
@@ -379,7 +379,7 @@ kelowna_clusters <- cluster_summary %>%
 print(kelowna_clusters)
 ```
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
 # Plot the matching clusters on the map
 plot_clusters_on_map(kelowna_clusters$event_cluster, hotspots_peak, zoom_level = 10)
 ```
@@ -669,7 +669,7 @@ high_pcp_summary <- hotspots_peak %>%
 print(high_pcp_summary)
 ```
 
-```{r, echo=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE}
 # Plot the event on map
 plot_clusters_on_map(14510, hotspots_peak, zoom_level = 10)
 ```
@@ -1354,7 +1354,7 @@ isi_outliers %>%
 # Most isi outliers come from clusters 401 and 130
 ```
 
-```{r, echo=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE}
 plot_clusters_on_map(401, hotspots_peak, zoom_level = 10)
 plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
 ```
@@ -1526,7 +1526,7 @@ fwi_outliers %>%
 # Most fwi outliers come from clusters 401 and 130, same as isi outliers
 ```
 
-```{r, echo=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE}
 plot_clusters_on_map(401, hotspots_peak, zoom_level = 10)
 plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
 ```
@@ -1862,7 +1862,7 @@ cluster_summary %>%
 *Snowy Mountain Fire and other fires in the Okanagan region in 2018.\
 Placer Mountain Fire area, a notable fire from 2018, which also burned in 2023.*
 
-```{r, echo=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE}
 plot_clusters_on_map(4956, hotspots_peak, zoom_level = 10) 
 
 plot_clusters_on_map(4844, hotspots_peak, zoom_level = 10) 
@@ -2265,7 +2265,7 @@ print(cluster_summary)
 
 *Plot the clusters on the map*
 
-```{r, echo=FALSE}
+```{r, fig.width=7, fig.height=11, echo=FALSE}
 # Plot the chosen clusters on the map
 plot_clusters_on_map(chosen_ids, hotspots_peak, zoom_level = 10)
 ```
