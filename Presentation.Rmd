@@ -2156,7 +2156,10 @@ create_summary_table <- function(test_results) {
 test_results_t_test <- lapply(fire_indices, function(index) {
   t.test(hotspots_peak_clean[[index]], hotspots_test_2018[[index]])
 })
+test_results_t_test
+```
 
+```{r}
 # Print summary table for t-test
 summary_table_t_test <- create_summary_table(test_results_t_test)
 print(summary_table_t_test)
@@ -2175,7 +2178,10 @@ print(summary_table_t_test)
 test_results_wilcoxon <- lapply(fire_indices, function(index) {
   wilcox.test(hotspots_peak_clean[[index]], hotspots_test_2018[[index]])
 })
+test_results_wilcoxon
+```
 
+```{r}
 # Print summary table for Wilcoxon test
 summary_table_wilcoxon <- create_summary_table(test_results_wilcoxon)
 print(summary_table_wilcoxon)
@@ -2192,3 +2198,136 @@ print(summary_table_wilcoxon)
 *However, the higher values of indices like FWI, DMC, and others in 2018 suggest there is a link, meaning higher values of these indices likely mean conditions for more fires.*
 
 *To find the relationship between these indices and the number of fires, need to make more analysis, like regression modeling.*
+
+#### Analysis of Two Similar Clusters
+
+*Further we wanted to test similar clusters.*
+
+*We need to find two clusters of fire events with similar characteristics, mean indices, perform statistical tests to compare their indices, and visualize the results.*
+
+*We selected clusters based on the similarity of their mean Fire Weather Index (FWI) and Drought Code (DC).*
+
+```{r}
+# Calculate summary statistics for each cluster
+cluster_summary_indices <- hotspots_test %>%
+  group_by(event_cluster) %>%
+  summarise(
+    num_events = n(),          
+    mean_fwi = mean(fwi),  # Mean FWI value for each cluster
+    mean_dc = mean(dc)     # Mean DC value for each cluster
+  )
+
+# Filter clusters that have 1000+ events
+chosen_clusters <- cluster_summary_indices %>%
+  filter(num_events >= 1000 & num_events <= 6000)
+
+# Function to calculate how similar mean values are
+calculate_similar <- function(df) {
+  df %>%
+    mutate(
+      fwi_diff = abs(mean_fwi - mean(chosen_clusters$mean_fwi)),
+      dc_diff = abs(mean_dc - mean(chosen_clusters$mean_dc)),
+      similar = fwi_diff + dc_diff
+    ) %>%
+    arrange(similar)
+}
+
+# Apply the function and choose two clusters with the closest mean FWI and DC
+chosen_clusters <- chosen_clusters %>%
+  calculate_similar() %>%
+  slice(1:2)
+
+# Chosen clusters
+print(chosen_clusters)
+
+```
+
+```{r}
+# Chosen cluster IDs
+chosen_ids <- chosen_clusters$event_cluster
+
+# Summary table for the chosen clusters
+cluster_summary <- hotspots_test %>%
+  filter(event_cluster %in% chosen_ids) %>%
+  group_by(event_cluster, year, month) %>%
+  summarize(
+    count = n(),
+    mean_ffmc = mean(ffmc, na.rm = TRUE),
+    mean_dmc = mean(dmc, na.rm = TRUE),
+    mean_dc = mean(dc, na.rm = TRUE),
+    mean_isi = mean(isi, na.rm = TRUE),
+    mean_bui = mean(bui, na.rm = TRUE),
+    mean_fwi = mean(fwi, na.rm = TRUE)
+  )
+print(cluster_summary)
+
+```
+
+*Plot the clusters on the map*
+
+```{r, echo=FALSE}
+# Plot the chosen clusters on the map
+plot_clusters_on_map(chosen_ids, hotspots_peak, zoom_level = 10)
+```
+
+*Subset the dataframe for the chosen clusters*
+
+```{r}
+# Filter data for the two chosen clusters
+cluster_1 <- hotspots_test %>% filter(event_cluster == chosen_ids[1])
+cluster_2 <- hotspots_test %>% filter(event_cluster == chosen_ids[2])
+```
+
+*Visualize the distribution*
+
+```{r, echo=FALSE}
+# Plot histograms for DC
+
+# DC Histogram for cluster_1
+ggplot(cluster_1, aes(x = dc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(cluster_1$dc, na.rm = TRUE), 
+                                         sd = sd(cluster_1$dc, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "DC Histogram for Cluster 1",
+       x = "DC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+# DC Histogram for cluster_2
+ggplot(cluster_2, aes(x = dc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(cluster_2$dc, na.rm = TRUE), 
+                                         sd = sd(cluster_2$dc, na.rm = TRUE)), 
+                color = "red", size = 1) +
+  labs(title = "DC Histogram for Cluster 2",
+       x = "DC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+```
+
+```{r}
+# Perform t-test on DC for the two clusters
+t_test_result <- t.test(cluster_1$dc, cluster_2$dc, alternative = "two.sided")
+
+# Print the t-test result
+print(t_test_result)
+
+```
+
+*The t-test shows no significant difference in the DC values between the two clusters (cluster_1 and cluster_2).*
+
+*The p-value is greater than 0.05, and the confidence interval suggests that the observed differences could be due to random chance rather than a true difference in means.*
+
+*Therefore, the DC values for these clusters are statistically similar.*
