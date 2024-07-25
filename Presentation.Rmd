@@ -717,7 +717,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = y
        y = "Temperature (°C)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *There is a clear seasonal pattern,\
@@ -755,7 +755,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(year), group = yea
        y = "Relative Humidity",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *Humidity values typically increase from August to October.\
@@ -792,7 +792,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = yea
        y = "Wind Speed (km/h)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *There is a clear seasonal pattern where wind speeds tend to be higher in the summer months and decrease towards October.\
@@ -847,7 +847,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
        y = "Precipitation (mm)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *There is a notable peak in July for several years,\
@@ -1006,7 +1006,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = y
        y = "FFMC",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *The lineplot shows that FFMC values peak every year during the fire season.*
@@ -1085,7 +1085,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = ye
        y = "DMC",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *The lineplot indicates that DMC values peak in late summer (August) and decrease in autumn.*
@@ -1169,7 +1169,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = yea
        y = "DC",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *The line plot of DC values by month shows a clear seasonal trend,\
@@ -1334,7 +1334,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = ye
        y = "ISI",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *ISI values tend to peak during the summer months, indicating higher fire spread potential during this period.*
@@ -1424,7 +1424,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_bui, color = factor(year), group = ye
        y = "BUI",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *BUI peaks in mid-summer, which matches the time when fire activity is usually the highest.*
@@ -1499,7 +1499,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = ye
        y = "FWI",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *The lineplot shows that FWI peaks in mid-summer, peak fire activity period.*
@@ -1797,7 +1797,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = ye
        y = "HFI (kW/m)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 ```
 
 *Different years show a lot of differences in HFI values.\
