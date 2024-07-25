@@ -2863,76 +2863,177 @@ t.test(cluster_13095$dc, cluster_4811$dc, alternative = "two.sided")
 
 
 
+# Linear regression model ####
 
-# template boxplot & hist####
+# Numeric columns
+numeric_columns <- c("temp", "rh", "ws", "pcp", "ffmc", "dmc", "dc", "isi", "bui", "fwi", "ros", "hfi")
+
+# Subset the dataframe
+hotspots_test <- hotspots_peak_clean %>%
+  select(all_of(numeric_columns), year, month, rep_date, event_cluster)
+
+str(hotspots_test)
 
 
+# Create a week column
+hotspots_test$week <- format(hotspots_test$rep_date, "%Y-%U")
+
+# Create weekly summary with event counts (fires) and average weekly indices
+weekly_summary <- hotspots_test %>%
+  group_by(week) %>%
+  summarise(
+    fires = n(),
+    hfi = mean(hfi, na.rm = TRUE),
+    temp = mean(temp, na.rm = TRUE),
+    rh = mean(rh, na.rm = TRUE),
+    ws = mean(ws, na.rm = TRUE),
+    pcp = mean(pcp, na.rm = TRUE),
+    ffmc = mean(ffmc, na.rm = TRUE),
+    dmc = mean(dmc, na.rm = TRUE),
+    dc = mean(dc, na.rm = TRUE),
+    isi = mean(isi, na.rm = TRUE),
+    bui = mean(bui, na.rm = TRUE),
+    fwi = mean(fwi, na.rm = TRUE),
+    ros = mean(ros, na.rm = TRUE)
+  )
+weekly_summary
 
 
-# HISTOGRAM - DISTRIBUTION OF THE VALUE IN ALL 10 YEARS
-ggplot(hotspots_peak, aes(x = pcp)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Windspeed at Fire Hotspots",
-       x = "Windspeed (m/s)",
+# Distribution of the number of fires per week
+ggplot(weekly_summary, aes(x = fires)) +
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Weekly Number of Fires", 
+       x = "Number of Fires", 
        y = "Frequency") +
-  scale_y_continuous(labels = comma) + 
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
 
 
-# BOXPLOTS 10 YEARS SIDE BY SIDE
-ggplot(hotspots_peak, aes(x = factor(year), y = pcp)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Windspeed Distribution Across Years",
-       x = "Year",
-       y = "Windspeed (m/s)") +
+# Best parameter Box-Cox 
+boxcox_result <- MASS::boxcox(lm(fires ~ 1, data = weekly_summary))
+lm_best <- boxcox_result$x[which.max(boxcox_result$y)]
+lm_best
+
+# Transform with lm_best
+weekly_summary <- weekly_summary %>%
+  mutate(boxcox_fires = ((fires + 1)^lm_best - 1) / lm_best)
+
+# Distribution of Box-Cox transformed number of fires
+ggplot(weekly_summary, aes(x = boxcox_fires)) +
+  geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Box-Cox Transformed Weekly Number of Fires", 
+       x = "Box-Cox Transformed Number of Fires", 
+       y = "Frequency") +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
 
 
-
-
-
-# LINE PLOT WITH FILTER FOR SPECIFIC YEAR  (trend line added)
-ggplot(hotspots_peak %>% filter(year == 2018), aes(x = rep_date, y = pcp)) +
-  geom_line(color = "steelblue") +
-  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
-  labs(title = "pcp Over the Peak Season 2014",
-       x = "Date",
-       y = "Relative Humidity (%)") +
+# Boxplot of Box-Cox transformed number of fires
+ggplot(weekly_summary, aes(y = boxcox_fires)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Boxplot of Box-Cox Transformed Weekly Number of Fires", 
+       y = "Box-Cox Transformed Number of Fires") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_y_continuous(labels = comma)
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+
+# Create scatterplot matrix
+ggpairs(weekly_summary, columns = c("fires", "boxcox_fires", numeric_columns),
+        title = "Scatterplot Matrix of Predictors")
+
+
+# Model 1
+model_1 <- lm(boxcox_fires ~ dmc + dc + bui + fwi + hfi + ffmc + isi, data = weekly_summary)
+summary(model_1)
+
+# Check for multicollinearity
+vif(model_1)
+
+
+
+# Remove bui 
+model_no_bui <- lm(boxcox_fires ~ dmc + dc + fwi + hfi + ffmc + isi, data = weekly_summary)
+summary(model_no_bui)
+
+# Check for multicollinearity
+vif(model_no_bui)
+
+
+# Remove fwi
+model_no_fwi <- lm(boxcox_fires ~ dmc + dc + hfi + ffmc + isi, data = weekly_summary)
+summary(model_no_fwi)
+
+# Check for multicollinearity
+vif(model_no_fwi)
+
+
+# Remove non-significant predictors
+model_final <- lm(boxcox_fires ~ dc + hfi + ffmc, data = weekly_summary)
+summary(model_final)
+
+# Check for multicollinearity
+vif(model_final)
+
+# Plot diagnostic plots
+par(mfrow = c(2, 2))
+plot(model_final)
 
 
 
 
 
-# 10 YEAR AVERAGE LINEPLOT - USES AVG TABLE
-# TRENDLINE
-ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = year)) +
-  geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
-  geom_smooth(se = FALSE, method = "loess", size = 1, linetype = "solid") +  # Dashed line for trend
-  labs(title = "Average Precipitation by Month",
-       x = "Month",
-       y = "Average Precipitation (mm)",
-       color = "Year") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+# Test 1
+
+# Create a dataframe with hypothetical conditions
+test_1 <- data.frame(
+  dc = c(200, 300, 400),     
+  hfi = c(1000, 2000, 3000), 
+  ffmc = c(85, 90, 95)      
+)
 
 
+predicted_boxcox_fires_test_1 <- predict(model_final, newdata = test_1)
+
+# Reverse Box-Cox transformation
+reverse_boxcox <- function(y, lambda) {
+  if (lambda == 0) {
+    exp(y) - 1
+  } else {
+    ((y * lambda) + 1)^(1 / lambda) - 1
+  }
+}
+
+predicted_fires_test_1 <- reverse_boxcox(predicted_boxcox_fires_test_1, lm_best)
+result_test_1 <- cbind(test_1, predicted_fires_test_1)
+result_test_1
+
+# Test 2
+
+test_2 <- data.frame(
+  dc = rep(300, 5),                # Constant value for Drought Code
+  hfi = seq(1000, 5000, by = 1000),# Varying values for Head Fire Intensity
+  ffmc = rep(90, 5)                # Constant value for Fine Fuel Moisture Code
+)
 
 
+predicted_boxcox_fires_test_2 <- predict(model_final, newdata = test_2)
+
+predicted_fires_test_2 <- reverse_boxcox(predicted_boxcox_fires_test_2, lm_best)
+
+# Result
+result_test_2 <- cbind(test_2, predicted_fires_test_2)
+result_test_2
 
 
-
-############## draft####
 

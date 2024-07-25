@@ -28,6 +28,9 @@ library(tidyr)
 library(gridExtra)
 library(corrplot)
 library(openair)
+library(GGally)
+library(car)
+
 ```
 
 ```{r, read data}
@@ -1907,7 +1910,7 @@ numeric_columns <- c("temp", "rh", "ws", "pcp", "ffmc", "dmc", "dc", "isi", "bui
 
 # Subset the dataframe
 hotspots_test <- hotspots_peak_clean %>%
-  select(all_of(numeric_columns), year, month, event_cluster)
+  select(all_of(numeric_columns), year, month, rep_date, event_cluster)
 
 str(hotspots_test)
 ```
@@ -2331,3 +2334,244 @@ print(t_test_result)
 *The p-value is greater than 0.05, and the confidence interval suggests that the observed differences could be due to random chance rather than a true difference in means.*
 
 *Therefore, the DC values for these clusters are statistically similar.*
+
+
+ ### Linear regression model
+
+Analyze the weekly number of fires using various fire index predictors.
+The goal is to build a linear regression model to predict the number of fires and see its performance.
+
+
+```{r}
+# Create a week column
+hotspots_test$week <- format(hotspots_test$rep_date, "%Y-%U")
+
+# Create weekly summary with event counts (fires) and average weekly indices
+weekly_summary <- hotspots_test %>%
+  group_by(week) %>%
+  summarise(
+    fires = n(),
+    hfi = mean(hfi, na.rm = TRUE),
+    temp = mean(temp, na.rm = TRUE),
+    rh = mean(rh, na.rm = TRUE),
+    ws = mean(ws, na.rm = TRUE),
+    pcp = mean(pcp, na.rm = TRUE),
+    ffmc = mean(ffmc, na.rm = TRUE),
+    dmc = mean(dmc, na.rm = TRUE),
+    dc = mean(dc, na.rm = TRUE),
+    isi = mean(isi, na.rm = TRUE),
+    bui = mean(bui, na.rm = TRUE),
+    fwi = mean(fwi, na.rm = TRUE),
+    ros = mean(ros, na.rm = TRUE)
+  )
+weekly_summary
+```
+
+
+
+```{r, echo=FALSE}
+# Distribution of the number of fires per week
+ggplot(weekly_summary, aes(x = fires)) +
+  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Weekly Number of Fires", 
+       x = "Number of Fires", 
+       y = "Frequency") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+```
+
+
+Transform the number of fires to get more normally distributed data
+
+```{r}
+# Best parameter Box-Cox 
+boxcox_result <- MASS::boxcox(lm(fires ~ 1, data = weekly_summary))
+lm_best <- boxcox_result$x[which.max(boxcox_result$y)]
+lm_best
+
+# Transform with lm_best
+weekly_summary <- weekly_summary %>%
+  mutate(boxcox_fires = ((fires + 1)^lm_best - 1) / lm_best)
+```
+
+
+```{r, echo=FALSE}
+# Distribution of Box-Cox transformed number of fires
+ggplot(weekly_summary, aes(x = boxcox_fires)) +
+  geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Distribution of Box-Cox Transformed Weekly Number of Fires", 
+       x = "Box-Cox Transformed Number of Fires", 
+       y = "Frequency") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+
+
+# Boxplot of Box-Cox transformed number of fires
+ggplot(weekly_summary, aes(y = boxcox_fires)) +
+  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  labs(title = "Boxplot of Box-Cox Transformed Weekly Number of Fires", 
+       y = "Box-Cox Transformed Number of Fires") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14),
+    axis.title = element_text(size = 12),
+    axis.text = element_text(size = 10)
+  )
+```
+
+
+```{r, echo=FALSE}
+# Create scatterplot matrix
+ggpairs(weekly_summary, columns = c("fires", "boxcox_fires", numeric_columns),
+        title = "Scatterplot Matrix of Predictors")
+```
+
+
+
+
+#####
+
+
+
+
+```{r}
+# Model 1
+model_1 <- lm(boxcox_fires ~ dmc + dc + bui + fwi + hfi + ffmc + isi, data = weekly_summary)
+summary(model_1)
+
+```
+
+
+
+```{r}
+# Check for multicollinearity
+vif(model_1)
+```
+
+
+
+```{r}
+# Remove bui
+model_no_bui <- lm(boxcox_fires ~ dmc + dc + fwi + hfi + ffmc + isi, data = weekly_summary)
+summary(model_no_bui)
+```
+
+
+
+```{r}
+# Check for multicollinearity
+vif(model_no_bui)
+```
+
+
+
+```{r}
+# Remove fwi
+model_no_fwi <- lm(boxcox_fires ~ dmc + dc + hfi + ffmc + isi, data = weekly_summary)
+summary(model_no_fwi)
+```
+
+
+
+```{r}
+# Check for multicollinearity
+vif(model_no_fwi)
+```
+
+
+```{r}
+# Remove non-significant predictors
+model_final <- lm(boxcox_fires ~ dc + hfi + ffmc, data = weekly_summary)
+summary(model_final)
+```
+
+
+```{r}
+# Check for multicollinearity
+vif(model_final)
+```
+
+
+
+```{r, echo=FALSE}
+# Plot diagnostic plots
+par(mfrow = c(2, 2))
+plot(model_final)
+```
+
+
+#### Example use of the model
+
+```{r}
+# Create a dataframe with hypothetical conditions
+test_1 <- data.frame(
+  dc = c(200, 300, 400),     # Example values for Drought Code
+  hfi = c(1000, 2000, 3000), # Example values for Head Fire Intensity
+  ffmc = c(85, 90, 95)       # Example values for Fine Fuel Moisture Code
+)
+```
+
+
+```{r}
+# Predict the Box-Cox transformed number of fires
+predicted_boxcox_fires_test_1 <- predict(model_final, newdata = test_1)
+
+# Reverse Box-Cox transformation
+reverse_boxcox <- function(y, lambda) {
+  if (lambda == 0) {
+    exp(y) - 1
+  } else {
+    ((y * lambda) + 1)^(1 / lambda) - 1
+  }
+}
+
+# Transform to original scale
+predicted_fires_test_1 <- reverse_boxcox(predicted_boxcox_fires_test_1, lm_best)
+
+```
+
+
+
+```{r}
+# Model predictions
+result_test_1 <- cbind(test_1, predicted_fires_test_1)
+print(result_test_1)
+```
+
+
+
+```{r}
+# Create a dataframe with hypothetical conditions (only HFI changes)
+test_2 <- data.frame(
+  dc = rep(300, 5),                # Constant value for Drought Code
+  hfi = seq(1000, 5000, by = 1000),# Varying values for Head Fire Intensity
+  ffmc = rep(90, 5)                # Constant value for Fine Fuel Moisture Code
+)
+```
+
+
+
+
+```{r}
+# Predict the Box-Cox transformed number of fires
+predicted_boxcox_fires_test_2 <- predict(model_final, newdata = test_2)
+
+# Transform to original scale
+predicted_fires_test_2 <- reverse_boxcox(predicted_boxcox_fires_test_2, lm_best)
+```
+
+
+```{r}
+# Model predictions
+result_test_2 <- cbind(test_2, predicted_fires_test_2)
+print(result_test_2)
+```
+
