@@ -277,7 +277,7 @@ plot_clusters_on_map <- function(cluster_ids, data, zoom_level = 10) {
   
   # Plot the clusters data on the map
   print(ggmap(map) +
-          geom_point(data = cluster_data, aes(x = lon, y = lat, color = factor(event_cluster)), size = 2, alpha = 0.3, shape = 21) +  
+          geom_point(data = cluster_data, aes(x = lon, y = lat, color = factor(event_cluster)), size = 2, alpha = 0.3, shape = 16) +  
           labs(title = "Matched Fire Clusters", 
                x = "Longitude", 
                y = "Latitude", 
