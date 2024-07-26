@@ -377,6 +377,8 @@ cat("Longitude Range:", lon_range, "\n")
 # - `rep_date`: The date and time when the fire event was reported.
 
 # Full Dataset Analysis ####
+
+# HOTSPOTS FULL (JAN NOV DEC DATA)
 # Summary table describing each hotspots dataset by year
 hotspots_df_summary <- hotspots %>%
   group_by(year) %>%
@@ -399,6 +401,33 @@ ggplot(hotspots_df_summary, aes(x = factor(year), y = hotspots_df_day_count)) +
 
 # This barplot shows, how many days each year had recorded fire events.
 # It helps us see if the reporting period has grown over the years.
+
+
+# HOTSPOTS PEAK
+
+# Summary table describing each hotspots dataset by year
+hotspots_df_summary_peak <- hotspots_peak %>%
+  group_by(year) %>%
+  summarise(
+    start_date = min(rep_date),
+    end_date = max(rep_date),
+    hotspots_df_day_count = as.numeric(difftime(max(rep_date), min(rep_date), units = "days"))
+  )
+
+print(hotspots_df_summary_peak)
+
+
+
+# Plotting the number of days reported per year
+ggplot(hotspots_df_summary_peak, aes(x = factor(year), y = hotspots_df_day_count)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  labs(title = "Number of Days Reported per Year",
+       x = "Year",
+       y = "Number of Days") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
 
 # Peak Season Analysis ####
 # Summary table for the peak season (May to October) describing each hotspots dataset by year
