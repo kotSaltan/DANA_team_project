@@ -2995,7 +2995,7 @@ plot(model_final)
 
 # Test 1
 
-# Create a dataframe with hypothetical conditions
+# Create a dataframe with hypothetical conditions (moderate, high, extreme)
 test_1 <- data.frame(
   dc = c(200, 400, 600),     
   hfi = c(1000, 7000, 12000), 
