@@ -2995,7 +2995,7 @@ plot(model_final)
 
 # Test 1
 
-# Create a dataframe with hypothetical conditions (moderate, high, extreme)
+# Create a dataframe with hypothetical conditions (moderate, high, extrem)
 test_1 <- data.frame(
   dc = c(200, 400, 600),     
   hfi = c(1000, 7000, 12000), 
@@ -3069,4 +3069,27 @@ predicted_fires_test_Kelowna <- reverse_boxcox(predicted_boxcox_fires_test_Kelow
 result_test_Kelowna <- cbind(test_Kelowna, predicted_fires_test_Kelowna)
 result_test_Kelowna
 
-print(kelowna_clusters)
+
+# Test 4
+
+# Kelowna fires, model_1
+
+# Create a dataframe with Kelowna data
+test_Kelowna_2 <- data.frame(
+  dc = c(867, 929, 920),     
+  hfi = c(3389, 6282, 1010), 
+  ffmc = c(91.6, 93.4, 86.5),
+  dmc=c(98.9,176,170),
+  isi=c(8.14,14,4.68),
+  bui=c(154,239,233),
+  fwi=c(32,48,23.4)
+)
+
+predicted_boxcox_fires_test_Kelowna_2 <- predict(model_1, newdata = test_Kelowna_2)
+
+predicted_fires_test_Kelowna_2 <- reverse_boxcox(predicted_boxcox_fires_test_Kelowna_2, lm_best)
+
+# Result
+result_test_Kelowna_2 <- cbind(test_Kelowna_2, predicted_fires_test_Kelowna_2)
+result_test_Kelowna_2
+
