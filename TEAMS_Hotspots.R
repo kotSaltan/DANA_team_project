@@ -284,18 +284,21 @@ plot_clusters_on_map <- function(cluster_ids, data, zoom_level = 10) {
                color = "Cluster ID") +
           theme_minimal() +
           theme(legend.position = "bottom") +
-          scale_color_manual(values = c("firebrick1", "orange", "yellow")) # Custom colours
+          scale_color_manual(values = c("firebrick1", "orange", "yellow", "orange3", "darkred")) # Custom colours
   ) 
 }
 
 
+chosen_ids_top <- c(4792,3120,14487,4790,3125)
+
+plot_clusters_on_map(chosen_ids_top, hotspots_peak, zoom_level = 7)
 
 # Plot the top 5 clusters individually
-plot_clusters_on_map(top_clusters$event_cluster[1], hotspots_peak, zoom_level = 10)
-plot_clusters_on_map(top_clusters$event_cluster[2], hotspots_peak, zoom_level = 10)
-plot_clusters_on_map(top_clusters$event_cluster[3], hotspots_peak, zoom_level = 10)
-plot_clusters_on_map(top_clusters$event_cluster[4], hotspots_peak, zoom_level = 10)
-plot_clusters_on_map(top_clusters$event_cluster[5], hotspots_peak, zoom_level = 10)
+# plot_clusters_on_map(top_clusters$event_cluster[1], hotspots_peak, zoom_level = 10)
+# plot_clusters_on_map(top_clusters$event_cluster[2], hotspots_peak, zoom_level = 10)
+# plot_clusters_on_map(top_clusters$event_cluster[3], hotspots_peak, zoom_level = 10)
+# plot_clusters_on_map(top_clusters$event_cluster[4], hotspots_peak, zoom_level = 10)
+# plot_clusters_on_map(top_clusters$event_cluster[5], hotspots_peak, zoom_level = 10)
 
 # The plots show large areas affected by fires.
 # Each fire cluster covers a big region, indicating major fire events.
