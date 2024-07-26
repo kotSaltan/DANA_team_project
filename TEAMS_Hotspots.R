@@ -2997,9 +2997,9 @@ plot(model_final)
 
 # Create a dataframe with hypothetical conditions
 test_1 <- data.frame(
-  dc = c(200, 300, 400),     
-  hfi = c(1000, 2000, 3000), 
-  ffmc = c(85, 90, 95)      
+  dc = c(200, 400, 600),     
+  hfi = c(1000, 7000, 12000), 
+  ffmc = c(50, 80, 95)      
 )
 
 
@@ -3018,12 +3018,13 @@ predicted_fires_test_1 <- reverse_boxcox(predicted_boxcox_fires_test_1, lm_best)
 result_test_1 <- cbind(test_1, predicted_fires_test_1)
 result_test_1
 
+
 # Test 2
 
 test_2 <- data.frame(
   dc = rep(300, 5),                # Constant value for Drought Code
-  hfi = seq(1000, 5000, by = 1000),# Varying values for Head Fire Intensity
-  ffmc = rep(90, 5)                # Constant value for Fine Fuel Moisture Code
+  hfi = seq(2000, 10000, by = 2000),# Varying values for Head Fire Intensity
+  ffmc = rep(70, 5)                # Constant value for Fine Fuel Moisture Code
 )
 
 
@@ -3037,3 +3038,35 @@ result_test_2
 
 
 
+# Test 3
+
+# Summary table for Kelowna
+hotspots_test %>%
+  filter(event_cluster %in% c(15551, 13923, 13928)) %>%
+  group_by(event_cluster, year, month) %>%
+  summarize(
+    count = n(),
+    mean_dc = mean(dc, na.rm = TRUE),
+    mean_hfi = mean(hfi, na.rm = TRUE),
+    mean_ffmc = mean(ffmc, na.rm = TRUE),
+    start_date = min(rep_date),
+    end_date = max(rep_date),
+  )
+
+
+# Create a dataframe with Kelowna data
+test_Kelowna <- data.frame(
+  dc = c(867, 929, 920),     
+  hfi = c(3389, 6282, 1010), 
+  ffmc = c(91.6, 93.4, 86.5)        
+)
+
+predicted_boxcox_fires_test_Kelowna <- predict(model_final, newdata = test_Kelowna)
+
+predicted_fires_test_Kelowna <- reverse_boxcox(predicted_boxcox_fires_test_Kelowna, lm_best)
+
+# Result
+result_test_Kelowna <- cbind(test_Kelowna, predicted_fires_test_Kelowna)
+result_test_Kelowna
+
+print(kelowna_clusters)
