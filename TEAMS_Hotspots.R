@@ -13,7 +13,8 @@ library(tidyr)      # For data tidying
 library(gridExtra)
 library(corrplot)
 library(openair)
-
+library(GGally)
+library(car)
 
 # Set seed for reproducibility
 set.seed(123)
@@ -543,6 +544,10 @@ print(event_sensors)
 # The VIIRS-I sensor is used the most for both this event and the overall data.
 # The S-NPP satellite is also a key source in both cases.
 
+
+
+
+
 # 4. Weather Data Variables ####
 
 # Weather conditions are critical factors in the spread of fires.
@@ -643,6 +648,9 @@ summary_hotspots <- describe_numerical(hotspots_peak, c('temp', 'rh', 'ws', 'wd'
 print(summary_hotspots)
 
 
+
+
+
 # 4.1 Temperature (°C) ####
 
 # Create a boxplot to compare temperature distributions across years
@@ -669,6 +677,8 @@ ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = y
        color = "Year") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
 
 
 
@@ -701,6 +711,8 @@ ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(year), group = yea
 
 
 
+
+
 # 4.3 Wind Speed (km/h) ####
 
 # Create a boxplot to compare wind speed distributions across years
@@ -729,6 +741,9 @@ ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = yea
 summary(hotspots_peak$ws)
 
 
+
+
+
 # 4.4 Wind direction (degrees) 
 
 # Visualize with Wind Rose to see most common wind direction using converted wind speed
@@ -739,6 +754,7 @@ hotspots_peak <- hotspots_peak %>%
 
 windRose(mydata = hotspots_peak, ws = "ws_m_s", wd = "wd", 
          main = "Wind Rose", paddle = FALSE)
+
 
 
 
@@ -785,6 +801,12 @@ remove_outliers <- function(data, variable) {
   upper_bound <- q3 + 1.5 * iqr
   data %>% filter(data[[variable]] >= lower_bound & data[[variable]] <= upper_bound)
 }
+
+
+# An outlier in one year may not be an outlier in another year if the distribution of values in that year is different.
+# Boxplots define outliers based on the distribution of data within each specific year,
+# so a value that is extreme for one year might be typical for another year if that year's data
+# has a wider spread or different distribution.
 
 # Remove outliers for temperature, relative humidity, and wind speed
 hotspots_peak_clean <- hotspots_peak %>%
@@ -855,6 +877,9 @@ summary_fire_indices <- describe_numerical(hotspots_peak, c('ffmc', 'dmc', 'dc',
 print(summary_fire_indices)
 
 
+
+
+
 # 5.1 Fine Fuel Moisture Code ####
 # A numeric rating of the moisture content of litter and other cured fine fuels.
 # This code is an indicator of the relative ease of ignition and the flammability of fine fuel.
@@ -874,7 +899,7 @@ ggplot(hotspots_peak, aes(x = ffmc)) +
   theme_minimal()
 
 # Plot boxplot for FFMC
-ggplot(hotspots_peak, aes(x = factor(year), y = ffmc)) +
+boxplot_ffmc <- ggplot(hotspots_peak, aes(x = factor(year), y = ffmc)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "FFMC Distribution Across Years",
        x = "Year",
@@ -885,6 +910,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = ffmc)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+boxplot_ffmc
 
 # Line plot for FFMC over time
 ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = year)) +
@@ -904,9 +930,9 @@ hotspots_peak_clean <- hotspots_peak %>%
   remove_outliers("ffmc")
 
 # Plot boxplot for FFMC
-ggplot(hotspots_peak_clean, aes(x = factor(year), y = ffmc)) +
+boxplot_ffmc_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = ffmc)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "FFMC Distribution Across Years",
+  labs(title = "FFMC Distribution Across Years (Clean)",
        x = "Year",
        y = "FFMC") +
   theme_minimal() +
@@ -915,6 +941,8 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = ffmc)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+grid.arrange(boxplot_ffmc, boxplot_ffmc_clean)
+
 
 
 
@@ -943,7 +971,7 @@ ggplot(hotspots_peak, aes(x = dmc)) +
   theme_minimal()
 
 # Plot boxplot for DMC
-ggplot(hotspots_peak, aes(x = factor(year), y = dmc)) +
+boxplot_dmc <- ggplot(hotspots_peak, aes(x = factor(year), y = dmc)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "DMC Distribution Across Years",
        x = "Year",
@@ -954,6 +982,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = dmc)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+boxplot_dmc
 
 # Line plot for DMC over time
 ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = year)) +
@@ -968,17 +997,14 @@ ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = ye
 
 
 
-
-
-
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
   remove_outliers("dmc")
 
 # Plot boxplot for DMC
-ggplot(hotspots_peak_clean, aes(x = factor(year), y = dmc)) +
+boxplot_dmc_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = dmc)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "DMC Distribution Across Years",
+  labs(title = "DMC Distribution Across Years (Clean)",
        x = "Year",
        y = "DMC") +
   theme_minimal() +
@@ -987,6 +1013,8 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = dmc)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+grid.arrange(boxplot_dmc, boxplot_dmc_clean)
+
 
 
 
@@ -1012,7 +1040,7 @@ ggplot(hotspots_peak, aes(x = dc)) +
   theme_minimal()
 
 # Plot boxplot for DC
-ggplot(hotspots_peak, aes(x = factor(year), y = dc)) +
+boxplot_dc <- ggplot(hotspots_peak, aes(x = factor(year), y = dc)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "DC Distribution Across Years",
        x = "Year",
@@ -1023,6 +1051,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = dc)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+boxplot_dc
 
 # Line plot for DC over time
 ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = year)) +
@@ -1042,16 +1071,14 @@ ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = yea
 
 
 
-
-
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
   remove_outliers("dc")
 
 # Plot boxplot for DC
-ggplot(hotspots_peak_clean, aes(x = factor(year), y = dc)) +
+boxplot_dc_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = dc)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "DC Distribution Across Years",
+  labs(title = "DC Distribution Across Years (Clean)",
        x = "Year",
        y = "DC") +
   theme_minimal() +
@@ -1060,6 +1087,9 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = dc)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+grid.arrange(boxplot_dc,boxplot_dc_clean)
+
+
 
 
 
@@ -1147,6 +1177,7 @@ ggplot(monthly_data, aes(x = Date)) +
 
 
 
+
 # 5.5 Initial Spread Index ####
 # A numerical rating of the expected rate of fire spread
 # based on wind speed, temperature, and fine fuel moisture content. 
@@ -1168,7 +1199,7 @@ ggplot(hotspots_peak, aes(x = isi)) +
   theme_minimal()
 
 # Plot boxplot for ISI
-ggplot(hotspots_peak, aes(x = factor(year), y = isi)) +
+boxplot_isi <- ggplot(hotspots_peak, aes(x = factor(year), y = isi)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "ISI Distribution Across Years",
        x = "Year",
@@ -1179,6 +1210,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = isi)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+boxplot_isi
 
 # Line plot for ISI over time
 ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = year)) +
@@ -1218,14 +1250,15 @@ plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
 # These conditions explain the high ISI values, indicating a high potential for severe fire behavior.
 
 
+
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
   remove_outliers("isi")
 
 # Plot boxplot for ISI
-ggplot(hotspots_peak_clean, aes(x = factor(year), y = isi)) +
+boxplot_isi_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = isi)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "ISI Distribution Across Years",
+  labs(title = "ISI Distribution Across Years (Clean)",
        x = "Year",
        y = "ISI") +
   theme_minimal() +
@@ -1234,11 +1267,15 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = isi)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+grid.arrange(boxplot_isi,boxplot_isi_clean)
 
 # After removing outliers, the cleaned ISI boxplots show more consistent distributions across the years. 
 # The extreme ISI values in 2014 were linked to the Mount McAllister fire.
 # The cleaned data provides a clearer view of typical ISI values,
 # better representing fire spread potential across different years.
+
+
+
 
 
 # 5.6 Buildup Index ####
@@ -1256,7 +1293,7 @@ ggplot(hotspots_peak, aes(x = bui)) +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
-ggplot(hotspots_peak, aes(x = factor(year), y = bui)) +
+boxplot_bui <- ggplot(hotspots_peak, aes(x = factor(year), y = bui)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "BUI Distribution Across Years",
        x = "Year",
@@ -1267,7 +1304,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = bui)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
-
+boxplot_bui
 
 ggplot(monthly_avg, aes(x = month, y = avg_bui, color = factor(year), group = year)) +
   geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
@@ -1281,15 +1318,14 @@ ggplot(monthly_avg, aes(x = month, y = avg_bui, color = factor(year), group = ye
 
 
 
-
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
   remove_outliers("bui")
 
 # Plot boxplot for BUI
-ggplot(hotspots_peak_clean, aes(x = factor(year), y = bui)) +
+boxplot_bui_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = bui)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "BUI Distribution Across Years",
+  labs(title = "BUI Distribution Across Years (Clean)",
        x = "Year",
        y = "BUI") +
   theme_minimal() +
@@ -1298,6 +1334,10 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = bui)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
+grid.arrange(boxplot_bui, boxplot_bui_clean)
+
+
+
 
 
 # 5.7 Fire Weather Index ####
@@ -1316,7 +1356,7 @@ ggplot(hotspots_peak, aes(x = fwi)) +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
-ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
+boxplot_fwi <- ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "FWI Distribution Across Years",
        x = "Year",
@@ -1327,7 +1367,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
-
+boxplot_fwi
 
 ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = year)) +
   geom_line(size = 0.5, alpha = 0.6, linetype = "dotted") +  # raw data
@@ -1362,15 +1402,14 @@ plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
 
 
 
-
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
   remove_outliers("fwi")
 
 # Plot boxplot for FWI
-ggplot(hotspots_peak_clean, aes(x = factor(year), y = fwi)) +
+boxplot_fwi_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = fwi)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "FWI Distribution Across Years",
+  labs(title = "FWI Distribution Across Years (Clean)",
        x = "Year",
        y = "FWI") +
   theme_minimal() +
@@ -1379,10 +1418,15 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = fwi)) +
         axis.title.y = element_text(size = 12),
         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
         axis.text.y = element_text(size = 10))
-# 
+grid.arrange(boxplot_fwi, boxplot_fwi_clean)
+
 # After removing outliers, the FWI boxplots show more consistent distributions across the years. 
 # Median FWI values generally fall between 20 and 40. Reducing outliers, especially from the 2014 Mount McAllister fire, 
 # provides a clearer view of typical fire weather conditions and trends over the years.
+
+
+
+
 
 # 5.8 Compare indices trends to timeline of fire events####
 
@@ -2384,7 +2428,7 @@ print(summary_fire_indices)
 
 # During EDA we looked into distributions of six key Fire Indices across different years.
 # The distributions of these indices for a particular year, 2018, 
-# appeared to be close to the overall mean values of these indices.
+# appeared to be close to the overall average values of these indices.
 # We also found out that 2018 had some significant fire events.
 
 # Average number of observations per year
@@ -2403,10 +2447,14 @@ nrow(filter(hotspots_peak_clean, year == 2018))
 length(unique(filter(hotspots_peak_clean, year == 2018)$event_cluster))
 # 2051
 
+
+grid.arrange(boxplot_ffmc_clean, boxplot_dmc_clean, boxplot_dc_clean,
+             boxplot_isi_clean, boxplot_bui_clean, boxplot_fwi_clean, nrow = 2, ncol = 3)
+
 # From these calculations, we found that 2018 had a significantly higher number of observations
 # and event clusters compared to the average over the ten-year period.
 # Despite the higher number of fire events, the main indices (FFMC, DMC, DC, ISI, BUI, FWI) 
-# remained close to their mean values across the dataset.
+# remained close to their median values across the dataset.
 
 # Therefore we wanted to test if the increased number of fires in 2018 was due to random chance
 # or if other factors were at play. 
@@ -2415,7 +2463,113 @@ length(unique(filter(hotspots_peak_clean, year == 2018)$event_cluster))
 # and a lower p-value would mean the presence of other contributing factors.
 
 
+# FFMC Histogram in 2018 with Normal Curve
+norm_d_ffmc <- ggplot(hotspots_test_2018, aes(x = ffmc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$ffmc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$ffmc, na.rm = TRUE)), 
+                color = "red", linewidth = 1) +
+  labs(title = "FFMC Histogram in 2018 with Normal Curve",
+       x = "FFMC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
 
+
+
+# DMC Histogram in 2018 with Normal Curve
+norm_d_dmc <- ggplot(hotspots_test_2018, aes(x = dmc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dmc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$dmc, na.rm = TRUE)), 
+                color = "red", linewidth = 1) +
+  labs(title = "DMC Histogram in 2018 with Normal Curve",
+       x = "DMC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+
+# DC Histogram in 2018 with Normal Curve
+norm_d_dc <- ggplot(hotspots_test_2018, aes(x = dc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 50, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dc, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$dc, na.rm = TRUE)), 
+                color = "red", linewidth = 1) +
+  labs(title = "DC Histogram in 2018 with Normal Curve",
+       x = "DC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+
+# ISI Histogram in 2018 with Normal Curve
+norm_d_isi <- ggplot(hotspots_test_2018, aes(x = isi)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$isi, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$isi, na.rm = TRUE)), 
+                color = "red", linewidth = 1) +
+  labs(title = "ISI Histogram in 2018 with Normal Curve",
+       x = "ISI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# BUI Histogram in 2018 with Normal Curve
+norm_d_bui <- ggplot(hotspots_test_2018, aes(x = bui)) +
+  geom_histogram(aes(y = ..density..), binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$bui, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$bui, na.rm = TRUE)), 
+                color = "red", linewidth = 1) +
+  labs(title = "BUI Histogram in 2018 with Normal Curve",
+       x = "BUI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# FWI Histogram in 2018 with Normal Curve
+norm_d_fwi <- ggplot(hotspots_test_2018, aes(x = fwi)) +
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$fwi, na.rm = TRUE), 
+                                         sd = sd(hotspots_test_2018$fwi, na.rm = TRUE)), 
+                color = "red", linewidth = 1) +
+  labs(title = "FWI Histogram in 2018 with Normal Curve",
+       x = "FWI",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+grid.arrange(norm_d_ffmc, norm_d_dmc, norm_d_dc, norm_d_isi, norm_d_bui, norm_d_fwi, nrow = 2, ncol = 3)
+# Most indices appear to be not normally distributed
 
 
 # Summary statistics for the overall dataset
@@ -2434,16 +2588,16 @@ print(summary_overall)
 print(summary_2018)
 
 # Differences
-difference <- summary_2018$Mean - summary_overall$Mean
+difference <- summary_2018$Median - summary_overall$Median
 
 # Percentage difference
-percentage_difference <- (summary_2018$Mean - summary_overall$Mean) / summary_overall$Mean * 100
+percentage_difference <- (summary_2018$Median - summary_overall$Median) / summary_overall$Median * 100
 
 # Create summary table
 test_summary <- data.frame(
   Index = summary_overall$Variable,
-  Overall_Mean = summary_overall$Mean,
-  Year_2018_Mean = summary_2018$Mean,
+  Overall_Median = summary_overall$Median,
+  Year_2018_Median = summary_2018$Median,
   Difference = round(difference, 2),
   Percentage_Difference = round(percentage_difference, 2)
 
@@ -2451,58 +2605,6 @@ test_summary <- data.frame(
 
 # Print the summary table
 print(test_summary)
-
-
-
-
-
-# Calculate standard deviation for the overall dataset
-sd_overall <- sapply(fire_indices, function(index) sd(hotspots_peak_clean[[index]], na.rm = TRUE))
-
-# Calculate standard deviation for the 2018 dataset
-sd_2018 <- sapply(fire_indices, function(index) sd(hotspots_test_2018[[index]], na.rm = TRUE))
-
-# Standard deviations
-sd_summary <- data.frame(
-  Index = fire_indices,
-  Overall_SD = sd_overall,
-  Year_2018_SD = sd_2018
-)
-
-# Print the summary of standard deviations
-print(sd_summary)
-
-# Overall, the lower standard deviations for the year 2018 across all six indices 
-# compared to the overall dataset indicate 
-# that the conditions related to fire behavior and potential were more consistent in 2018. 
-
-
-
-# t-tests for each index
-t_test_results <- lapply(fire_indices, function(index) {
-  t.test(hotspots_peak_clean[[index]], hotspots_test_2018[[index]], alternative = "two.sided")
-})
-
-# p-values and other summary
-t_test_summary <- data.frame(
-  Index = fire_indices,
-  P_Value = sapply(t_test_results, function(result) result$p.value),
-  Mean_Difference = sapply(t_test_results, function(result) result$estimate[1] - result$estimate[2]),
-  Overall_Mean = sapply(t_test_results, function(result) result$estimate[1]),
-  Year_2018_Mean = sapply(t_test_results, function(result) result$estimate[2])
-)
-
-t_test_summary$Significant <- t_test_summary$P_Value < 0.05
-
-# Print the t-test summary
-
-print(t_test_summary)
-
-# All the p-values are extremely small, indicating that the differences in means for all six indices 
-# between the overall dataset and the year 2018 are statistically significant.
-# This suggests that the conditions in 2018 were indeed different from the overall conditions,
-# which could explain the increased number of fire events that year.
-
 
 
 
@@ -2516,8 +2618,8 @@ wilcox_results <- sapply(fire_indices, function(index) {
 # Display the results
 test_summary <- data.frame(
   Index = fire_indices,
-  Overall_Mean = summary_overall$Mean,
-  Year_2018_Mean = summary_2018$Mean,
+  Overall_Median = summary_overall$Median,
+  Year_2018_Median = summary_2018$Median,
   P_Value = wilcox_results,
   Significant = wilcox_results < 0.05
 )
@@ -2539,215 +2641,11 @@ print(test_summary)
 
 
 
-# FFMC Histogram in 2018 with Normal Curve
-ggplot(hotspots_test_2018, aes(x = ffmc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$ffmc, na.rm = TRUE), 
-                                         sd = sd(hotspots_test_2018$ffmc, na.rm = TRUE)), 
-                color = "red", size = 1) +
-  labs(title = "FFMC Histogram in 2018 with Normal Curve",
-       x = "FFMC",
-       y = "Density") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-
-# DMC Histogram in 2018 with Normal Curve
-ggplot(hotspots_test_2018, aes(x = dmc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dmc, na.rm = TRUE), 
-                                         sd = sd(hotspots_test_2018$dmc, na.rm = TRUE)), 
-                color = "red", size = 1) +
-  labs(title = "DMC Histogram in 2018 with Normal Curve",
-       x = "DMC",
-       y = "Density") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-
-# DC Histogram in 2018 with Normal Curve
-ggplot(hotspots_test_2018, aes(x = dc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 50, fill = "skyblue", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dc, na.rm = TRUE), 
-                                         sd = sd(hotspots_test_2018$dc, na.rm = TRUE)), 
-                color = "red", size = 1) +
-  labs(title = "DC Histogram in 2018 with Normal Curve",
-       x = "DC",
-       y = "Density") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-
-# ISI Histogram in 2018 with Normal Curve
-ggplot(hotspots_test_2018, aes(x = isi)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$isi, na.rm = TRUE), 
-                                         sd = sd(hotspots_test_2018$isi, na.rm = TRUE)), 
-                color = "red", size = 1) +
-  labs(title = "ISI Histogram in 2018 with Normal Curve",
-       x = "ISI",
-       y = "Density") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-# BUI Histogram in 2018 with Normal Curve
-ggplot(hotspots_test_2018, aes(x = bui)) +
-  geom_histogram(aes(y = ..density..), binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$bui, na.rm = TRUE), 
-                                         sd = sd(hotspots_test_2018$bui, na.rm = TRUE)), 
-                color = "red", size = 1) +
-  labs(title = "BUI Histogram in 2018 with Normal Curve",
-       x = "BUI",
-       y = "Density") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-# FWI Histogram in 2018 with Normal Curve
-ggplot(hotspots_test_2018, aes(x = fwi)) +
-  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$fwi, na.rm = TRUE), 
-                                         sd = sd(hotspots_test_2018$fwi, na.rm = TRUE)), 
-                color = "red", size = 1) +
-  labs(title = "FWI Histogram in 2018 with Normal Curve",
-       x = "FWI",
-       y = "Density") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
 
 
 
 
-
-# FFMC QQ Plot with a subset of data
-sample_data_ffmc <- hotspots_test_2018 %>% sample_n(5000)
-
-ggplot(sample_data_ffmc, aes(sample = ffmc)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "FFMC QQ Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# DMC QQ Plot with a subset of data
-sample_data_dmc <- hotspots_test_2018 %>% sample_n(5000)
-
-ggplot(sample_data_dmc, aes(sample = dmc)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "DMC QQ Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-# DC QQ Plot with a subset of data
-sample_data_dc <- hotspots_test_2018 %>% sample_n(5000)
-
-ggplot(sample_data_dc, aes(sample = dc)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "DC QQ Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# ISI QQ Plot with a subset of data
-sample_data_isi <- hotspots_test_2018 %>% sample_n(5000)
-
-ggplot(sample_data_isi, aes(sample = isi)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "ISI QQ Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# BUI QQ Plot with a subset of data
-sample_data_bui <- hotspots_test_2018 %>% sample_n(5000)
-
-ggplot(sample_data_bui, aes(sample = bui)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "BUI QQ Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# FWI QQ Plot with a subset of data
-sample_data_fwi <- hotspots_test_2018 %>% sample_n(5000)
-
-ggplot(sample_data_fwi, aes(sample = fwi)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "FWI QQ Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-
-
-# T Test with similar clusters DRAFT ####
+# T Test with similar clusters ####
 
 
 
@@ -2772,8 +2670,8 @@ chosen_clusters <- cluster_summary_indices %>%
 calculate_similar <- function(df) {
   df %>%
     mutate(
-      fwi_diff = abs(mean_fwi - mean(target_clusters$mean_fwi)),
-      dc_diff = abs(mean_dc - mean(target_clusters$mean_dc)),
+      fwi_diff = abs(mean_fwi - mean(chosen_clusters$mean_fwi)),
+      dc_diff = abs(mean_dc - mean(chosen_clusters$mean_dc)),
       similar = fwi_diff + dc_diff
     ) %>%
     arrange(similar)
