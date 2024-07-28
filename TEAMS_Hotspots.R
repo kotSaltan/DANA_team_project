@@ -59,7 +59,7 @@ print(fire_events_per_month)
 
 # Create a bar plot to visualize the number of fire events per month
 ggplot(fire_events_per_month, aes(x = month, y = n_events)) +
-  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  geom_bar(stat = "identity", fill = "lightgreen", color = "black") +
   labs(title = "Number of Fire Events per Month",
        x = "Month",
        y = "Number of Fire Events") +
@@ -151,47 +151,47 @@ event_data <- hotspots_peak %>%
   select(lat_km, lon_km, time_hours)  # Reassign event_data to include only the necessary columns
 
 
-# # # # Function to apply DBSCAN and count clusters
-# apply_dbscan <- function(data, eps_value, minPts_value) {
-#   db <- dbscan(data, eps = eps_value, minPts = minPts_value)  # Apply DBSCAN
-#   data$event_cluster <- db$cluster  # Add cluster labels
-#   num_clusters <- length(unique(data$event_cluster)) - 1  # Count clusters excluding noise (0)
-#   num_noise <- sum(data$event_cluster == 0)  # Count noise points
-#   cat("eps =", eps_value, ", minPts =", minPts_value, ": Number of clusters =", num_clusters, ", Number of noise points =", num_noise, "\n")
-#   return(num_clusters)
-# }
-# 
-# # Parameters for the loop
-# desired_clusters <- 16956  # Official number of fires
-# best_eps <- NA  # Placeholder for best eps value
-# best_minPts <- NA  # Placeholder for best minPts value
-# best_diff <- Inf  # Placeholder for the smallest difference
-# 
-# # Iterate over eps and minPts values to find the best match
-# for (eps_val in seq(5, 15, by = 1)) {  # Adjust range and step size as needed
-#   for (minPts_val in seq(1, 5, by = 1)) {  # Adjust range and step size as needed
-#     num_clusters <- apply_dbscan(event_data, eps_val, minPts_val)
-#     diff <- abs(num_clusters - desired_clusters)
-#     if (diff < best_diff) {  # Check if this is the best match so far
-#       best_eps <- eps_val
-#       best_minPts <- minPts_val
-#       best_diff <- diff
-#     }
-#   }
-# }
-# 
-# # Print out the best parameters found
-# cat("Best eps value:", best_eps, "\n")  # Best eps value: 12
-# cat("Best minPts value:", best_minPts, "\n")  # Best minPts value: 1
+# # # Function to apply DBSCAN and count clusters
+apply_dbscan <- function(data, eps_value, minPts_value) {
+  db <- dbscan(data, eps = eps_value, minPts = minPts_value)  # Apply DBSCAN
+  data$event_cluster <- db$cluster  # Add cluster labels
+  num_clusters <- length(unique(data$event_cluster)) - 1  # Count clusters excluding noise (0)
+  num_noise <- sum(data$event_cluster == 0)  # Count noise points
+  cat("eps =", eps_value, ", minPts =", minPts_value, ": Number of clusters =", num_clusters, ", Number of noise points =", num_noise, "\n")
+  return(num_clusters)
+}
 
-# The best parameters found mean that fire events within a 12 km radius are grouped into clusters,
-# and even a single event can form a cluster if it occurs alone within that distance during the given time span.
+# Parameters for the loop
+desired_clusters <- 15095  # Official number of fires
+best_eps <- NA  # Placeholder for best eps value
+best_minPts <- NA  # Placeholder for best minPts value
+best_diff <- Inf  # Placeholder for the smallest difference
+
+# Iterate over eps and minPts values to find the best match
+for (eps_val in seq(5, 15, by = 1)) {  # Adjust range and step size as needed
+  for (minPts_val in seq(1, 5, by = 1)) {  # Adjust range and step size as needed
+    num_clusters <- apply_dbscan(event_data, eps_val, minPts_val)
+    diff <- abs(num_clusters - desired_clusters)
+    if (diff < best_diff) {  # Check if this is the best match so far
+      best_eps <- eps_val
+      best_minPts <- minPts_val
+      best_diff <- diff
+    }
+  }
+}
+
+# Print out the best parameters found
+cat("Best eps value:", best_eps, "\n")  # Best eps value: 11
+cat("Best minPts value:", best_minPts, "\n")  # Best minPts value: 2
+
+# The best parameters found mean that fire events within a 11 km radius are grouped into clusters,
+# and 2 events minimum form a cluster.
 
 # Final Clustering and Analysis ####
 
 # Apply DBSCAN with the best parameters found
-best_eps <- 12
-best_minPts <- 1
+best_eps <- 11
+best_minPts <- 2
 best_db <- dbscan(event_data, eps = best_eps, minPts = best_minPts)
 
 # Add cluster labels to the original dataset
@@ -205,8 +205,8 @@ hotspots_peak <- hotspots_peak %>%
 # Number of clusters identified by DBSCAN
 cat("Number of clusters identified by DBSCAN:", length(unique(hotspots_peak$event_cluster)), "\n")
 
-# Output: Number of clusters identified by DBSCAN: 17400
-# This tells us that there are 17,400 clusters identified in the dataset after removing noise.
+# Output: Number of clusters identified by DBSCAN: 15026
+# This tells us that there are 15026 clusters identified in the dataset after removing noise.
 
 # Summary of clusters
 cluster_summary <- hotspots_peak %>%
@@ -241,22 +241,22 @@ print(top_clusters)
 
 # Output:
 #   event_cluster start_date          end_date            num_events latitude longitude
-# 1          4792 2018-08-04 16:56:00 2018-08-25 07:15:00      66933     53.0     -126. # Tweedsmuir Complex Fire (2018)
-# 2          3120 2017-07-28 20:57:00 2017-08-13 02:04:00      61666     52.7     -124. # Elephant Hill Fire (2017)
-# 3         14487 2023-09-14 03:57:00 2023-09-24 04:08:00      56406     58.7     -121. # Fort Nelson Fire (2023)
-# 4          4790 2018-08-05 12:20:00 2018-08-22 20:06:00      34712     54.2     -125. # Shovel Lake Fire (2018)
-# 5          3125 2017-07-23 02:47:00 2017-08-13 05:00:00      30241     51.0     -121. # Hanceville-Riske Creek Fire (2017)
+# 1          3930 2018-08-04 16:56:00 2018-08-22 20:06:00      62103     53.0     -126. # Tweedsmuir Complex Fire (2018)
+# 2          2408 2017-07-30 04:31:00 2017-08-13 02:04:00      61622     52.7     -124. # Elephant Hill Fire (2017)
+# 3         12440 2023-09-14 03:57:00 2023-09-24 04:08:00      55183     58.7     -121. # Fort Nelson Fire (2023)
+# 4          3928 2018-08-05 16:38:00 2018-08-22 20:06:00      30660     54.2     -125. # Shovel Lake Fire (2018)
+# 5          2388 2017-07-23 02:47:00 2017-08-13 05:00:00      30152     51.1     -121. # Hanceville-Riske Creek Fire (2017)
 
 # Plot the events in the largest clusters 
-ggplot(hotspots_peak %>% filter(event_cluster %in% top_clusters$event_cluster), 
-       aes(x = lon, y = lat, color = factor(event_cluster))) +
-  geom_point(alpha = 0.5, size = 2) +
-  labs(title = "Top 5 Largest Fire Clusters",
-       x = "Longitude",
-       y = "Latitude",
-       color = "Cluster ID") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
+# ggplot(hotspots_peak %>% filter(event_cluster %in% top_clusters$event_cluster), 
+#        aes(x = lon, y = lat, color = factor(event_cluster))) +
+#   geom_point(alpha = 0.5, size = 2) +
+#   labs(title = "Top 5 Largest Fire Clusters",
+#        x = "Longitude",
+#        y = "Latitude",
+#        color = "Cluster ID") +
+#   theme_minimal() +
+#   theme(legend.position = "bottom")
 
 
 
@@ -285,12 +285,12 @@ plot_clusters_on_map <- function(cluster_ids, data, zoom_level = 10) {
                color = "Cluster ID") +
           theme_minimal() +
           theme(legend.position = "bottom") +
-          scale_color_manual(values = c("firebrick1", "orange", "yellow", "orange3", "darkred")) # Custom colours
+          scale_color_manual(values = c("firebrick1", "orange", "yellow", "orange3", "yellow2", "red3", "red4")) # Custom colours
   ) 
 }
 
 
-chosen_ids_top <- c(4792,3120,14487,4790,3125)
+chosen_ids_top <- c(3930,2408,12440,3928,2388)
 
 plot_clusters_on_map(chosen_ids_top, hotspots_peak, zoom_level = 7)
 
@@ -393,7 +393,7 @@ print(hotspots_df_summary)
 
 # Plotting the number of days reported per year
 ggplot(hotspots_df_summary, aes(x = factor(year), y = hotspots_df_day_count)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_bar(stat = "identity", fill = "lightgreen") +
   labs(title = "Number of Days Reported per Year",
        x = "Year",
        y = "Number of Days") +
@@ -421,7 +421,7 @@ print(hotspots_df_summary_peak)
 
 # Plotting the number of days reported per year
 ggplot(hotspots_df_summary_peak, aes(x = factor(year), y = hotspots_df_day_count)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_bar(stat = "identity", fill = "lightgreen") +
   labs(title = "Number of Days Reported per Year",
        x = "Year",
        y = "Number of Days") +
@@ -472,7 +472,7 @@ source_summary <- hotspots %>%
 print(source_summary)
 
 ggplot(source_summary, aes(x = reorder(source, -num_events), y = num_events)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_bar(stat = "identity", fill = "lightgreen") +
   labs(title = "Number of Fire Events Reported by Each Source",
        x = "Source",
        y = "Number of Events") +
@@ -489,7 +489,7 @@ satellite_summary <- hotspots %>%
 print(satellite_summary)
 
 ggplot(satellite_summary, aes(x = reorder(satellite, -num_events), y = num_events)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_bar(stat = "identity", fill = "lightgreen") +
   labs(title = "Number of Fire Events Reported by Each Satellite",
        x = "Satellite",
        y = "Number of Events") +
@@ -506,7 +506,7 @@ sensor_summary <- hotspots %>%
 print(sensor_summary)
 
 ggplot(sensor_summary, aes(x = reorder(sensor, -num_events), y = num_events)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_bar(stat = "identity", fill = "lightgreen") +
   labs(title = "Number of Fire Events Reported by Each Sensor",
        x = "Sensor",
        y = "Number of Events") +
@@ -515,11 +515,11 @@ ggplot(sensor_summary, aes(x = reorder(sensor, -num_events), y = num_events)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # 3.4 Specific Event Analysis ####
-# Example of a Specific Fire Event: Kelowna Fire Biggest Cluster (Cluster ID: 13928)
-
+# Example of a Specific Fire Event: Kelowna Fire Biggest Cluster (Cluster ID: 11969)
+kelowna_clusters
 # Filter the data for the specific cluster
 event_data <- hotspots_peak %>%
-  filter(event_cluster == 13928)
+  filter(event_cluster == 11969)
 
 # Summarize the sources, satellites, and sensors used for this event
 event_sources <- event_data %>%
@@ -539,7 +539,7 @@ print(event_sources)
 print(event_satellites)
 print(event_sensors)
 
-# In the Kelowna fire cluster (ID: 13928), data came from various sources, satellites, and sensors. 
+# In the Kelowna fire cluster (ID: 11969), data came from various sources, satellites, and sensors. 
 # Most data were provided by NASA sources and the VIIRS-I sensor, mainly using the S-NPP satellite.
 # The VIIRS-I sensor is used the most for both this event and the overall data.
 # The S-NPP satellite is also a key source in both cases.
@@ -605,11 +605,11 @@ print(monthly_avg)
 
 # There are no missing values in the weather data.
 # The minimum temperature recorded is -9.66°C, which is unusually low for fire events.
-# The maximum temperature recorded is 43.88°C, which is expected during peak fire seasons.
-# The relative humidity ranges from 7.00% to 100.00%, there are different weather conditions.
-# Wind speeds range from 0.00 km/h to 16.47 km/h.
+# The maximum temperature recorded is 43.13°C, which is expected during peak fire seasons.
+# The relative humidity ranges from 11.00% to 100.00%, there are different weather conditions.
+# Wind speeds range from 0.00 km/h to 59.30 km/h.
 # There is a full range of possible wind directions.
-# The precipitation data has a maximum value of 651.79 mm, needs further investigation.
+# The precipitation data has a maximum value of 78.59 mm, but mostly 0 or close to zero values.
 
 
 # Summarize the count of subzero temperature events by year and month
@@ -625,28 +625,6 @@ print(subzero_temps_summary)
 # The peak month for subzero temperature events is October,
 # even colder conditions do not stop fires from happening.
 
-# Summarize the count of precipitation events > 100 mm by year and month
-high_pcp_summary <- hotspots_peak %>%
-  filter(pcp > 100) %>%
-  group_by(year, month, event_cluster) %>%
-  summarise(count = n(), .groups = 'drop') %>%
-  arrange(desc(year))
-
-# Print the summary table
-print(high_pcp_summary)
-
-# Plot the event on map
-plot_clusters_on_map(14510, hotspots_peak, zoom_level = 10)
-
-
-# Remove the high precipitation outlier from the dataset
-hotspots_peak <- hotspots_peak %>%
-  filter(!(event_cluster == 14510 & year == 2023 & month == "Jul"))
-
-# Re-run the descriptive statistics without the outlier
-summary_hotspots <- describe_numerical(hotspots_peak, c('temp', 'rh', 'ws', 'wd', 'pcp'))
-print(summary_hotspots)
-
 
 
 
@@ -655,7 +633,7 @@ print(summary_hotspots)
 
 # Create a boxplot to compare temperature distributions across years
 ggplot(hotspots_peak, aes(x = factor(year), y = temp)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Temperature Distribution Across Years (Peak)",
        x = "Year",
        y = "Temperature (°C)") +
@@ -676,7 +654,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = y
        y = "Temperature (°C)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 
@@ -686,7 +664,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_temp, color = factor(year), group = y
 
 # Create a boxplot to compare relative humidity distributions across years
 ggplot(hotspots_peak, aes(x = factor(year), y = rh)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Relative Humidity Distribution Across Years (Peak)",
        x = "Year",
        y = "Relative Humidity") +
@@ -707,7 +685,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(year), group = yea
        y = "Relative Humidity",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 
@@ -717,7 +695,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_rh, color = factor(year), group = yea
 
 # Create a boxplot to compare wind speed distributions across years
 ggplot(hotspots_peak, aes(x = factor(year), y = ws)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Wind Speed Distribution Across Years (Peak)",
        x = "Year",
        y = "Wind Speed (km/h)") +
@@ -737,7 +715,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_ws, color = factor(year), group = yea
        y = "Wind Speed (km/h)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 summary(hotspots_peak$ws)
 
 
@@ -763,7 +741,7 @@ windRose(mydata = hotspots_peak, ws = "ws_m_s", wd = "wd",
 
 # Create a boxplot to compare precipitation distributions across years
 ggplot(hotspots_peak, aes(x = factor(year), y = pcp)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Precipitation Distribution Across Years (Peak)",
        x = "Year",
        y = "Precipitation (mm)") +
@@ -783,13 +761,10 @@ ggplot(monthly_avg, aes(x = month, y = avg_pcp, color = factor(year), group = ye
        y = "Precipitation (mm)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 
-# Even after removing one extreme outlier, there are still many high precipitation values. 
-# Since precipitation often has many zero entries, 
-# need to handle these outliers carefully to ensure they don't skew our results.
 
 
 # Define the function to remove outliers
@@ -819,9 +794,17 @@ summary_clean <- describe_numerical(hotspots_peak_clean, c('temp', 'rh', 'ws', '
 print(summary_clean)
 
 
+# Output
+# Variable Missing_Values   Min Median   Mean    Max
+# 1     temp              0  7.52  22.70  22.29  36.19
+# 2       rh              0 11.00  32.00  33.51  59.00
+# 3       ws              0  1.80   8.87   9.28  16.66
+# 4       wd              0  0.00 212.00 202.28 360.00
+# 5      pcp              0  0.00   0.00   0.14  46.46
+
 # Create a box plot to compare temperature distributions across years
 ggplot(hotspots_peak_clean, aes(x = factor(year), y = temp)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Temperature Distribution Across Years (Peak, Cleaned)",
        x = "Year",
        y = "Temperature (°C)") +
@@ -835,7 +818,7 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = temp)) +
 
 # Create a box plot to compare relative humidity distributions across years
 ggplot(hotspots_peak_clean, aes(x = factor(year), y = rh)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Relative Humidity Distribution Across Years (Peak, Cleaned)",
        x = "Year",
        y = "Relative Humidity (%)") +
@@ -849,10 +832,23 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = rh)) +
 
 # Create a box plot to compare wind speed distributions across years
 ggplot(hotspots_peak_clean, aes(x = factor(year), y = ws)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Wind Speed Distribution Across Years (Peak, Cleaned)",
        x = "Year",
        y = "Wind Speed (km/h)") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10))
+
+# Create a box plot to compare precipitation across years
+ggplot(hotspots_peak_clean, aes(x = factor(year), y = pcp)) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
+  labs(title = "Precipitation Distribution Across Years (Peak, Cleaned)",
+       x = "Year",
+       y = "Precipitation (mm)") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 15),
         axis.title.x = element_text(size = 12),
@@ -893,14 +889,14 @@ print(summary_fire_indices)
 
 # Plot histogram for FFMC
 ggplot(hotspots_peak, aes(x = ffmc)) +
-  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 2, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of FFMC Values", x = "FFMC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
 
 # Plot boxplot for FFMC
 boxplot_ffmc <- ggplot(hotspots_peak, aes(x = factor(year), y = ffmc)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "FFMC Distribution Across Years",
        x = "Year",
        y = "FFMC") +
@@ -921,7 +917,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_ffmc, color = factor(year), group = y
        y = "FFMC",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 
@@ -931,7 +927,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 
 # Plot boxplot for FFMC
 boxplot_ffmc_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = ffmc)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "FFMC Distribution Across Years (Clean)",
        x = "Year",
        y = "FFMC") +
@@ -965,14 +961,14 @@ grid.arrange(boxplot_ffmc, boxplot_ffmc_clean)
 
 # Plot histogram for DMC
 ggplot(hotspots_peak, aes(x = dmc)) +
-  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 2, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of DMC Values", x = "DMC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
 
 # Plot boxplot for DMC
 boxplot_dmc <- ggplot(hotspots_peak, aes(x = factor(year), y = dmc)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "DMC Distribution Across Years",
        x = "Year",
        y = "DMC") +
@@ -993,7 +989,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_dmc, color = factor(year), group = ye
        y = "DMC",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 
@@ -1003,7 +999,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 
 # Plot boxplot for DMC
 boxplot_dmc_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = dmc)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "DMC Distribution Across Years (Clean)",
        x = "Year",
        y = "DMC") +
@@ -1034,14 +1030,14 @@ grid.arrange(boxplot_dmc, boxplot_dmc_clean)
 
 # Plot histogram for DC
 ggplot(hotspots_peak, aes(x = dc)) +
-  geom_histogram(binwidth = 20, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 20, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of DC Values", x = "DC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
 
 # Plot boxplot for DC
 boxplot_dc <- ggplot(hotspots_peak, aes(x = factor(year), y = dc)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "DC Distribution Across Years",
        x = "Year",
        y = "DC") +
@@ -1062,7 +1058,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_dc, color = factor(year), group = yea
        y = "DC",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 # DC is important because it helps understand how dry the forest floor is
@@ -1077,7 +1073,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 
 # Plot boxplot for DC
 boxplot_dc_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = dc)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "DC Distribution Across Years (Clean)",
        x = "Year",
        y = "DC") +
@@ -1193,14 +1189,14 @@ ggplot(monthly_data, aes(x = Date)) +
 
 # Plot histogram for ISI
 ggplot(hotspots_peak, aes(x = isi)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of ISI Values", x = "ISI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
 # Plot boxplot for ISI
 boxplot_isi <- ggplot(hotspots_peak, aes(x = factor(year), y = isi)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "ISI Distribution Across Years",
        x = "Year",
        y = "ISI") +
@@ -1257,7 +1253,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 
 # Plot boxplot for ISI
 boxplot_isi_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = isi)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "ISI Distribution Across Years (Clean)",
        x = "Year",
        y = "ISI") +
@@ -1288,13 +1284,13 @@ grid.arrange(boxplot_isi,boxplot_isi_clean)
 # Extreme: 121 and above
 
 ggplot(hotspots_peak, aes(x = bui)) +
-  geom_histogram(binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 10, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of BUI Values", x = "BUI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
 boxplot_bui <- ggplot(hotspots_peak, aes(x = factor(year), y = bui)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "BUI Distribution Across Years",
        x = "Year",
        y = "BUI") +
@@ -1324,7 +1320,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 
 # Plot boxplot for BUI
 boxplot_bui_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = bui)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "BUI Distribution Across Years (Clean)",
        x = "Year",
        y = "BUI") +
@@ -1351,13 +1347,13 @@ grid.arrange(boxplot_bui, boxplot_bui_clean)
 # Extreme (31+): Fires start and spread quickly, and are intense and challenging to control.
 
 ggplot(hotspots_peak, aes(x = fwi)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of FWI Values", x = "FWI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
 
 boxplot_fwi <- ggplot(hotspots_peak, aes(x = factor(year), y = fwi)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "FWI Distribution Across Years",
        x = "Year",
        y = "FWI") +
@@ -1408,7 +1404,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 
 # Plot boxplot for FWI
 boxplot_fwi_clean <- ggplot(hotspots_peak_clean, aes(x = factor(year), y = fwi)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "FWI Distribution Across Years (Clean)",
        x = "Year",
        y = "FWI") +
@@ -1455,7 +1451,7 @@ ggplot(monthly_data, aes(x = Date)) +
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("ISI" = "skyblue")) +
+  scale_color_manual(values = c("ISI" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -1473,7 +1469,7 @@ ggplot(monthly_data, aes(x = Date)) +
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("BUI" = "skyblue")) +
+  scale_color_manual(values = c("BUI" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -1491,7 +1487,7 @@ ggplot(monthly_data, aes(x = Date)) +
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("FWI" = "skyblue")) +
+  scale_color_manual(values = c("FWI" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -1542,7 +1538,7 @@ fuel_counts <- hotspots_peak %>%
 
 # Create a bar plot for the fuel column
 ggplot(fuel_counts, aes(x = reorder(fuel, -count), y = count)) +
-  geom_bar(stat = "identity", fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_bar(stat = "identity", fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Fuel Types", x = "Fuel Type", y = "Count") +
   theme_minimal() +
   scale_y_continuous(labels = scales::comma) + 
@@ -1569,7 +1565,7 @@ print(summary_other_variables)
 
 
 ggplot(hotspots_peak, aes(x = ros)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution Rate of Spread at Fire Hotspots",
        x = "ROS (m/min)",
        y = "Frequency") +
@@ -1583,7 +1579,7 @@ ggplot(hotspots_peak, aes(x = ros)) +
 
 
 ggplot(hotspots_peak, aes(x = factor(year), y = ros)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Rate of Spread Distribution Across Years",
        x = "Year",
        y = "ROS (m/min)") +
@@ -1603,7 +1599,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 
 # Plot boxplot for ROS
 ggplot(hotspots_peak_clean, aes(x = factor(year), y = ros)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "ROS Distribution Across Years",
        x = "Year",
        y = "ROS") +
@@ -1633,7 +1629,7 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = ros)) +
 
 # Plot histogram for HFI
 ggplot(hotspots_peak, aes(x = hfi)) +
-  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
+  geom_histogram(binwidth = 1000, fill = "lightgreen", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
   labs(title = "Distribution of HFI Values",
        x = "HFI (kW/m)",
        y = "Frequency") +
@@ -1642,7 +1638,7 @@ ggplot(hotspots_peak, aes(x = hfi)) +
   theme_minimal()
 
 ggplot(hotspots_peak, aes(x = factor(year), y = hfi)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "HFI Distribution Across Years",
        x = "Year",
        y = "HFI (kW/m)") +
@@ -1737,7 +1733,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 
 # Plot boxplot for HFI
 ggplot(hotspots_peak_clean, aes(x = factor(year), y = hfi)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "HFI Distribution Across Years",
        x = "Year",
        y = "HFI") +
@@ -2154,7 +2150,7 @@ sum(zero_pcuring$zero_count)
 
 # Create the histogram for pcuring
 ggplot(hotspots_peak_pcuring, aes(x = pcuring)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Curing Percentage (pcuring) Values", 
        x = "Curing Percentage (pcuring)", 
        y = "Frequency") +
@@ -2216,7 +2212,7 @@ summary(hotspots_peak_cfactor$cfactor)
 
 # Create the histogram for cfactor
 ggplot(hotspots_peak_cfactor, aes(x = cfactor)) +
-  geom_histogram(binwidth = 0.1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 0.1, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Curing Factor (cfactor) Values", 
        x = "Curing Factor (cfactor)", 
        y = "Frequency") +
@@ -2319,7 +2315,7 @@ print(elev_outliers)
 
 # Histogram of elevation values
 ggplot(hotspots_peak, aes(x = elev)) +
-  geom_histogram(binwidth = 100, fill = "skyblue", color = "black") +
+  geom_histogram(binwidth = 100, fill = "lightgreen", color = "black") +
   labs(title = "Distribution of Elevation Values",
        x = "Elevation (meters)",
        y = "Frequency") +
@@ -2483,7 +2479,7 @@ print(summary_2018)
 
 # FFMC Histogram in 2018 with Normal Curve
 norm_d_ffmc <- ggplot(hotspots_test_2018, aes(x = ffmc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$ffmc, na.rm = TRUE), 
                                          sd = sd(hotspots_test_2018$ffmc, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
@@ -2501,7 +2497,7 @@ norm_d_ffmc <- ggplot(hotspots_test_2018, aes(x = ffmc)) +
 
 # DMC Histogram in 2018 with Normal Curve
 norm_d_dmc <- ggplot(hotspots_test_2018, aes(x = dmc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dmc, na.rm = TRUE), 
                                          sd = sd(hotspots_test_2018$dmc, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
@@ -2519,7 +2515,7 @@ norm_d_dmc <- ggplot(hotspots_test_2018, aes(x = dmc)) +
 
 # DC Histogram in 2018 with Normal Curve
 norm_d_dc <- ggplot(hotspots_test_2018, aes(x = dc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 50, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 50, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$dc, na.rm = TRUE), 
                                          sd = sd(hotspots_test_2018$dc, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
@@ -2537,7 +2533,7 @@ norm_d_dc <- ggplot(hotspots_test_2018, aes(x = dc)) +
 
 # ISI Histogram in 2018 with Normal Curve
 norm_d_isi <- ggplot(hotspots_test_2018, aes(x = isi)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$isi, na.rm = TRUE), 
                                          sd = sd(hotspots_test_2018$isi, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
@@ -2554,7 +2550,7 @@ norm_d_isi <- ggplot(hotspots_test_2018, aes(x = isi)) +
 
 # BUI Histogram in 2018 with Normal Curve
 norm_d_bui <- ggplot(hotspots_test_2018, aes(x = bui)) +
-  geom_histogram(aes(y = ..density..), binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 10, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$bui, na.rm = TRUE), 
                                          sd = sd(hotspots_test_2018$bui, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
@@ -2571,7 +2567,7 @@ norm_d_bui <- ggplot(hotspots_test_2018, aes(x = bui)) +
 
 # FWI Histogram in 2018 with Normal Curve
 norm_d_fwi <- ggplot(hotspots_test_2018, aes(x = fwi)) +
-  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 5, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(hotspots_test_2018$fwi, na.rm = TRUE), 
                                          sd = sd(hotspots_test_2018$fwi, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
@@ -2716,7 +2712,7 @@ cluster_4811 <- hotspots_test %>% filter(event_cluster == 4811)
 
 # DC Histogram cluster_13095
 ggplot(cluster_13095, aes(x = dc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(cluster_13095$dc, na.rm = TRUE), 
                                          sd = sd(cluster_13095$dc, na.rm = TRUE)), 
                 color = "red", size = 1) +
@@ -2732,7 +2728,7 @@ ggplot(cluster_13095, aes(x = dc)) +
 
 # DC Histogram cluster_4811
 ggplot(cluster_4811, aes(x = dc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(cluster_4811$dc, na.rm = TRUE), 
                                          sd = sd(cluster_4811$dc, na.rm = TRUE)), 
                 color = "red", size = 1) +
@@ -2858,7 +2854,7 @@ cluster_4811 <- hotspots_test %>% filter(event_cluster == 4811)
 
 # DC Histogram cluster_9206
 norm_d_dc_9206 <- ggplot(cluster_9206, aes(x = dc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(cluster_9206$dc, na.rm = TRUE), 
                                          sd = sd(cluster_9206$dc, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
@@ -2875,7 +2871,7 @@ norm_d_dc_9206 <- ggplot(cluster_9206, aes(x = dc)) +
 
 # DC Histogram cluster_4811
 norm_d_dc_4811 <- ggplot(cluster_4811, aes(x = dc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
   stat_function(fun = dnorm, args = list(mean = mean(cluster_4811$dc, na.rm = TRUE), 
                                          sd = sd(cluster_4811$dc, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
@@ -2944,7 +2940,7 @@ weekly_summary
 
 # Distribution of the number of fires per week
 ggplot(weekly_summary, aes(x = fires)) +
-  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 1000, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Weekly Number of Fires", 
        x = "Number of Fires", 
        y = "Frequency") +
@@ -2967,7 +2963,7 @@ weekly_summary <- weekly_summary %>%
 
 # Distribution of Box-Cox transformed number of fires
 ggplot(weekly_summary, aes(x = boxcox_fires)) +
-  geom_histogram(binwidth = 0.2, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(binwidth = 0.2, fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of Box-Cox Transformed Weekly Number of Fires", 
        x = "Box-Cox Transformed Number of Fires", 
        y = "Frequency") +
@@ -2981,7 +2977,7 @@ ggplot(weekly_summary, aes(x = boxcox_fires)) +
 
 # Boxplot of Box-Cox transformed number of fires
 ggplot(weekly_summary, aes(y = boxcox_fires)) +
-  geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_boxplot(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Boxplot of Box-Cox Transformed Weekly Number of Fires", 
        y = "Box-Cox Transformed Number of Fires") +
   theme_minimal() +
