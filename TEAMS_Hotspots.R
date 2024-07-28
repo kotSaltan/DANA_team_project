@@ -1129,10 +1129,10 @@ ggplot(monthly_data, aes(x = Date)) +
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("FFMC" = "lightblue")) +
+  scale_color_manual(values = c("FFMC" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
 # Plot DMC and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
@@ -1147,10 +1147,10 @@ ggplot(monthly_data, aes(x = Date)) +
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("DMC" = "lightblue")) +
+  scale_color_manual(values = c("DMC" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
 # Plot DC and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
@@ -1165,10 +1165,10 @@ ggplot(monthly_data, aes(x = Date)) +
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("DC" = "lightblue")) +
+  scale_color_manual(values = c("DC" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
 
 
@@ -1217,7 +1217,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_isi, color = factor(year), group = ye
        y = "ISI",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 
@@ -1233,11 +1233,11 @@ dim(isi_outliers)
 isi_outliers %>% 
   count(event_cluster) %>% 
   arrange(desc(n))
-# Most isi outliers come from clusters 401 and 130
+# Most isi outliers come from clusters 355 and 128
 
 
-plot_clusters_on_map(401, hotspots_peak, zoom_level = 10)
-plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(335, hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(128, hotspots_peak, zoom_level = 10)
 
 
 # The data from July 2014, shows very high ISI values at a specific location in British Columbia.
@@ -1310,7 +1310,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_bui, color = factor(year), group = ye
        y = "BUI",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 
@@ -1373,7 +1373,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_fwi, color = factor(year), group = ye
        y = "FWI",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 
 
@@ -1390,11 +1390,9 @@ dim(fwi_outliers)
 fwi_outliers %>% 
   count(event_cluster) %>% 
   arrange(desc(n))
-# Most fwi outliers come from clusters 401 and 130, same as isi outliers
+# Most fwi outliers come from clusters 355 and 128, same as isi outliers
 
 
-plot_clusters_on_map(401, hotspots_peak, zoom_level = 10)
-plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
 
 
 
@@ -1454,7 +1452,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("ISI" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
 # Plot BUI and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
@@ -1472,7 +1470,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("BUI" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
 # Plot FWI and Fire Counts
 ggplot(monthly_data, aes(x = Date)) +
@@ -1490,7 +1488,7 @@ ggplot(monthly_data, aes(x = Date)) +
   scale_color_manual(values = c("FWI" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
 # The plots show a clear link between indices and the number of fires.
 # When there are more fires, the FWI is also higher.
@@ -1662,7 +1660,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = ye
        y = "HFI (kW/m)",
        color = "Year") +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
 # Different years show a lot of differences in HFI values. 
 # For example, 2014 and 2021 had higher peaks, meaning there was more intense fire activity in those years. 
@@ -1693,10 +1691,10 @@ ggplot(monthly_data, aes(x = Date)) +
        x = "Year",
        color = "Index",
        fill = "Index") +
-  scale_color_manual(values = c("HFI" = "lightblue")) +
+  scale_color_manual(values = c("HFI" = "lightgreen")) +
   scale_fill_manual(values = c("Fire Occurrences" = "red")) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
 
 
 
@@ -1713,19 +1711,18 @@ dim(hfi_outliers)
 hfi_outliers %>% 
   count(event_cluster) %>% 
   arrange(desc(n))
-# Most hfi outliers come from clusters 4956, 4844, 13837 and 4887
+# Most hfi outliers come from clusters 4094, 3983, 11877 and 4024
 
 # See the details of the events with high hfi
 cluster_summary %>%
-  filter(event_cluster %in% c(4956, 4844, 13837, 4887))
+  filter(event_cluster %in% c(4094, 3983, 11877, 4024))
 
 
-plot_clusters_on_map(4956, hotspots_peak, zoom_level = 10) # 19 Jul 2018, Snowy Mountain Fire and other fires in the Okanagan region.
-plot_clusters_on_map(4844, hotspots_peak, zoom_level = 10) # 12 Aug 2018
-plot_clusters_on_map(4887, hotspots_peak, zoom_level = 10) # 11 Aug 2018,  Placer Mountain Fire area, a notable fire from 2018.
-plot_clusters_on_map(13837, hotspots_peak, zoom_level = 10) # 19 Aug 2023, area close to cluster 4887.
+plot_clusters_on_map(4094, hotspots_peak, zoom_level = 10) # 18 Jul 2018, Snowy Mountain Fire and other fires in the Okanagan region.
+plot_clusters_on_map(3983, hotspots_peak, zoom_level = 10) # 11 Aug 2018
+plot_clusters_on_map(11877, hotspots_peak, zoom_level = 10) # 11 Aug 2023
+plot_clusters_on_map(4024, hotspots_peak, zoom_level = 10) # 11 Aug 2018
 
-# the coordinates of these clusters match with known historic fire data in 2018 and 2023.
 
 # Remove outliers
 hotspots_peak_clean <- hotspots_peak %>%
@@ -2429,19 +2426,19 @@ print(summary_fire_indices)
 
 # Average number of observations per year
 nrow(hotspots_peak) / length(unique(hotspots_peak$year))
-# 173461.2
+# 173024.2
 
 # Average number of unique event_clusters per year
 length(unique(hotspots_peak$event_cluster)) / length(unique(hotspots_peak$year))
-# 1739.9
+# 1502.6
 
 # Number of observations in 2018
 nrow(filter(hotspots_peak_clean, year == 2018))
-# 339685
+# 339604
 
 # Number of unique event clusters in 2018
 length(unique(filter(hotspots_peak_clean, year == 2018)$event_cluster))
-# 2051
+# 1932
 
 
 grid.arrange(boxplot_ffmc_clean, boxplot_dmc_clean, boxplot_dc_clean,
@@ -2680,114 +2677,121 @@ chosen_clusters <- chosen_clusters %>%
 # Chosen clusters
 print(chosen_clusters)
 
-# Chosen cluster IDs
-chosen_ids <- c(4811, 13095)
+#draft####
+# Output:
+# event_cluster num_events mean_fwi mean_dc fwi_diff dc_diff similar
+# 
+# 1          3953       3460     32.5    523.     2.67   0.192    2.86
+# 2          4009       1217     31.7    520.     1.92   3.32     5.24
+# 
+# # Chosen cluster IDs
+# chosen_ids <- c(4811, 13095)
+# 
+# # Summary table for the chosen clusters
+# hotspots_test %>%
+#   filter(event_cluster %in% chosen_ids) %>%
+#   group_by(event_cluster, year, month) %>%
+#   summarize(
+#     count = n(),
+#     mean_ffmc = mean(ffmc, na.rm = TRUE),
+#     mean_dmc = mean(dmc, na.rm = TRUE),
+#     mean_dc = mean(dc, na.rm = TRUE),
+#     mean_isi = mean(isi, na.rm = TRUE),
+#     mean_bui = mean(bui, na.rm = TRUE),
+#     mean_fwi = mean(fwi, na.rm = TRUE)
+#   )
+# 
+# 
+# # Plot the chosen clusters on the map
+# plot_clusters_on_map(chosen_ids, hotspots_peak, zoom_level = 10)
+# 
+# 
+# 
+# 
+# # Filter data for the two chosen clusters
+# cluster_13095 <- hotspots_test %>% filter(event_cluster == 13095)
+# cluster_4811 <- hotspots_test %>% filter(event_cluster == 4811)
+# 
+# 
+# 
+# # DC Histogram cluster_13095
+# ggplot(cluster_13095, aes(x = dc)) +
+#   geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
+#   stat_function(fun = dnorm, args = list(mean = mean(cluster_13095$dc, na.rm = TRUE), 
+#                                          sd = sd(cluster_13095$dc, na.rm = TRUE)), 
+#                 color = "red", size = 1) +
+#   labs(title = "DC Histogram cluster_13095",
+#        x = "DC",
+#        y = "Density") +
+#   theme_minimal() +
+#   theme(plot.title = element_text(hjust = 0.5, size = 15),
+#         axis.title.x = element_text(size = 12),
+#         axis.title.y = element_text(size = 12),
+#         axis.text.x = element_text(size = 10),
+#         axis.text.y = element_text(size = 10))
+# 
+# # DC Histogram cluster_4811
+# ggplot(cluster_4811, aes(x = dc)) +
+#   geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
+#   stat_function(fun = dnorm, args = list(mean = mean(cluster_4811$dc, na.rm = TRUE), 
+#                                          sd = sd(cluster_4811$dc, na.rm = TRUE)), 
+#                 color = "red", size = 1) +
+#   labs(title = "DC Histogram cluster_4811",
+#        x = "DC",
+#        y = "Density") +
+#   theme_minimal() +
+#   theme(plot.title = element_text(hjust = 0.5, size = 15),
+#         axis.title.x = element_text(size = 12),
+#         axis.title.y = element_text(size = 12),
+#         axis.text.x = element_text(size = 10),
+#         axis.text.y = element_text(size = 10))
+# 
+# 
+# 
+# # DC QQ Plot cluster_13095
+# ggplot(cluster_13095, aes(sample = dc)) +
+#   stat_qq() +
+#   stat_qq_line() +
+#   labs(title = "DC QQ Plot",
+#        x = "Theoretical Quantiles",
+#        y = "Sample Quantiles") +
+#   theme_minimal() +
+#   theme(plot.title = element_text(hjust = 0.5, size = 15),
+#         axis.title.x = element_text(size = 12),
+#         axis.title.y = element_text(size = 12),
+#         axis.text.x = element_text(size = 10),
+#         axis.text.y = element_text(size = 10))
+# 
+# # DC QQ Plot cluster_4811
+# ggplot(cluster_4811, aes(sample = dc)) +
+#   stat_qq() +
+#   stat_qq_line() +
+#   labs(title = "DC QQ Plot",
+#        x = "Theoretical Quantiles",
+#        y = "Sample Quantiles") +
+#   theme_minimal() +
+#   theme(plot.title = element_text(hjust = 0.5, size = 15),
+#         axis.title.x = element_text(size = 12),
+#         axis.title.y = element_text(size = 12),
+#         axis.text.x = element_text(size = 10),
+#         axis.text.y = element_text(size = 10))
+# 
+# 
+# 
+# # Perform t-test on DC
+# t.test(cluster_13095$dc, cluster_4811$dc, alternative = "two.sided")
+# 
+# 
+# # The t-test shows no significant difference in the DC values between the two clusters (13095 and 4811). 
+# # The p-value bigger than 0.05 and the confidence interval [-1.63, 1.44] 
+# # show that the observed differences could be due to random chance rather than a true difference in means. 
+# # The DC values for these clusters are statistically similar.
+# 
+# 
 
-# Summary table for the chosen clusters
-hotspots_test %>%
-  filter(event_cluster %in% chosen_ids) %>%
-  group_by(event_cluster, year, month) %>%
-  summarize(
-    count = n(),
-    mean_ffmc = mean(ffmc, na.rm = TRUE),
-    mean_dmc = mean(dmc, na.rm = TRUE),
-    mean_dc = mean(dc, na.rm = TRUE),
-    mean_isi = mean(isi, na.rm = TRUE),
-    mean_bui = mean(bui, na.rm = TRUE),
-    mean_fwi = mean(fwi, na.rm = TRUE)
-  )
 
 
-# Plot the chosen clusters on the map
-plot_clusters_on_map(chosen_ids, hotspots_peak, zoom_level = 10)
-
-
-
-
-# Filter data for the two chosen clusters
-cluster_13095 <- hotspots_test %>% filter(event_cluster == 13095)
-cluster_4811 <- hotspots_test %>% filter(event_cluster == 4811)
-
-
-
-# DC Histogram cluster_13095
-ggplot(cluster_13095, aes(x = dc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(cluster_13095$dc, na.rm = TRUE), 
-                                         sd = sd(cluster_13095$dc, na.rm = TRUE)), 
-                color = "red", size = 1) +
-  labs(title = "DC Histogram cluster_13095",
-       x = "DC",
-       y = "Density") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# DC Histogram cluster_4811
-ggplot(cluster_4811, aes(x = dc)) +
-  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(cluster_4811$dc, na.rm = TRUE), 
-                                         sd = sd(cluster_4811$dc, na.rm = TRUE)), 
-                color = "red", size = 1) +
-  labs(title = "DC Histogram cluster_4811",
-       x = "DC",
-       y = "Density") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-
-# DC QQ Plot cluster_13095
-ggplot(cluster_13095, aes(sample = dc)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "DC QQ Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# DC QQ Plot cluster_4811
-ggplot(cluster_4811, aes(sample = dc)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "DC QQ Plot",
-       x = "Theoretical Quantiles",
-       y = "Sample Quantiles") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-
-
-# Perform t-test on DC
-t.test(cluster_13095$dc, cluster_4811$dc, alternative = "two.sided")
-
-
-# The t-test shows no significant difference in the DC values between the two clusters (13095 and 4811). 
-# The p-value bigger than 0.05 and the confidence interval [-1.63, 1.44] 
-# show that the observed differences could be due to random chance rather than a true difference in means. 
-# The DC values for these clusters are statistically similar.
-
-
-
-
-
-# T Test with similar clusters #### TO BE DISCUSSED - DIFFERENT CLUSTERS IN USE
+# T Test with similar clusters ####
 
 
 # Number of events, mean FWI, and mean DC for each cluster (test data)
@@ -2809,7 +2813,7 @@ calculate_similar <- function(df) {
     mutate(
       fwi_diff = abs(mean_fwi - mean(chosen_clusters$mean_fwi)),
       dc_diff = abs(mean_dc - mean(chosen_clusters$mean_dc)),
-      similar = 0.3*fwi_diff + 0.7*dc_diff
+      similar = 0.4*fwi_diff + 0.6*dc_diff
     ) %>%
     arrange(similar)
 }
@@ -2817,17 +2821,17 @@ calculate_similar <- function(df) {
 # Apply the function and choose two clusters with the closest mean FWI and DC
 chosen_clusters <- chosen_clusters %>%
   calculate_similar() %>%
-  slice(1:2)
+  slice(1:5)
 
 # Chosen clusters
 print(chosen_clusters)
 
 # Chosen cluster IDs
-chosen_ids <- c(4811, 9206)
+chosen_ids <- c(13137, 4009)
 
 # Summary table for the chosen clusters
 hotspots_test %>%
-  filter(event_cluster %in% chosen_ids) %>%
+  filter(event_cluster %in% chosen_clusters$event_cluster) %>%
   group_by(event_cluster, year, month) %>%
   summarize(
     count = n(),
@@ -2847,18 +2851,18 @@ plot_clusters_on_map(chosen_ids, hotspots_peak, zoom_level = 10)
 
 
 # Filter data for the two chosen clusters
-cluster_9206 <- hotspots_test %>% filter(event_cluster == 9206)
-cluster_4811 <- hotspots_test %>% filter(event_cluster == 4811)
+cluster_13137 <- hotspots_test %>% filter(event_cluster == 13137)
+cluster_4009 <- hotspots_test %>% filter(event_cluster == 4009)
 
 
 
-# DC Histogram cluster_9206
-norm_d_dc_9206 <- ggplot(cluster_9206, aes(x = dc)) +
+# DC Histogram cluster_13137
+norm_d_dc_13137 <- ggplot(cluster_13137, aes(x = dc)) +
   geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(cluster_9206$dc, na.rm = TRUE), 
-                                         sd = sd(cluster_9206$dc, na.rm = TRUE)), 
+  stat_function(fun = dnorm, args = list(mean = mean(cluster_13137$dc, na.rm = TRUE), 
+                                         sd = sd(cluster_13137$dc, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
-  labs(title = "DC Histogram of Cluster 9206\n with Normal Curve",
+  labs(title = "DC Histogram of Cluster 13137\n with Normal Curve",
        x = "DC",
        y = "Density") +
   theme_minimal() +
@@ -2869,13 +2873,13 @@ norm_d_dc_9206 <- ggplot(cluster_9206, aes(x = dc)) +
         axis.text.y = element_text(size = 10))
 
 
-# DC Histogram cluster_4811
-norm_d_dc_4811 <- ggplot(cluster_4811, aes(x = dc)) +
+# DC Histogram cluster_4009
+norm_d_dc_4009 <- ggplot(cluster_4009, aes(x = dc)) +
   geom_histogram(aes(y = ..density..), binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
-  stat_function(fun = dnorm, args = list(mean = mean(cluster_4811$dc, na.rm = TRUE), 
-                                         sd = sd(cluster_4811$dc, na.rm = TRUE)), 
+  stat_function(fun = dnorm, args = list(mean = mean(cluster_4009$dc, na.rm = TRUE), 
+                                         sd = sd(cluster_4009$dc, na.rm = TRUE)), 
                 color = "red", linewidth = 1) +
-  labs(title = "DC Histogram of Cluster 4811\n with Normal Curve",
+  labs(title = "DC Histogram of Cluster 4009\n with Normal Curve",
        x = "DC",
        y = "Density") +
   theme_minimal() +
@@ -2885,14 +2889,14 @@ norm_d_dc_4811 <- ggplot(cluster_4811, aes(x = dc)) +
         axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 10))
 
-grid.arrange(norm_d_dc_4811, norm_d_dc_9206)
+grid.arrange(norm_d_dc_4009, norm_d_dc_13137)
 
 # Perform t-test on DC
-t.test(cluster_9206$dc, cluster_4811$dc, alternative = "two.sided")
+t.test(cluster_4009$dc, cluster_13137$dc, alternative = "two.sided")
 
 
-# The t-test shows no significant difference in the DC values between the two clusters (9206 and 4811). 
-# The p-value bigger than 0.05 and the confidence interval [-2.56, 2.59] 
+# The t-test shows no significant difference in the DC values between the two clusters (4009 and 13137). 
+# The p-value bigger than 0.05 and the confidence interval [-2.56, 3.9] 
 # show that the observed differences could be due to random chance rather than a true difference in means. 
 # The DC values for these clusters are statistically similar.
 
