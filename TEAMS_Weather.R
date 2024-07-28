@@ -61,6 +61,7 @@ weather_peak <- weather_peak %>%
          mean_temp, spd_max_gust, total_precip, total_rain)
 
 
+str(weather_peak)
 
 # Describe numerical ####
 
@@ -557,4 +558,76 @@ print(hist_filtered)
 
 #   Rate: Greater than 7.6 mm/hour
 # Description: Heavy rain can lead to significant runoff, flooding, and substantial visibility reductions
+
+
+
+# Two Sample T Test
+
+# Subset the data
+names(weather_peak)
+# Subset data for August 2018 and August 2021
+august_2018 <- filter(weather_peak, year == 2018 & month == "Aug")
+august_2021 <- filter(weather_peak, year == 2021 & month == "Aug")
+
+# Remove NA values
+august_2018 <- august_2018 %>% drop_na()
+august_2021 <- august_2021 %>% drop_na()
+
+
+# Remove outliers
+august_2018 <- august_2018 %>%
+  remove_outliers("mean_temp") %>%
+  remove_outliers("spd_max_gust")
+
+august_2021 <- august_2021 %>% 
+  remove_outliers("mean_temp") %>%
+  remove_outliers("spd_max_gust")
+
+
+# Create histograms
+create_histogram <- function(data_2018, data_2021, var_name, binwidth) {
+  p <- ggplot() +
+    geom_histogram(data = data_2018, aes_string(x = var_name, y = "..density.."), 
+                   binwidth = binwidth, fill = "skyblue", color = "black", alpha = 0.7) +
+    geom_histogram(data = data_2021, aes_string(x = var_name, y = "..density.."), 
+                   binwidth = binwidth, fill = "orange", color = "black", alpha = 0.7) +
+    labs(title = paste("Histogram of", var_name, "\n in August 2018 and 2021"),
+         x = var_name,
+         y = "Density") +
+    theme_minimal() +
+    theme(plot.title = element_text(hjust = 0.5, size = 15),
+          axis.title.x = element_text(size = 12),
+          axis.title.y = element_text(size = 12),
+          axis.text.x = element_text(size = 10),
+          axis.text.y = element_text(size = 10))
+  return(p)
+}
+
+# Create histograms for each variable
+create_histogram(august_2018, august_2021, "mean_temp", binwidth = 1)
+create_histogram(august_2018, august_2021, "spd_max_gust", binwidth = 1)
+create_histogram(august_2018, august_2021, "total_precip", binwidth = 1)
+create_histogram(august_2018, august_2021, "total_rain", binwidth = 1)
+
+
+
+
+
+# Mean Temperature
+wilcox.test(august_2018$mean_temp, august_2021$mean_temp)
+# p-value = 0.7037
+
+# Maximum Wind Gust Speed
+wilcox.test(august_2018$spd_max_gust, august_2021$spd_max_gust)
+# p-value = 0.008199
+
+# Total Precipitation
+wilcox.test(august_2018$total_precip, august_2021$total_precip)
+# p-value = 0.0002356
+
+# Total Rainfall
+wilcox.test(august_2018$total_rain, august_2021$total_rain)
+# p-value = 0.0002356
+
+
 

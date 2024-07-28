@@ -2463,6 +2463,24 @@ grid.arrange(boxplot_ffmc_clean, boxplot_dmc_clean, boxplot_dc_clean,
 # and a lower p-value would mean the presence of other contributing factors.
 
 
+
+
+# Summary statistics for the overall dataset
+summary_overall <- describe_numerical(hotspots_peak, fire_indices)
+summary_overall
+
+# Filter data for the year 2018
+hotspots_test_2018 <- hotspots_test %>% filter(year == 2018)
+
+# Summary statistics for the year 2018
+summary_2018 <- describe_numerical(hotspots_test_2018, fire_indices)
+summary_2018
+
+# Print summary statistics
+print(summary_overall)
+print(summary_2018)
+
+
 # FFMC Histogram in 2018 with Normal Curve
 norm_d_ffmc <- ggplot(hotspots_test_2018, aes(x = ffmc)) +
   geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
@@ -2572,20 +2590,6 @@ grid.arrange(norm_d_ffmc, norm_d_dmc, norm_d_dc, norm_d_isi, norm_d_bui, norm_d_
 # Most indices appear to be not normally distributed
 
 
-# Summary statistics for the overall dataset
-summary_overall <- describe_numerical(hotspots_peak, fire_indices)
-summary_overall
-
-# Filter data for the year 2018
-hotspots_test_2018 <- hotspots_test %>% filter(year == 2018)
-
-# Summary statistics for the year 2018
-summary_2018 <- describe_numerical(hotspots_test_2018, fire_indices)
-summary_2018
-
-# Print summary statistics
-print(summary_overall)
-print(summary_2018)
 
 # Differences
 difference <- summary_2018$Median - summary_overall$Median
@@ -2645,12 +2649,7 @@ print(test_summary)
 
 
 
-# T Test with similar clusters ####
-
-
-
-
-
+# T Test with similar clusters #### TO BE DISCUSSED
 
 
 # Number of events, mean FWI, and mean DC for each cluster (test data)
@@ -2788,6 +2787,120 @@ t.test(cluster_13095$dc, cluster_4811$dc, alternative = "two.sided")
 # show that the observed differences could be due to random chance rather than a true difference in means. 
 # The DC values for these clusters are statistically similar.
 
+
+
+
+
+# T Test with similar clusters #### TO BE DISCUSSED - DIFFERENT CLUSTERS IN USE
+
+
+# Number of events, mean FWI, and mean DC for each cluster (test data)
+cluster_summary_indices <- hotspots_test %>%
+  group_by(event_cluster) %>%
+  summarise(
+    num_events = n(),          
+    mean_fwi = mean(fwi),  # Mean FWI value for each cluster
+    mean_dc = mean(dc)     # Mean DC value for each cluster
+  )
+
+# Filter clusters that have 1000+ events
+chosen_clusters <- cluster_summary_indices %>%
+  filter(num_events >= 1000 & num_events <= 6000)
+
+# Function to calculate how similar mean values are
+calculate_similar <- function(df) {
+  df %>%
+    mutate(
+      fwi_diff = abs(mean_fwi - mean(chosen_clusters$mean_fwi)),
+      dc_diff = abs(mean_dc - mean(chosen_clusters$mean_dc)),
+      similar = 0.3*fwi_diff + 0.7*dc_diff
+    ) %>%
+    arrange(similar)
+}
+
+# Apply the function and choose two clusters with the closest mean FWI and DC
+chosen_clusters <- chosen_clusters %>%
+  calculate_similar() %>%
+  slice(1:2)
+
+# Chosen clusters
+print(chosen_clusters)
+
+# Chosen cluster IDs
+chosen_ids <- c(4811, 9206)
+
+# Summary table for the chosen clusters
+hotspots_test %>%
+  filter(event_cluster %in% chosen_ids) %>%
+  group_by(event_cluster, year, month) %>%
+  summarize(
+    count = n(),
+    mean_ffmc = mean(ffmc, na.rm = TRUE),
+    mean_dmc = mean(dmc, na.rm = TRUE),
+    mean_dc = mean(dc, na.rm = TRUE),
+    mean_isi = mean(isi, na.rm = TRUE),
+    mean_bui = mean(bui, na.rm = TRUE),
+    mean_fwi = mean(fwi, na.rm = TRUE)
+  )
+
+
+# Plot the chosen clusters on the map
+plot_clusters_on_map(chosen_ids, hotspots_peak, zoom_level = 10)
+
+
+
+
+# Filter data for the two chosen clusters
+cluster_9206 <- hotspots_test %>% filter(event_cluster == 9206)
+cluster_4811 <- hotspots_test %>% filter(event_cluster == 4811)
+
+
+
+# DC Histogram cluster_9206
+norm_d_dc_9206 <- ggplot(cluster_9206, aes(x = dc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(cluster_9206$dc, na.rm = TRUE), 
+                                         sd = sd(cluster_9206$dc, na.rm = TRUE)), 
+                color = "red", linewidth = 1) +
+  labs(title = "DC Histogram of Cluster 9206\n with Normal Curve",
+       x = "DC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+
+# DC Histogram cluster_4811
+norm_d_dc_4811 <- ggplot(cluster_4811, aes(x = dc)) +
+  geom_histogram(aes(y = ..density..), binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  stat_function(fun = dnorm, args = list(mean = mean(cluster_4811$dc, na.rm = TRUE), 
+                                         sd = sd(cluster_4811$dc, na.rm = TRUE)), 
+                color = "red", linewidth = 1) +
+  labs(title = "DC Histogram of Cluster 4811\n with Normal Curve",
+       x = "DC",
+       y = "Density") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 15),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10))
+
+grid.arrange(norm_d_dc_4811, norm_d_dc_9206)
+
+# Perform t-test on DC
+t.test(cluster_9206$dc, cluster_4811$dc, alternative = "two.sided")
+
+
+# The t-test shows no significant difference in the DC values between the two clusters (9206 and 4811). 
+# The p-value bigger than 0.05 and the confidence interval [-2.56, 2.59] 
+# show that the observed differences could be due to random chance rather than a true difference in means. 
+# The DC values for these clusters are statistically similar.
+
+# Refer to Weather Rscript file for T Test 
 
 
 
