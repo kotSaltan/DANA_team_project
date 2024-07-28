@@ -889,7 +889,7 @@ print(summary_fire_indices)
 
 # Plot histogram for FFMC
 ggplot(hotspots_peak, aes(x = ffmc)) +
-  geom_histogram(binwidth = 2, fill = "lightgreen", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of FFMC Values", x = "FFMC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
@@ -961,7 +961,7 @@ grid.arrange(boxplot_ffmc, boxplot_ffmc_clean)
 
 # Plot histogram for DMC
 ggplot(hotspots_peak, aes(x = dmc)) +
-  geom_histogram(binwidth = 2, fill = "lightgreen", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of DMC Values", x = "DMC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
@@ -1030,7 +1030,7 @@ grid.arrange(boxplot_dmc, boxplot_dmc_clean)
 
 # Plot histogram for DC
 ggplot(hotspots_peak, aes(x = dc)) +
-  geom_histogram(binwidth = 20, fill = "lightgreen", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of DC Values", x = "DC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
@@ -1189,7 +1189,7 @@ ggplot(monthly_data, aes(x = Date)) +
 
 # Plot histogram for ISI
 ggplot(hotspots_peak, aes(x = isi)) +
-  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of ISI Values", x = "ISI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
@@ -1284,7 +1284,7 @@ grid.arrange(boxplot_isi,boxplot_isi_clean)
 # Extreme: 121 and above
 
 ggplot(hotspots_peak, aes(x = bui)) +
-  geom_histogram(binwidth = 10, fill = "lightgreen", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of BUI Values", x = "BUI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
@@ -1347,7 +1347,7 @@ grid.arrange(boxplot_bui, boxplot_bui_clean)
 # Extreme (31+): Fires start and spread quickly, and are intense and challenging to control.
 
 ggplot(hotspots_peak, aes(x = fwi)) +
-  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution of FWI Values", x = "FWI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
@@ -1563,7 +1563,7 @@ print(summary_other_variables)
 
 
 ggplot(hotspots_peak, aes(x = ros)) +
-  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) +
   labs(title = "Distribution Rate of Spread at Fire Hotspots",
        x = "ROS (m/min)",
        y = "Frequency") +
@@ -1627,7 +1627,7 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = ros)) +
 
 # Plot histogram for HFI
 ggplot(hotspots_peak, aes(x = hfi)) +
-  geom_histogram(binwidth = 1000, fill = "lightgreen", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
+  geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
   labs(title = "Distribution of HFI Values",
        x = "HFI (kW/m)",
        y = "Frequency") +
