@@ -267,18 +267,6 @@ top_clusters <- cluster_summary %>%
 print(top_clusters)
 ```
 
-```{r, echo=FALSE}
-# Plot the events in the largest clusters 
-ggplot(hotspots_peak %>% filter(event_cluster %in% top_clusters$event_cluster), 
-       aes(x = lon, y = lat, color = factor(event_cluster))) +
-  geom_point(alpha = 0.5, size = 2) +
-  labs(title = "Top 5 Largest Fire Clusters",
-       x = "Longitude",
-       y = "Latitude",
-       color = "Cluster ID") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
-```
 
 ### Visualize the clusters
 
@@ -297,50 +285,40 @@ plot_clusters_on_map <- function(cluster_ids, data, zoom_level = 10) {
   # Get the map from Stadia Maps API
   map <- get_stadiamap(bbox = bbox, zoom = zoom_level, maptype = "stamen_terrain")
   
+  
+  
   # Plot the clusters data on the map
   print(ggmap(map) +
-          geom_point(data = cluster_data, aes(x = lon, y = lat, color = factor(event_cluster)), size = 2, alpha = 0.3, shape = 19) +  
+          geom_point(data = cluster_data, aes(x = lon, y = lat, color = factor(event_cluster)), size = 2, alpha = 0.3, shape = 16) +  
           labs(title = "Matched Fire Clusters", 
                x = "Longitude", 
                y = "Latitude", 
                color = "Cluster ID") +
           theme_minimal() +
           theme(legend.position = "bottom") +
-          scale_color_manual(values = c("firebrick1", "orange", "yellow")) # Custom colours
+          scale_color_manual(values = c("firebrick1", "orange", "yellow", "orange3", "darkred")) # Custom colours
   ) 
 }
 ```
 
 *ID 4792 Tweedsmuir Complex Fire (2018)*
 
-```{r maps_top, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
-# Plot the top 5 clusters individually
-plot_clusters_on_map(top_clusters$event_cluster[1], hotspots_peak, zoom_level = 10)
-```
-
 *ID 3120 Elephant Hill Fire (2017)*
-
-```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
-plot_clusters_on_map(top_clusters$event_cluster[2], hotspots_peak, zoom_level = 10)
-```
 
 *ID 14487 Fort Nelson Fire (2023)*
 
-```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
-plot_clusters_on_map(top_clusters$event_cluster[3], hotspots_peak, zoom_level = 10)
-```
-
 *ID 4790 Shovel Lake Fire (2018)*
-
-```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
-plot_clusters_on_map(top_clusters$event_cluster[4], hotspots_peak, zoom_level = 10)
-```
 
 *ID 3125 Hanceville-Riske Creek Fire (2017)*
 
-```{r, fig.width=7, fig.height=11, echo=FALSE, warning=FALSE}
-plot_clusters_on_map(top_clusters$event_cluster[5], hotspots_peak, zoom_level = 10)
+
+```{r, fig.width=10, fig.height=11, echo=FALSE}
+# The biggest 5 clusters on the map
+chosen_ids_top <- c(4792,3120,14487,4790,3125)
+
+plot_clusters_on_map(chosen_ids_top, hotspots_peak, zoom_level = 7)
 ```
+
 
 *The plots show large areas affected by fires.\
 Each fire cluster covers a big region, indicating major fire events.\
@@ -1909,6 +1887,9 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = hfi)) +
 
 *The median HFI values are generally below 20,000 kW/m after removing outliers.*
 
+
+
+
 ## Tests and Models
 
 *In this section, we use statistical tests to see some meaningful patters and build models to predict fire risk.*
@@ -1963,9 +1944,9 @@ length(unique(filter(hotspots_peak_clean, year == 2018)$event_cluster))
 *From these calculations, we found that 2018 had a significantly higher number of observations and event clusters compared to the average over the ten-year period.*
 
 
-```{r}
+```{r, fig.width=10, fig.height=11, echo=FALSE}
 grid.arrange(boxplot_ffmc_clean, boxplot_dmc_clean, boxplot_dc_clean,
-             boxplot_isi_clean, boxplot_bui_clean, boxplot_fwi_clean, nrow = 2, ncol = 3)
+             boxplot_isi_clean, boxplot_bui_clean, boxplot_fwi_clean, nrow = 3, ncol = 2)
 ```
 
 
@@ -1978,9 +1959,33 @@ grid.arrange(boxplot_ffmc_clean, boxplot_dmc_clean, boxplot_dc_clean,
 *A p-value greater than 0.05 would suggest that the higher number of fires could be due to a chance,\
 and a lower p-value would mean the presence of other contributing factors.*
 
+
+
+
+*Summary statistics for before T Test*
+
+
+```{r}
+# Summary statistics for the overall dataset
+summary_overall <- describe_numerical(hotspots_peak, fire_indices)
+summary_overall
+```
+
+```{r}
+# Filter data for the year 2018
+hotspots_test_2018 <- hotspots_test %>% filter(year == 2018)
+
+# Summary statistics for the year 2018
+summary_2018 <- describe_numerical(hotspots_test_2018, fire_indices)
+summary_2018
+```
+
+
+
+
 *Check the histograms if they follow the normal distribution.*
 
-```{r, echo=FALSE}
+```{r, fig.width=10, fig.height=11, echo=FALSE}
 
 # FFMC Histogram in 2018 with Normal Curve
 norm_d_ffmc <- ggplot(hotspots_test_2018, aes(x = ffmc)) +
@@ -2087,30 +2092,10 @@ norm_d_fwi <- ggplot(hotspots_test_2018, aes(x = fwi)) +
         axis.text.y = element_text(size = 10))
 
 
-grid.arrange(norm_d_ffmc, norm_d_dmc, norm_d_dc, norm_d_isi, norm_d_bui, norm_d_fwi, nrow = 2, ncol = 3)
+grid.arrange(norm_d_ffmc, norm_d_dmc, norm_d_dc, norm_d_isi, norm_d_bui, norm_d_fwi, nrow = 3, ncol = 2)
 # Most indices appear to be not normally distributed
 
 ```
-
-
-*Summary statistics for before T Test*
-
-
-```{r}
-# Summary statistics for the overall dataset
-summary_overall <- describe_numerical(hotspots_peak, fire_indices)
-summary_overall
-```
-
-```{r}
-# Filter data for the year 2018
-hotspots_test_2018 <- hotspots_test %>% filter(year == 2018)
-
-# Summary statistics for the year 2018
-summary_2018 <- describe_numerical(hotspots_test_2018, fire_indices)
-summary_2018
-```
-
 
 
 ```{r, echo=FALSE}
@@ -2329,7 +2314,12 @@ print(t_test_result)
 
 *Therefore, the DC values for these clusters are statistically similar.*
 
-\### Linear regression model
+
+
+
+
+
+### Linear regression model
 
 Analyze the weekly number of fires using various fire index predictors. The goal is to build a linear regression model to predict the number of fires and see its performance.
 
