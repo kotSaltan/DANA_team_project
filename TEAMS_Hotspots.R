@@ -2991,9 +2991,50 @@ ggplot(weekly_summary, aes(y = boxcox_fires)) +
     axis.text = element_text(size = 10)
   )
 
-# Create scatterplot matrix
-ggpairs(weekly_summary, columns = c("fires", "boxcox_fires", numeric_columns),
-        title = "Scatterplot Matrix of Predictors")
+
+
+# Functions for scatterplot
+panel.corr <- function(x, y){
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- round(cor(x, y), digits=2)
+  text(0.5, 0.5, r, cex = 1) 
+}
+
+panel.hist <- function(x, ...){
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks
+  len <- length(breaks)
+  y <- h$counts/max(h$counts)
+  rect(breaks[-len], 0, breaks[-1], y, col = "lightblue")
+}
+
+panel.scat <- function(x, y){
+  points(x, y, pch = 19, cex = 0.5, col = "lightgrey")
+  abline(lm(y ~ x), col = "lightblue4", lwd = 2) 
+}
+
+# Prepare the data for the scatterplot matrix
+data_for_plot <- weekly_summary %>%
+  select(fires, boxcox_fires, temp, rh, ws, pcp, ffmc, dmc, dc, isi, bui, fwi, ros, hfi)
+
+# Scatterplot matrix
+pairs(
+  data_for_plot,
+  lower.panel = panel.scat,
+  upper.panel = panel.corr,
+  diag.panel = panel.hist,
+  labels = c("Fires", "BoxCox Fires", "Temp", "RH", "WS", "PCP", "FFMC", "DMC", "DC", "ISI", "BUI", "FWI", "ROS", "HFI"),
+  gap = 0.3, 
+  main = "Scatterplot Matrix of Predictors",
+  cex.labels = 1.2
+  )
+
+
+
+
 
 
 # Model 1
@@ -3002,7 +3043,8 @@ summary(model_1)
 
 # Check for multicollinearity
 vif(model_1)
-
+# Variance Inflation Factor for each predictor to detect multicollinearity.
+# High VIF values > 10 show multicollinearity among the predictors.
 
 
 # Remove bui 
@@ -3038,7 +3080,7 @@ plot(model_final)
 
 # Test 1
 
-# Create a dataframe with hypothetical conditions (moderate, high, extrem)
+# Create a dataframe with hypothetical conditions (moderate, high, extreme)
 test_1 <- data.frame(
   dc = c(200, 400, 600),     
   hfi = c(1000, 7000, 12000), 
