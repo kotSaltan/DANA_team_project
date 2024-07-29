@@ -3090,3 +3090,4 @@ result_test_Kelowna_2 <- cbind(test_Kelowna_2, predicted_fires_test_Kelowna_2)
 result_test_Kelowna_2
 
 mean(result_test_Kelowna_2$predicted_fires_test_Kelowna_2, na.rm = TRUE)
+
