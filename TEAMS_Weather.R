@@ -604,7 +604,7 @@ create_histogram <- function(data_2018, data_2021, var_name, binwidth) {
 }
 
 # Create histograms for each variable
-create_histogram(august_2018, august_2021, "mean_temp", binwidth = 1)
+create_histogram(august_2018, august_2021, "max_temp", binwidth = 1)
 create_histogram(august_2018, august_2021, "spd_max_gust", binwidth = 1)
 create_histogram(august_2018, august_2021, "total_precip", binwidth = 1)
 create_histogram(august_2018, august_2021, "total_rain", binwidth = 1)
@@ -630,4 +630,62 @@ wilcox.test(august_2018$total_rain, august_2021$total_rain)
 # p-value = 0.0002356
 
 
+
+
+# Kelowna Weather ####
+
+# Known fire near Kelowna in 2023
+kelowna_fire <- data.frame(
+  fire_name = "McDougall Creek Fire",
+  start_date = as.Date("2023-08-16"),  
+  end_date = as.Date("2023-08-30"),
+  latitude = 49.8821,
+  longitude = -119.4370
+)
+
+
+# Calculate the distance from each weather station to Kelowna
+weather_peak <- weather_peak %>%
+  mutate(
+    distance_to_kelowna = distHaversine(
+      matrix(c(lon, lat), ncol = 2),
+      matrix(c(kelowna_fire$longitude, kelowna_fire$latitude), ncol = 2)
+    ) / 1000  # Convert meters to kilometers
+  )
+
+
+# Filter weather stations within 25 km of Kelowna
+kelowna_weather_data <- weather_peak %>%
+  filter(distance_to_kelowna < 25)
+unique(kelowna_weather_data$station_name)
+
+# Filter data for 2023
+kelowna_weather_data_2023 <- kelowna_weather_data %>%
+  filter(year == 2023)
+
+
+
+# Summarize the data from different weather stations to get total rain each day
+daily_kelowna_rain <- kelowna_weather_data_2023 %>%
+  group_by(date) %>%
+  summarise(total_rain = sum(total_rain, na.rm = TRUE))
+
+
+# Identify days with and without rain, add column
+daily_kelowna_rain <- daily_kelowna_rain %>%
+  mutate(rain_day = total_rain >= 0.1) # this is a threshold for a dry day
+
+# Plot the periods of rain and dry periods for the entire year of 2023
+ggplot(daily_kelowna_rain, aes(x = date, y = total_rain)) +
+  geom_point(aes(color = rain_day), size = 2) +
+  scale_color_manual(values = c("indianred", "cornflowerblue"), labels = c("Dry (<0.1 mm)", "Rain (>=0.1 mm)")) +
+  labs(title = "Daily Rain near Kelowna",
+       x = "Date",
+       y = "Total Rain (mm)",
+       color = "Condition") +
+  theme_minimal(base_size = 15) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom") +
+  geom_vline(xintercept = as.numeric(kelowna_fire$start_date), linetype = "dashed", color = "red", size = 0.5) +
+  geom_vline(xintercept = as.numeric(kelowna_fire$end_date), linetype = "dashed", color = "red", size = 0.5) +
+  scale_x_date(date_labels = "%b", date_breaks = "1 month")
 
