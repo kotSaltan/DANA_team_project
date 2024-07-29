@@ -790,8 +790,8 @@ hotspots_peak_clean <- hotspots_peak %>%
   remove_outliers("ws")
 
 # Check the summary statistics after removing outliers
-summary_clean <- describe_numerical(hotspots_peak_clean, c('temp', 'rh', 'ws', 'wd', 'pcp'))
-print(summary_clean)
+summary_weather_clean <- describe_numerical(hotspots_peak_clean, c('temp', 'rh', 'ws', 'wd', 'pcp'))
+print(summary_weather_clean)
 
 
 # Output
@@ -1504,6 +1504,9 @@ ggplot(monthly_data, aes(x = Date)) +
 
 
 
+# Summary of fire indices
+summary_fire_indices_clean <- describe_numerical(hotspots_peak_clean, c('ffmc', 'dmc', 'dc', 'isi', 'bui', 'fwi'))
+print(summary_fire_indices_clean)
 
 
 # 6. Other Variables ####
