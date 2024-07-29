@@ -1628,7 +1628,7 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = ros)) +
 
 # Helps predict fire destructiveness, allocate resources, warn or evacuate public.
 
-# Plot histogram for HFI
+# Plot histogram for HFI ####
 ggplot(hotspots_peak, aes(x = hfi)) +
   geom_histogram(fill = "lightgreen", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
   labs(title = "Distribution of HFI Values",
@@ -1665,7 +1665,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = ye
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "bottom")
 
-# Different years show a lot of differences in HFI values. 
+# Different years show a lot of differences in HFI values. ####
 # For example, 2014 and 2021 had higher peaks, meaning there was more intense fire activity in those years. 
 # 2020 had lower HFI values,  there were milder fire conditions or better fire control efforts.
 # 
@@ -1673,7 +1673,7 @@ ggplot(monthly_avg, aes(x = month, y = avg_hfi, color = factor(year), group = ye
 # Weather conditions, temperature, humidity, and wind speed,  can affect how fires behave.
 
 
-# Analyze the trends of HFI and the number of fire events.
+# Analyze the trends of HFI and the number of fire events. ####
 
 # Use the previously normalized monthly_data table
 
@@ -1702,7 +1702,7 @@ ggplot(monthly_data, aes(x = Date)) +
 
 
 
-# Analyses of the extreme outliers of 2014, 2018, 2021  and 2023, values greater than 75000
+# Analyses of the extreme outliers of 2014, 2018, 2021  and 2023, values greater than 75000 ####
 
 
 # Filter out entries with HFI values greater than 75000
@@ -1721,7 +1721,7 @@ cluster_summary %>%
   filter(event_cluster %in% c(4094, 3983, 11877, 4024))
 
 
-plot_clusters_on_map(4094, hotspots_peak, zoom_level = 10) # 18 Jul 2018, Snowy Mountain Fire and other fires in the Okanagan region.
+plot_clusters_on_map(4094, hotspots_peak, zoom_level = 10) # 18 Jul 2018
 plot_clusters_on_map(3983, hotspots_peak, zoom_level = 10) # 11 Aug 2018
 plot_clusters_on_map(11877, hotspots_peak, zoom_level = 10) # 11 Aug 2023
 plot_clusters_on_map(4024, hotspots_peak, zoom_level = 10) # 11 Aug 2018
@@ -1746,10 +1746,12 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = hfi)) +
 
 
 
+# Summary of other variables
+summary_other_variables_clean <- describe_numerical(hotspots_peak_clean, c('ros', 'hfi'))
+print(summary_other_variables_clean)
 
 
-
-# SFC TFC and BFC are a part of BORFIRE model.
+# SFC TFC and BFC are a part of BORFIRE model. ####
 # The Boreal Fire Effects (BORFIRE) model estimates carbon emissions from wildfires in Canada. 
 # It calculates preburn fuel loads for various forest components using the Canadian Forest Fire Weather Index (FWI) System.
 # This model considers surface fuel consumption, 
@@ -1758,636 +1760,636 @@ ggplot(hotspots_peak_clean, aes(x = factor(year), y = hfi)) +
 
 
 
-"sfc" # Surface Fuel Consumption (modelled)
-# SFC represents the amount of fuel consumed by surface fires, 
-# including organic soil (duff), surface litter, dead and downed woody debris.
-# Calculated using indices of the FWI System (BUI and DC).
-
-# Range typically varies significantly depending on the forest type and weather conditions.
-
-print(monthly_avg)
-
-ggplot(hotspots_peak, aes(x = sfc)) +
-  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Surface Fuel Consumption (SFC)",
-       x = "SFC (kg/m²)",
-       y = "Frequency") +
-  theme_minimal() + 
-  scale_y_continuous(labels = comma)
-
-
-
-
-
-
-"tfc" # Total Fuel Consumption (modelled)
-# TFC is the total amount of fuel consumed by both surface and crown fires. 
-# It includes all components in SFC plus the consumption of overstory fuels (canopy).
-# Estimates the overall carbon emissions from a fire event.
-# Range varies widely based on the intensity and spread of the fire, 
-# as well as the initial fuel load and moisture content.
-
-
-
-ggplot(hotspots_peak, aes(x = tfc)) +
-  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Total Fuel Consumption (TFC)",
-       x = "TFC (kg/m²)",
-       y = "Frequency") +
-  theme_minimal() +
-  scale_y_continuous(labels = comma)
-  
-
-
-
-
-
-"bfc" # Borfire Fuel Consumption (modelled)      
-# BFC refers to a specific component of the BORFIRE model focused on estimating carbon emissions from boreal forest fires.
-
-summary(hotspots_peak$bfc)
-
-# Explore huge bfc values
-huge_bfc <- hotspots_peak %>%
-  filter(bfc > 1000)
-
-# Print the resulting data frame to inspect the entries with huge bfc values
-
-huge_bfc %>%
-  group_by(year, month) %>%
-  summarise(n_entries = n()) %>%
-  arrange(year, month)
-
-summary(huge_bfc$bfc)
-
-# Possibly the information here is incorrectly recorded
-
-# The Max  value in the dataset appeart to be out of valid range
-
-# Remove NA values from BFC data
-hotspots_peak_BFC <- hotspots_peak %>%
-  filter(!is.na(bfc))
-
-
-
-# Calculate IQR for BFC
-IQR_bfc <- IQR(hotspots_peak_BFC$bfc, na.rm = TRUE)
-Q1_bfc <- quantile(hotspots_peak_BFC$bfc, 0.25, na.rm = TRUE)
-Q3_bfc <- quantile(hotspots_peak_BFC$bfc, 0.75, na.rm = TRUE)
-
-# Define lower and upper bounds for outliers
-upper_bound_bfc <- Q3_bfc + 1.5 * IQR_bfc
-
-# Filter out the outliers
-hotspots_peak_BFC <- hotspots_peak_BFC %>%
-  filter(bfc <= upper_bound_bfc)
-
-# Summary of filtered data
-summary(hotspots_peak_BFC$bfc)
-
-
-# Plot Histogram of BFC Data Without Handling Outliers
-ggplot(hotspots_peak_BFC, aes(x = bfc)) +
-  geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Boreal Fire Consumption (BFC)",
-       x = "BFC",
-       y = "Frequency") +
-  theme_minimal() + 
-  scale_y_continuous(labels = scales::comma)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"cfb" #  Crown Fraction Burned (%) at hotspot location (modelled)
-# The CFB index measures the proportion of tree crowns that are consumed by a wildfire. 
-# It ranges from 0 to 100%, 
-# where 0% means no crown fire activity and 100% indicates 
-# that the entire tree crowns in the area have been burned.
-
-ggplot(hotspots_peak, aes(x = cfb)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of CFB at Fire Hotspots",
-       x = "CFB",
-       y = "Frequency") +
-  scale_y_continuous(labels = comma) + 
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10),
-        axis.text.y = element_text(size = 10))
-
-# This histogram is dominated by zero values, making it difficult to identify clear trends.
-
-
-# Count missing values in the CFB column
-sum(is.na(hotspots_peak$cfb))
-
-
-# Identify years with the most missing values
-missing_cfb <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(cfb)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(missing_percentage))
-
-missing_cfb
-
-# 2015 has the highest percentage of missing values at 56.1%.
-# 2017 has 54.9%.
-# 2016 has 46.8%.
-# 2018-2024 and 2014 have no missing values
-
-zero_cfb <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    zero_count = sum(cfb == 0, na.rm = TRUE),
-    zero_percentage = (zero_count / total_count) * 100
-  ) %>%
-  arrange(desc(zero_percentage))
-
-zero_cfb
-
-# 2019 has the highest percentage of zero values at 92.7%.
-# 2020, 2021, 2022, and 2023 also have high values ranging from 65.4% to 77.8%.
-# 2015-2018, and 2024 have almost no zero values.
-
-# Data collection for this variable lacks quality.
-
-# Filter out zero and na values to check the CFB values when it was properly recorded.
-
-hotspots_peak_CFB <- hotspots_peak %>%
-  filter(cfb > 0 & !is.na(cfb))
-
-# Create the histogram for CFB
-ggplot(hotspots_peak_CFB, aes(x = cfb)) +
-  geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Crown Fraction Burned (CFB) at Fire Hotspots",
-       x = "CFB",
-       y = "Frequency") +
-  theme_minimal() + 
-  scale_y_continuous(labels = scales::comma)
-
-# The histogram shows a significant peak at the value of 100%,
-# indicating that in many fire events with non zero recorded CFB values,
-# the entire tree crown is completely burned.
-# This suggests that when fires do occur,
-# they tend to be quite severe, affecting the full canopy of trees.
-
-
-
-
-
-
-"age" # Age of Trees (in days)
-
-
-# Count missing values in the Age column
-sum(is.na(hotspots_peak$age))
-
-
-# Identify years with the most missing values
-missing_age <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(age)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(missing_percentage))
-
-missing_age
-
-
-zero_age <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    zero_count = sum(age == 0, na.rm = TRUE),
-    zero_percentage = (zero_count / total_count) * 100
-  ) %>%
-  arrange(desc(zero_percentage))
-
-zero_age
-
-# # The years with valid amount of observations are 2014 2015 2016. 
-# The variable almost doesnt have meaningfull values in 2017 and 2018. 
-# The more resent hotspots have stopped recording this variable altogether.
-
-hotspots_peak_age <- hotspots_peak %>%
-  filter(age > 0 & !is.na(age))
-
-# Create the histogram for Age
-ggplot(hotspots_peak_age, aes(x = age)) +
-  geom_histogram(binwidth = 100, fill = "steelblue", color = "black") +
-  labs(title = "Distribution of Tree Age at Fire Hotspots",
-       x = "Age",
-       y = "Frequency") +
-  theme_minimal() + 
-  scale_y_continuous(labels = scales::comma)
-
-
-
-
-
-
-"estarea" # approximate burned area based on historical average area burned per hotspot by
-# agency and fuel type
-
-
-# Count missing values in the estarea
-sum(is.na(hotspots_peak$estarea))
-
-
-# Identify years with the most missing values
-missing_estarea <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(estarea)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-missing_estarea
-
-# 2023 2022 and 2021 do not have this variable.
-# 2015 2016 2018 2019 has around 50% missing values
-# 2020 85 % missing values
-
-
-zero_estarea <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    zero_count = sum(estarea == 0, na.rm = TRUE),
-    zero_percentage = (zero_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-zero_estarea
-
-# Additionally to the missing values already described, 2017 has almost 50% zero values
-# The only year with values present is 2014
-# The more resent hotspots have stopped recording this variable altogether.
-# There has probably been a change in reporting teckniques with this variable,
-# it may be not suitable for meaningful analyses for the 10 year period
-
-
-"polyid"   
-
-
-# Count missing values in the estarea
-sum(is.na(hotspots_peak$polyid))
-
-
-# Identify years with the most missing values
-missing_polyid <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(polyid)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-missing_polyid
-
-# 2018-2023 do not have this variable.
-
-
-
-zero_polyid <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    zero_count = sum(polyid == 0, na.rm = TRUE),
-    zero_percentage = (zero_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-zero_polyid
-
-# Additionally 2017 has almost all zero values
-
-# Initially the variable was used to identify specific event,
-# but recently the reporting process has changed
-# Only meaningful information in 2014 2015 and 2016, 
-# it may be not suitable for meaningful analyses for the 10 year period
-
-
-
-
-
-"pcuring" # Percent Curing
-# This indicates the proportion of grass and other fuels (non-woody) that are in a cured (dried) state, ready to burn.
-# For example, if pcuring is 80%, it means that 80% of the vegetation is dead or dry enough to ignite and sustain fire.
-
-# The FWI System incorporates pcuring as part of its calculations to determine indices 
-# like the Fine Fuel Moisture Code (FFMC) and the Initial Spread Index (ISI).
-# These indices are used to estimate the ease of ignition and 
-# the rate of spread for fires in grasslands and similar fuel types.
-
-# Count missing values in the pcuring
-sum(is.na(hotspots_peak$pcuring))
-
-
-# Identify years with the most missing values
-missing_pcuring <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(pcuring)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-missing_pcuring
-
-# 2023 does not have this variable.
-
-
-# Exclude the year 2023 where pcuring is missing
-hotspots_peak_pcuring <- hotspots_peak %>%
-  filter(!(year == 2023)) %>%
-  filter(!is.na(pcuring))
-
-# Check the summary of the filtered data
-summary(hotspots_peak_pcuring$pcuring)
-
-# Checking for values greater than 100%
-pcuring_above_100 <- hotspots_peak %>% filter(pcuring > 100)
-summary(pcuring_above_100)
-
-# 4 entries with values above 100% - out of range values, possible mistake in reporting
-
-zero_pcuring <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    zero_count = sum(pcuring == 0, na.rm = TRUE),
-    zero_percentage = (zero_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-zero_pcuring
-sum(zero_pcuring$zero_count)
-# 62239 zero values
-
-# Create the histogram for pcuring
-ggplot(hotspots_peak_pcuring, aes(x = pcuring)) +
-  geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Curing Percentage (pcuring) Values", 
-       x = "Curing Percentage (pcuring)", 
-       y = "Frequency") +
-  scale_y_continuous(labels = scales::comma) + 
-  theme_minimal()
-
-# Create the boxplot for pcuring across years
-ggplot(hotspots_peak_pcuring, aes(x = factor(year), y = pcuring)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Curing Percentage (pcuring) Across Years",
-       x = "Year",
-       y = "Curing Percentage (pcuring)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-# The median pcuring values for these years range between 30% and 50%.
-# There are many entries with pcuring at 0%, 
-# possibly indicating periods with no drying or data recording issues.
-
-
-"cfactor" # Curing Factor
-# The amount of curing, or drying, of vegetation.
-
-# Count missing values in the cfactor
-sum(is.na(hotspots_peak$cfactor))
-
-
-# Identify years with the most missing values
-missing_cfactor <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(cfactor)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-missing_cfactor
-
-# 2019 - 2023 does not have this variable.
-
-
-# Exclude the years where cfactor is missing
-hotspots_peak_cfactor <- hotspots_peak %>%
-  filter((year < 2019)) %>%
-  filter(!is.na(cfactor))
-
-# Check the summary of the filtered data
-summary(hotspots_peak_cfactor$cfactor)
-
-# range from 0 to 1
-# Represents the curing factor as a proportion rather than a percentage.
-
-
-# Create the histogram for cfactor
-ggplot(hotspots_peak_cfactor, aes(x = cfactor)) +
-  geom_histogram(binwidth = 0.1, fill = "lightgreen", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Curing Factor (cfactor) Values", 
-       x = "Curing Factor (cfactor)", 
-       y = "Frequency") +
-  scale_y_continuous(labels = scales::comma) + 
-  theme_minimal()
-
-# Create the boxplot for cfactor across years
-ggplot(hotspots_peak_cfactor, aes(x = factor(year), y = cfactor)) +
-  geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
-  labs(title = "Distribution of Curing Factor (cfactor) Across Years",
-       x = "Year",
-       y = "Curing Factor (cfactor)") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 15),
-        axis.title.x = element_text(size = 12),
-        axis.title.y = element_text(size = 12),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10))
-
-
-
-# The mean cfactor is 0.13
-# The variable has stopped being recorded recently.
-# It may be not suitable for meaningful analyses for the 10 year period
-
-
-
-"greenup" # – phenological state of deciduous trees (0=leafless, 1=green)
-sum(is.na(hotspots_peak$greenup))
-
-# Identify years with the most missing values
-missing_greenup <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(greenup)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-missing_greenup
-
-# 2023 does not have this variable.
-
-# Count the number of observations in each greenup state
-greenup_count <- hotspots_peak %>%
-  group_by(greenup) %>%
-  summarise(count = n())
-greenup_count
-
-# There are invalid values present in the dataset. This variable is only 0 or 1
-
-# Filter out invalid values in the greenup variable
-hotspots_peak_greenup <- hotspots_peak %>%
-  filter(greenup %in% c(0, 1))
-
-# Check the summary of the filtered data
-summary(hotspots_peak_greenup$greenup)
-
-greenup_by_year <- hotspots_peak_greenup %>%
-  group_by(year, greenup) %>%
-  summarise(count = n(), .groups = 'drop') %>%
-  arrange(desc(year), greenup)
-
-# Visualize the count of observations in each greenup state
-ggplot(greenup_by_year, aes(x = factor(greenup), y = count, fill = factor(greenup))) +
-  geom_bar(stat = "identity") +
-  labs(title = "Count of Observations by Greenup State",
-       x = "Greenup State",
-       y = "Count",
-       fill = "Greenup State") +
-  scale_fill_manual(values = c("0" = "bisque3", "1" = "lightgreen")) +
-  theme_minimal()+
-  scale_y_continuous(labels = scales::comma) 
-
-# There are significantly more observations for greenup state 1 (trees with green leaves) compared to state 0 (leafless trees).
-# The greenup state alone may not provide significant insights into fire behavior or risks.
-
-
-
-"elev" # elevation above sea level (meters)
-# BC's elevation ranges from sea level to approximately 4000 meters,
-# with the highest peak being Mount Fairweather at 4663 meters.
-
-# Check for missing values
-sum(is.na(hotspots_peak$elev))
-
-# A low percentage of missing values
-
-range(hotspots_peak$elev, na.rm = TRUE)
-# -1 3129 While there is one instance of a below sea level elevation, the range is valid for BC
-# These particular entries may have been reported incorrectly due to technical issues.
-
-# Identify and analyze outliers
-elev_outliers <- hotspots_peak %>%
-  filter(elev < 0)
-print(elev_outliers)
-
-
-
-# Histogram of elevation values
-ggplot(hotspots_peak, aes(x = elev)) +
-  geom_histogram(binwidth = 100, fill = "lightgreen", color = "black") +
-  labs(title = "Distribution of Elevation Values",
-       x = "Elevation (meters)",
-       y = "Frequency") +
-  theme_minimal()
-
-# Overall the distribution of elevation levels is normal for British Columbia.
-
-"cfl"     
-
-"tfc0" 
-
-"sfl"  
-
-"ecozone"# – Ecozone in which hotspot is located
-
-# Identify years with the most missing values
-missing_ecozone <- hotspots_peak %>%
-  group_by(year) %>%
-  summarise(
-    total_count = n(),
-    missing_count = sum(is.na(ecozone)),
-    missing_percentage = (missing_count / total_count) * 100
-  ) %>%
-  arrange(desc(year))
-
-missing_ecozone
-
-# For the years 2019-2023 there are only 24+4 missing entries.
-
-
-# Count the number of hotspots in each ecozone
-ecozone_counts <- hotspots_peak %>% filter(year >= 2019) %>% 
-  group_by(ecozone) %>%
-  summarise(count = n())
-
-# Print the ecozone counts
-print(ecozone_counts)
-
-# Convert ecozone to a factor
-ecozone_counts$ecozone <- factor(ecozone_counts$ecozone, levels = c(14, 4, 9, 12, 13, "NA"))
-
-# Define custom colors and labels for the selected ecozones (Statistics Canada site)
-# https://www.statcan.gc.ca/en/subjects/standard/environment/elc/2017-map
-custom_colors <- c("14" = "#B5D79F", "4" = "#989898", "9" = "#36C48E", 
-                   "12" = "#ACC32D", "13" = "#05734D", "NA" = "#000000")
-
-custom_labels <- c("14" = "Montane Cordillera", "4" = "Taiga Plains", "9" = "Boreal Plains",
-                   "12" = "Boreal Cordillera", "13" = "Pacific Maritime")
-
-# Visualize the distribution of hotspots by ecozone with custom legend
-ggplot(ecozone_counts, aes(x = reorder(ecozone, -count), y = count, fill = ecozone)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Distribution of Hotspots by Ecozone (2019 onwards)",
-       x = "Ecozone",
-       y = "Number of Hotspots",
-       fill = "Ecozone") +
-  theme_minimal() +
-  scale_y_continuous(labels = scales::comma) +
-  scale_fill_manual(values = custom_colors, labels = custom_labels) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
-        legend.position = "right", 
-        legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10))
-
-
-# The plot shows distribution of ecozones in the hotspot dataset.
-# The plot shows that the Montane Cordillera ecozone has the highest number of hotspots, 
-# indicating it is the most fire-prone ecozone in the dataset from 2019 onwards.
-
-"sfc0"     
-
-"cbh"   
+# "sfc" # Surface Fuel Consumption (modelled) 
+# # SFC represents the amount of fuel consumed by surface fires, 
+# # including organic soil (duff), surface litter, dead and downed woody debris.
+# # Calculated using indices of the FWI System (BUI and DC).
+# 
+# # Range typically varies significantly depending on the forest type and weather conditions.
+# 
+# print(monthly_avg)
+# 
+# ggplot(hotspots_peak, aes(x = sfc)) +
+#   geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+#   labs(title = "Distribution of Surface Fuel Consumption (SFC)",
+#        x = "SFC (kg/m²)",
+#        y = "Frequency") +
+#   theme_minimal() + 
+#   scale_y_continuous(labels = comma)
+# 
+# 
+# 
+# 
+# 
+# 
+# "tfc" # Total Fuel Consumption (modelled)
+# # TFC is the total amount of fuel consumed by both surface and crown fires. 
+# # It includes all components in SFC plus the consumption of overstory fuels (canopy).
+# # Estimates the overall carbon emissions from a fire event.
+# # Range varies widely based on the intensity and spread of the fire, 
+# # as well as the initial fuel load and moisture content.
+# 
+# 
+# 
+# ggplot(hotspots_peak, aes(x = tfc)) +
+#   geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+#   labs(title = "Distribution of Total Fuel Consumption (TFC)",
+#        x = "TFC (kg/m²)",
+#        y = "Frequency") +
+#   theme_minimal() +
+#   scale_y_continuous(labels = comma)
+#   
+# 
+# 
+# 
+# 
+# 
+# "bfc" # Borfire Fuel Consumption (modelled)      
+# # BFC refers to a specific component of the BORFIRE model focused on estimating carbon emissions from boreal forest fires.
+# 
+# summary(hotspots_peak$bfc)
+# 
+# # Explore huge bfc values
+# huge_bfc <- hotspots_peak %>%
+#   filter(bfc > 1000)
+# 
+# # Print the resulting data frame to inspect the entries with huge bfc values
+# 
+# huge_bfc %>%
+#   group_by(year, month) %>%
+#   summarise(n_entries = n()) %>%
+#   arrange(year, month)
+# 
+# summary(huge_bfc$bfc)
+# 
+# # Possibly the information here is incorrectly recorded
+# 
+# # The Max  value in the dataset appeart to be out of valid range
+# 
+# # Remove NA values from BFC data
+# hotspots_peak_BFC <- hotspots_peak %>%
+#   filter(!is.na(bfc))
+# 
+# 
+# 
+# # Calculate IQR for BFC
+# IQR_bfc <- IQR(hotspots_peak_BFC$bfc, na.rm = TRUE)
+# Q1_bfc <- quantile(hotspots_peak_BFC$bfc, 0.25, na.rm = TRUE)
+# Q3_bfc <- quantile(hotspots_peak_BFC$bfc, 0.75, na.rm = TRUE)
+# 
+# # Define lower and upper bounds for outliers
+# upper_bound_bfc <- Q3_bfc + 1.5 * IQR_bfc
+# 
+# # Filter out the outliers
+# hotspots_peak_BFC <- hotspots_peak_BFC %>%
+#   filter(bfc <= upper_bound_bfc)
+# 
+# # Summary of filtered data
+# summary(hotspots_peak_BFC$bfc)
+# 
+# 
+# # Plot Histogram of BFC Data Without Handling Outliers
+# ggplot(hotspots_peak_BFC, aes(x = bfc)) +
+#   geom_histogram(binwidth = 0.5, fill = "steelblue", color = "black") +
+#   labs(title = "Distribution of Boreal Fire Consumption (BFC)",
+#        x = "BFC",
+#        y = "Frequency") +
+#   theme_minimal() + 
+#   scale_y_continuous(labels = scales::comma)
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# "cfb" #  Crown Fraction Burned (%) at hotspot location (modelled)
+# # The CFB index measures the proportion of tree crowns that are consumed by a wildfire. 
+# # It ranges from 0 to 100%, 
+# # where 0% means no crown fire activity and 100% indicates 
+# # that the entire tree crowns in the area have been burned.
+# 
+# ggplot(hotspots_peak, aes(x = cfb)) +
+#   geom_histogram(binwidth = 1, fill = "steelblue", color = "black", alpha = 0.7) +
+#   labs(title = "Distribution of CFB at Fire Hotspots",
+#        x = "CFB",
+#        y = "Frequency") +
+#   scale_y_continuous(labels = comma) + 
+#   theme_minimal() +
+#   theme(plot.title = element_text(hjust = 0.5, size = 15),
+#         axis.title.x = element_text(size = 12),
+#         axis.title.y = element_text(size = 12),
+#         axis.text.x = element_text(size = 10),
+#         axis.text.y = element_text(size = 10))
+# 
+# # This histogram is dominated by zero values, making it difficult to identify clear trends.
+# 
+# 
+# # Count missing values in the CFB column
+# sum(is.na(hotspots_peak$cfb))
+# 
+# 
+# # Identify years with the most missing values
+# missing_cfb <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     missing_count = sum(is.na(cfb)),
+#     missing_percentage = (missing_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(missing_percentage))
+# 
+# missing_cfb
+# 
+# # 2015 has the highest percentage of missing values at 56.1%.
+# # 2017 has 54.9%.
+# # 2016 has 46.8%.
+# # 2018-2024 and 2014 have no missing values
+# 
+# zero_cfb <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     zero_count = sum(cfb == 0, na.rm = TRUE),
+#     zero_percentage = (zero_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(zero_percentage))
+# 
+# zero_cfb
+# 
+# # 2019 has the highest percentage of zero values at 92.7%.
+# # 2020, 2021, 2022, and 2023 also have high values ranging from 65.4% to 77.8%.
+# # 2015-2018, and 2024 have almost no zero values.
+# 
+# # Data collection for this variable lacks quality.
+# 
+# # Filter out zero and na values to check the CFB values when it was properly recorded.
+# 
+# hotspots_peak_CFB <- hotspots_peak %>%
+#   filter(cfb > 0 & !is.na(cfb))
+# 
+# # Create the histogram for CFB
+# ggplot(hotspots_peak_CFB, aes(x = cfb)) +
+#   geom_histogram(binwidth = 1, fill = "steelblue", color = "black") +
+#   labs(title = "Distribution of Crown Fraction Burned (CFB) at Fire Hotspots",
+#        x = "CFB",
+#        y = "Frequency") +
+#   theme_minimal() + 
+#   scale_y_continuous(labels = scales::comma)
+# 
+# # The histogram shows a significant peak at the value of 100%,
+# # indicating that in many fire events with non zero recorded CFB values,
+# # the entire tree crown is completely burned.
+# # This suggests that when fires do occur,
+# # they tend to be quite severe, affecting the full canopy of trees.
+# 
+# 
+# 
+# 
+# 
+# 
+# "age" # Age of Trees (in days)
+# 
+# 
+# # Count missing values in the Age column
+# sum(is.na(hotspots_peak$age))
+# 
+# 
+# # Identify years with the most missing values
+# missing_age <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     missing_count = sum(is.na(age)),
+#     missing_percentage = (missing_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(missing_percentage))
+# 
+# missing_age
+# 
+# 
+# zero_age <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     zero_count = sum(age == 0, na.rm = TRUE),
+#     zero_percentage = (zero_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(zero_percentage))
+# 
+# zero_age
+# 
+# # # The years with valid amount of observations are 2014 2015 2016. 
+# # The variable almost doesnt have meaningfull values in 2017 and 2018. 
+# # The more resent hotspots have stopped recording this variable altogether.
+# 
+# hotspots_peak_age <- hotspots_peak %>%
+#   filter(age > 0 & !is.na(age))
+# 
+# # Create the histogram for Age
+# ggplot(hotspots_peak_age, aes(x = age)) +
+#   geom_histogram(binwidth = 100, fill = "steelblue", color = "black") +
+#   labs(title = "Distribution of Tree Age at Fire Hotspots",
+#        x = "Age",
+#        y = "Frequency") +
+#   theme_minimal() + 
+#   scale_y_continuous(labels = scales::comma)
+# 
+# 
+# 
+# 
+# 
+# 
+# "estarea" # approximate burned area based on historical average area burned per hotspot by
+# # agency and fuel type
+# 
+# 
+# # Count missing values in the estarea
+# sum(is.na(hotspots_peak$estarea))
+# 
+# 
+# # Identify years with the most missing values
+# missing_estarea <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     missing_count = sum(is.na(estarea)),
+#     missing_percentage = (missing_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# missing_estarea
+# 
+# # 2023 2022 and 2021 do not have this variable.
+# # 2015 2016 2018 2019 has around 50% missing values
+# # 2020 85 % missing values
+# 
+# 
+# zero_estarea <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     zero_count = sum(estarea == 0, na.rm = TRUE),
+#     zero_percentage = (zero_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# zero_estarea
+# 
+# # Additionally to the missing values already described, 2017 has almost 50% zero values
+# # The only year with values present is 2014
+# # The more resent hotspots have stopped recording this variable altogether.
+# # There has probably been a change in reporting teckniques with this variable,
+# # it may be not suitable for meaningful analyses for the 10 year period
+# 
+# 
+# "polyid"   
+# 
+# 
+# # Count missing values in the estarea
+# sum(is.na(hotspots_peak$polyid))
+# 
+# 
+# # Identify years with the most missing values
+# missing_polyid <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     missing_count = sum(is.na(polyid)),
+#     missing_percentage = (missing_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# missing_polyid
+# 
+# # 2018-2023 do not have this variable.
+# 
+# 
+# 
+# zero_polyid <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     zero_count = sum(polyid == 0, na.rm = TRUE),
+#     zero_percentage = (zero_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# zero_polyid
+# 
+# # Additionally 2017 has almost all zero values
+# 
+# # Initially the variable was used to identify specific event,
+# # but recently the reporting process has changed
+# # Only meaningful information in 2014 2015 and 2016, 
+# # it may be not suitable for meaningful analyses for the 10 year period
+# 
+# 
+# 
+# 
+# 
+# "pcuring" # Percent Curing
+# # This indicates the proportion of grass and other fuels (non-woody) that are in a cured (dried) state, ready to burn.
+# # For example, if pcuring is 80%, it means that 80% of the vegetation is dead or dry enough to ignite and sustain fire.
+# 
+# # The FWI System incorporates pcuring as part of its calculations to determine indices 
+# # like the Fine Fuel Moisture Code (FFMC) and the Initial Spread Index (ISI).
+# # These indices are used to estimate the ease of ignition and 
+# # the rate of spread for fires in grasslands and similar fuel types.
+# 
+# # Count missing values in the pcuring
+# sum(is.na(hotspots_peak$pcuring))
+# 
+# 
+# # Identify years with the most missing values
+# missing_pcuring <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     missing_count = sum(is.na(pcuring)),
+#     missing_percentage = (missing_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# missing_pcuring
+# 
+# # 2023 does not have this variable.
+# 
+# 
+# # Exclude the year 2023 where pcuring is missing
+# hotspots_peak_pcuring <- hotspots_peak %>%
+#   filter(!(year == 2023)) %>%
+#   filter(!is.na(pcuring))
+# 
+# # Check the summary of the filtered data
+# summary(hotspots_peak_pcuring$pcuring)
+# 
+# # Checking for values greater than 100%
+# pcuring_above_100 <- hotspots_peak %>% filter(pcuring > 100)
+# summary(pcuring_above_100)
+# 
+# # 4 entries with values above 100% - out of range values, possible mistake in reporting
+# 
+# zero_pcuring <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     zero_count = sum(pcuring == 0, na.rm = TRUE),
+#     zero_percentage = (zero_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# zero_pcuring
+# sum(zero_pcuring$zero_count)
+# # 62239 zero values
+# 
+# # Create the histogram for pcuring
+# ggplot(hotspots_peak_pcuring, aes(x = pcuring)) +
+#   geom_histogram(binwidth = 1, fill = "lightgreen", color = "black", alpha = 0.7) +
+#   labs(title = "Distribution of Curing Percentage (pcuring) Values", 
+#        x = "Curing Percentage (pcuring)", 
+#        y = "Frequency") +
+#   scale_y_continuous(labels = scales::comma) + 
+#   theme_minimal()
+# 
+# # Create the boxplot for pcuring across years
+# ggplot(hotspots_peak_pcuring, aes(x = factor(year), y = pcuring)) +
+#   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+#   labs(title = "Distribution of Curing Percentage (pcuring) Across Years",
+#        x = "Year",
+#        y = "Curing Percentage (pcuring)") +
+#   theme_minimal() +
+#   theme(plot.title = element_text(hjust = 0.5, size = 15),
+#         axis.title.x = element_text(size = 12),
+#         axis.title.y = element_text(size = 12),
+#         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+#         axis.text.y = element_text(size = 10))
+# 
+# 
+# # The median pcuring values for these years range between 30% and 50%.
+# # There are many entries with pcuring at 0%, 
+# # possibly indicating periods with no drying or data recording issues.
+# 
+# 
+# "cfactor" # Curing Factor
+# # The amount of curing, or drying, of vegetation.
+# 
+# # Count missing values in the cfactor
+# sum(is.na(hotspots_peak$cfactor))
+# 
+# 
+# # Identify years with the most missing values
+# missing_cfactor <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     missing_count = sum(is.na(cfactor)),
+#     missing_percentage = (missing_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# missing_cfactor
+# 
+# # 2019 - 2023 does not have this variable.
+# 
+# 
+# # Exclude the years where cfactor is missing
+# hotspots_peak_cfactor <- hotspots_peak %>%
+#   filter((year < 2019)) %>%
+#   filter(!is.na(cfactor))
+# 
+# # Check the summary of the filtered data
+# summary(hotspots_peak_cfactor$cfactor)
+# 
+# # range from 0 to 1
+# # Represents the curing factor as a proportion rather than a percentage.
+# 
+# 
+# # Create the histogram for cfactor
+# ggplot(hotspots_peak_cfactor, aes(x = cfactor)) +
+#   geom_histogram(binwidth = 0.1, fill = "lightgreen", color = "black", alpha = 0.7) +
+#   labs(title = "Distribution of Curing Factor (cfactor) Values", 
+#        x = "Curing Factor (cfactor)", 
+#        y = "Frequency") +
+#   scale_y_continuous(labels = scales::comma) + 
+#   theme_minimal()
+# 
+# # Create the boxplot for cfactor across years
+# ggplot(hotspots_peak_cfactor, aes(x = factor(year), y = cfactor)) +
+#   geom_boxplot(fill = "steelblue", color = "black", alpha = 0.7) +
+#   labs(title = "Distribution of Curing Factor (cfactor) Across Years",
+#        x = "Year",
+#        y = "Curing Factor (cfactor)") +
+#   theme_minimal() +
+#   theme(plot.title = element_text(hjust = 0.5, size = 15),
+#         axis.title.x = element_text(size = 12),
+#         axis.title.y = element_text(size = 12),
+#         axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+#         axis.text.y = element_text(size = 10))
+# 
+# 
+# 
+# # The mean cfactor is 0.13
+# # The variable has stopped being recorded recently.
+# # It may be not suitable for meaningful analyses for the 10 year period
+# 
+# 
+# 
+# "greenup" # – phenological state of deciduous trees (0=leafless, 1=green)
+# sum(is.na(hotspots_peak$greenup))
+# 
+# # Identify years with the most missing values
+# missing_greenup <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     missing_count = sum(is.na(greenup)),
+#     missing_percentage = (missing_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# missing_greenup
+# 
+# # 2023 does not have this variable.
+# 
+# # Count the number of observations in each greenup state
+# greenup_count <- hotspots_peak %>%
+#   group_by(greenup) %>%
+#   summarise(count = n())
+# greenup_count
+# 
+# # There are invalid values present in the dataset. This variable is only 0 or 1
+# 
+# # Filter out invalid values in the greenup variable
+# hotspots_peak_greenup <- hotspots_peak %>%
+#   filter(greenup %in% c(0, 1))
+# 
+# # Check the summary of the filtered data
+# summary(hotspots_peak_greenup$greenup)
+# 
+# greenup_by_year <- hotspots_peak_greenup %>%
+#   group_by(year, greenup) %>%
+#   summarise(count = n(), .groups = 'drop') %>%
+#   arrange(desc(year), greenup)
+# 
+# # Visualize the count of observations in each greenup state
+# ggplot(greenup_by_year, aes(x = factor(greenup), y = count, fill = factor(greenup))) +
+#   geom_bar(stat = "identity") +
+#   labs(title = "Count of Observations by Greenup State",
+#        x = "Greenup State",
+#        y = "Count",
+#        fill = "Greenup State") +
+#   scale_fill_manual(values = c("0" = "bisque3", "1" = "lightgreen")) +
+#   theme_minimal()+
+#   scale_y_continuous(labels = scales::comma) 
+# 
+# # There are significantly more observations for greenup state 1 (trees with green leaves) compared to state 0 (leafless trees).
+# # The greenup state alone may not provide significant insights into fire behavior or risks.
+# 
+# 
+# 
+# "elev" # elevation above sea level (meters)
+# # BC's elevation ranges from sea level to approximately 4000 meters,
+# # with the highest peak being Mount Fairweather at 4663 meters.
+# 
+# # Check for missing values
+# sum(is.na(hotspots_peak$elev))
+# 
+# # A low percentage of missing values
+# 
+# range(hotspots_peak$elev, na.rm = TRUE)
+# # -1 3129 While there is one instance of a below sea level elevation, the range is valid for BC
+# # These particular entries may have been reported incorrectly due to technical issues.
+# 
+# # Identify and analyze outliers
+# elev_outliers <- hotspots_peak %>%
+#   filter(elev < 0)
+# print(elev_outliers)
+# 
+# 
+# 
+# # Histogram of elevation values
+# ggplot(hotspots_peak, aes(x = elev)) +
+#   geom_histogram(binwidth = 100, fill = "lightgreen", color = "black") +
+#   labs(title = "Distribution of Elevation Values",
+#        x = "Elevation (meters)",
+#        y = "Frequency") +
+#   theme_minimal()
+# 
+# # Overall the distribution of elevation levels is normal for British Columbia.
+# 
+# "cfl"     
+# 
+# "tfc0" 
+# 
+# "sfl"  
+# 
+# "ecozone"# – Ecozone in which hotspot is located
+# 
+# # Identify years with the most missing values
+# missing_ecozone <- hotspots_peak %>%
+#   group_by(year) %>%
+#   summarise(
+#     total_count = n(),
+#     missing_count = sum(is.na(ecozone)),
+#     missing_percentage = (missing_count / total_count) * 100
+#   ) %>%
+#   arrange(desc(year))
+# 
+# missing_ecozone
+# 
+# # For the years 2019-2023 there are only 24+4 missing entries.
+# 
+# 
+# # Count the number of hotspots in each ecozone
+# ecozone_counts <- hotspots_peak %>% filter(year >= 2019) %>% 
+#   group_by(ecozone) %>%
+#   summarise(count = n())
+# 
+# # Print the ecozone counts
+# print(ecozone_counts)
+# 
+# # Convert ecozone to a factor
+# ecozone_counts$ecozone <- factor(ecozone_counts$ecozone, levels = c(14, 4, 9, 12, 13, "NA"))
+# 
+# # Define custom colors and labels for the selected ecozones (Statistics Canada site)
+# # https://www.statcan.gc.ca/en/subjects/standard/environment/elc/2017-map
+# custom_colors <- c("14" = "#B5D79F", "4" = "#989898", "9" = "#36C48E", 
+#                    "12" = "#ACC32D", "13" = "#05734D", "NA" = "#000000")
+# 
+# custom_labels <- c("14" = "Montane Cordillera", "4" = "Taiga Plains", "9" = "Boreal Plains",
+#                    "12" = "Boreal Cordillera", "13" = "Pacific Maritime")
+# 
+# # Visualize the distribution of hotspots by ecozone with custom legend
+# ggplot(ecozone_counts, aes(x = reorder(ecozone, -count), y = count, fill = ecozone)) +
+#   geom_bar(stat = "identity") +
+#   labs(title = "Distribution of Hotspots by Ecozone (2019 onwards)",
+#        x = "Ecozone",
+#        y = "Number of Hotspots",
+#        fill = "Ecozone") +
+#   theme_minimal() +
+#   scale_y_continuous(labels = scales::comma) +
+#   scale_fill_manual(values = custom_colors, labels = custom_labels) +
+#   theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+#         legend.position = "right", 
+#         legend.title = element_text(size = 12),
+#         legend.text = element_text(size = 10))
+# 
+# 
+# # The plot shows distribution of ecozones in the hotspot dataset.
+# # The plot shows that the Montane Cordillera ecozone has the highest number of hotspots, 
+# # indicating it is the most fire-prone ecozone in the dataset from 2019 onwards.
+# 
+# "sfc0"     
+# 
+# "cbh"   
 
 
 
