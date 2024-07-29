@@ -3017,8 +3017,6 @@ kelowna_summary <- hotspots_test %>%
     end_date = max(rep_date),
     .groups = 'drop'  
   )
-
-# Print the summary table
 print(kelowna_summary)
 
 
@@ -3045,16 +3043,38 @@ mean(result_test_Kelowna$predicted_fires_test_Kelowna, na.rm = TRUE)
 
 # Kelowna fires, model_1
 
+# Summary table for Kelowna
+kelowna_summary <- hotspots_test %>%
+  filter(event_cluster %in% kelowna_cluster_ids) %>%
+  group_by(event_cluster, year, month) %>%
+  summarize(
+    count = n(),
+    mean_dc = mean(dc, na.rm = TRUE),
+    mean_hfi = mean(hfi, na.rm = TRUE),
+    mean_ffmc = mean(ffmc, na.rm = TRUE),
+    mean_dmc = mean(dmc, na.rm = TRUE),
+    mean_isi = mean(isi, na.rm = TRUE),
+    mean_bui = mean(bui, na.rm = TRUE),
+    mean_fwi = mean(fwi, na.rm = TRUE),
+    start_date = min(rep_date),
+    end_date = max(rep_date),
+    .groups = 'drop'  
+  )
+print(kelowna_summary)
+
 # Create a dataframe with Kelowna data
 test_Kelowna_2 <- data.frame(
-  dc = c(867, 929, 920),     
-  hfi = c(3389, 6282, 1010), 
-  ffmc = c(91.6, 93.4, 86.5),
-  dmc=c(98.9,176,170),
-  isi=c(8.14,14,4.68),
-  bui=c(154,239,233),
-  fwi=c(32,48,23.4)
+  dc = kelowna_summary$mean_dc,     
+  hfi = kelowna_summary$mean_hfi, 
+  ffmc = kelowna_summary$mean_ffmc,
+  dmc = kelowna_summary$mean_dmc,
+  isi = kelowna_summary$mean_isi,
+  bui = kelowna_summary$mean_bui,
+  fwi = kelowna_summary$mean_fwi
 )
+print(test_Kelowna_2)
+
+
 
 predicted_boxcox_fires_test_Kelowna_2 <- predict(model_1, newdata = test_Kelowna_2)
 
@@ -3064,3 +3084,4 @@ predicted_fires_test_Kelowna_2 <- reverse_boxcox(predicted_boxcox_fires_test_Kel
 result_test_Kelowna_2 <- cbind(test_Kelowna_2, predicted_fires_test_Kelowna_2)
 result_test_Kelowna_2
 
+mean(result_test_Kelowna_2$predicted_fires_test_Kelowna_2, na.rm = TRUE)
