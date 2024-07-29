@@ -2858,12 +2858,12 @@ panel.hist <- function(x, ...){
   breaks <- h$breaks
   len <- length(breaks)
   y <- h$counts/max(h$counts)
-  rect(breaks[-len], 0, breaks[-1], y, col = "lightblue")
+  rect(breaks[-len], 0, breaks[-1], y, col = "lightgreen")
 }
 
 panel.scat <- function(x, y){
   points(x, y, pch = 19, cex = 0.5, col = "lightgrey")
-  abline(lm(y ~ x), col = "lightblue4", lwd = 2) 
+  abline(lm(y ~ x), col = "darkgreen", lwd = 2) 
 }
 
 # Prepare the data for the scatterplot matrix
@@ -2920,10 +2920,37 @@ summary(model_final)
 # Check for multicollinearity
 vif(model_final)
 
-# Plot diagnostic plots
-par(mfrow = c(2, 2))
-plot(model_final)
+# # Plot diagnostic plots
+# par(mfrow = c(2, 2))
+# plot(model_final)
 
+# Residuals
+ggplot(data = model_final, aes(x = .fitted, y = .resid)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted Values", x = "Fitted Values", y = "Residuals") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12))
+
+# Generate predicted values using the final model
+weekly_summary$predicted_values <- predict(model_final, newdata = weekly_summary)
+
+# Create a data frame with actual and predicted values
+plot_data <- data.frame(
+  actual_values = weekly_summary$boxcox_fires,
+  predicted_values = weekly_summary$predicted_values
+)
+
+ggplot(data = plot_data, aes(x = actual_values, y = predicted_values)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "darkgreen") +
+  labs(title = "Actual vs Predicted Values", x = "Actual Values", y = "Predicted Values") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12))
 
 
 
@@ -2975,9 +3002,11 @@ result_test_2
 
 # Test 3
 
+kelowna_cluster_ids <- kelowna_clusters$event_cluster
+
 # Summary table for Kelowna
-hotspots_test %>%
-  filter(event_cluster %in% c(15551, 13923, 13928)) %>%
+kelowna_summary <- hotspots_test %>%
+  filter(event_cluster %in% kelowna_cluster_ids) %>%
   group_by(event_cluster, year, month) %>%
   summarize(
     count = n(),
@@ -2986,14 +3015,19 @@ hotspots_test %>%
     mean_ffmc = mean(ffmc, na.rm = TRUE),
     start_date = min(rep_date),
     end_date = max(rep_date),
+    .groups = 'drop'  
   )
+
+# Print the summary table
+print(kelowna_summary)
+
 
 
 # Create a dataframe with Kelowna data
 test_Kelowna <- data.frame(
-  dc = c(867, 929, 920),     
-  hfi = c(3389, 6282, 1010), 
-  ffmc = c(91.6, 93.4, 86.5)        
+  dc = kelowna_summary$mean_dc,     
+  hfi = kelowna_summary$mean_hfi, 
+  ffmc = kelowna_summary$mean_ffmc        
 )
 
 predicted_boxcox_fires_test_Kelowna <- predict(model_final, newdata = test_Kelowna)
@@ -3003,6 +3037,8 @@ predicted_fires_test_Kelowna <- reverse_boxcox(predicted_boxcox_fires_test_Kelow
 # Result
 result_test_Kelowna <- cbind(test_Kelowna, predicted_fires_test_Kelowna)
 result_test_Kelowna
+
+mean(result_test_Kelowna$predicted_fires_test_Kelowna, na.rm = TRUE)
 
 
 # Test 4
