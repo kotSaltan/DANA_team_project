@@ -198,7 +198,7 @@ apply_dbscan <- function(data, eps_value, minPts_value) {
 }
 
 # Parameters for the loop
-desired_clusters <- 16956  # Official number of fires
+desired_clusters <- 15095  # Official number of fires
 best_eps <- NA  # Placeholder for best eps value
 best_minPts <- NA  # Placeholder for best minPts value
 best_diff <- Inf  # Placeholder for the smallest difference
@@ -217,19 +217,18 @@ for (eps_val in seq(5, 15, by = 1)) {  # Adjust range and step size as needed
 }
 
 # Print out the best parameters found
-cat("Best eps value:", best_eps, "\n")  # Best eps value: 12
-cat("Best minPts value:", best_minPts, "\n")  # Best minPts value: 1
+cat("Best eps value:", best_eps, "\n")  # Best eps value: 11
+cat("Best minPts value:", best_minPts, "\n")  # Best minPts value: 2
 ```
 
-*The best parameters found mean that fire events within a 12 km radius\
+*The best parameters found mean that fire events within an 11 km radius\
 are grouped into clusters,\
-and even a single event can form a cluster\
-if it occurs alone within that distance during the given time span.*
+and 2 events minimum form a cluster.*
 
 ```{r}
 # Apply DBSCAN with the best parameters found
-best_eps <- 12
-best_minPts <- 1
+best_eps <- 11
+best_minPts <- 2
 best_db <- dbscan(event_data, eps = best_eps, minPts = best_minPts)
 
 # Add cluster labels to the original dataset
@@ -296,25 +295,26 @@ plot_clusters_on_map <- function(cluster_ids, data, zoom_level = 10) {
                color = "Cluster ID") +
           theme_minimal() +
           theme(legend.position = "bottom") +
-          scale_color_manual(values = c("firebrick1", "orange", "yellow", "orange3", "darkred")) # Custom colours
+          scale_color_manual(values = c("firebrick1", "orange", "yellow", "orange3", "yellow2", "red3", "red4")) # Custom colours
   ) 
 }
+
 ```
 
-*ID 4792 Tweedsmuir Complex Fire (2018)*
+*ID 3930 Tweedsmuir Complex Fire (2018)*
 
-*ID 3120 Elephant Hill Fire (2017)*
+*ID 2408 Elephant Hill Fire (2017)*
 
-*ID 14487 Fort Nelson Fire (2023)*
+*ID 12440 Fort Nelson Fire (2023)*
 
-*ID 4790 Shovel Lake Fire (2018)*
+*ID 3928 Shovel Lake Fire (2018)*
 
-*ID 3125 Hanceville-Riske Creek Fire (2017)*
+*ID 2388 Hanceville-Riske Creek Fire (2017)*
 
 
 ```{r, fig.width=10, fig.height=11, echo=FALSE}
 # The biggest 5 clusters on the map
-chosen_ids_top <- c(4792,3120,14487,4790,3125)
+chosen_ids_top <- c(3930,2408,12440,3928,2388)
 
 plot_clusters_on_map(chosen_ids_top, hotspots_peak, zoom_level = 7)
 ```
@@ -527,9 +527,10 @@ ggplot(sensor_summary, aes(x = reorder(sensor, -num_events), y = num_events)) +
 ### Example of a Specific Fire Event: Kelowna Fire Cluster (Cluster ID: 13928)
 
 ```{r}
+kelowna_cluster_ids <- kelowna_clusters$event_cluster
 # Filter the data for the specific cluster
 event_data <- hotspots_peak %>%
-  filter(event_cluster == 13928)
+  filter(event_cluster %in% kelowna_cluster_ids)
 
 # Summarize the sources, satellites, and sensors used for this event
 event_sources <- event_data %>%
@@ -550,7 +551,7 @@ print(event_satellites)
 print(event_sensors)
 ```
 
-*In the Kelowna fire cluster (ID: 13928),\
+*In the Kelowna fire clusters,\
 data came from various sources, satellites, and sensors.\
 Most data were provided by NASA sources and the VIIRS-I sensor,\
 mainly using the S-NPP satellite.\
@@ -617,11 +618,11 @@ monthly_avg <- hotspots_peak %>%
 
 *There are no missing values in the weather data.\
 The minimum temperature recorded is -9.66°C, which is unusually low for fire events.\
-The maximum temperature recorded is 43.88°C, which is expected during peak fire seasons.\
-The relative humidity ranges from 7.00% to 100.00%, there are different weather conditions.\
-Wind speeds range from 0.00 km/h to 16.47 km/h.\
+The maximum temperature recorded is 43.13°C, which is expected during peak fire seasons.\
+The relative humidity ranges from 11.00% to 100.00%, there are different weather conditions.\
+Wind speeds range from 0.00 km/h to 59.3 km/h.\
 There is a full range of possible wind directions.\
-The precipitation data has a maximum value of 651.79 mm, needs further investigation.*
+The precipitation data has a maximum value of 78.59.*
 
 ```{r}
 # Summarize the count of subzero temperature events by year and month
@@ -638,32 +639,7 @@ print(subzero_temps_summary)
 *The peak month for subzero temperature events is October,\
 even colder conditions do not stop fires from happening.*
 
-```{r}
-# Summarize the count of precipitation events > 100 mm by year and month
-high_pcp_summary <- hotspots_peak %>%
-  filter(pcp > 100) %>%
-  group_by(year, month, event_cluster) %>%
-  summarise(count = n(), .groups = 'drop') %>%
-  arrange(desc(year))
 
-# Print the summary table
-print(high_pcp_summary)
-```
-
-```{r, fig.width=7, fig.height=11, echo=FALSE}
-# Plot the event on map
-plot_clusters_on_map(14510, hotspots_peak, zoom_level = 10)
-```
-
-```{r}
-# Remove the high precipitation outlier from the dataset
-hotspots_peak <- hotspots_peak %>%
-  filter(!(event_cluster == 14510 & year == 2023 & month == "Jul"))
-
-# Re-run the descriptive statistics without the outlier
-summary_hotspots <- describe_numerical(hotspots_peak, c('temp', 'rh', 'ws', 'wd', 'pcp'))
-print(summary_hotspots)
-```
 
 ### Temperature (°C)
 
@@ -686,7 +662,7 @@ ggplot(hotspots_peak, aes(x = factor(year), y = temp)) +
 *The median temperatures are between 20°C and 25°C.\
 2019 stands out with a slightly lower median temperature.\
 There are significant outliers present in all years,\
-particularly in 2014, 2017, 2018, and 2023.*
+particularly in 2014, 2017, 2018, 2021 and 2023.*
 
 ```{r, echo=FALSE}
 # Lineplot for temperature over time
@@ -837,8 +813,7 @@ showing higher average precipitation during these months.*
 
 ### Outliers
 
-*Even after removing one extreme outlier, there are still many high precipitation values.\
-Since precipitation often has many zero entries,\
+*Since precipitation often has many zero entries,\
 need to handle these outliers carefully to ensure they don't skew our results.*
 
 ```{r}
@@ -952,7 +927,7 @@ This code is an indicator of the relative ease of ignition and the flammability 
 ```{r, echo=FALSE}
 # Plot histogram for FFMC
 ggplot(hotspots_peak, aes(x = ffmc)) +
-  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of FFMC Values", x = "FFMC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
@@ -1031,7 +1006,7 @@ and medium-size woody material.*
 ```{r, echo=FALSE}
 # Plot histogram for DMC
 ggplot(hotspots_peak, aes(x = dmc)) +
-  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of DMC Values", x = "DMC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
@@ -1117,7 +1092,7 @@ Higher DC values usually mean longer dry periods and can show how severe fire se
 ```{r, echo=FALSE}
 # Plot histogram for DC
 ggplot(hotspots_peak, aes(x = dc)) +
-  geom_histogram(binwidth = 20, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of DC Values", x = "DC", y = "Frequency") +
   scale_y_continuous(labels = comma) + 
   theme_minimal()
@@ -1283,12 +1258,16 @@ they alone do not cause fires.*
 based on wind speed, temperature, and fine fuel moisture content.\
 ISI is crucial for understanding how quickly a fire can spread once it has ignited.*
 
-*0-3: Low spread potential. Fires will spread slowly and are relatively easy to control. 4-7: Moderate spread potential. Fires spread more quickly and may require more effort to control. 8-12: High spread potential. Fires spread rapidly and can be difficult to control. 13-19: Very high spread potential. Fires spread very rapidly and are challenging to control. 20+: Extreme spread potential. Fires spread uncontrollably and can be extremely dangerous.*
+*0-3: Low spread potential. Fires will spread slowly and are relatively easy to control.    
+4-7: Moderate spread potential. Fires spread more quickly and may require more effort to control.  
+8-12: High spread potential. Fires spread rapidly and can be difficult to control.  
+13-19: Very high spread potential. Fires spread very rapidly and are challenging to control.   
+20+: Extreme spread potential. Fires spread uncontrollably and can be extremely dangerous.*
 
 ```{r, echo=FALSE}
 # Plot histogram for ISI
 ggplot(hotspots_peak, aes(x = isi)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of ISI Values", x = "ISI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
@@ -1342,8 +1321,8 @@ isi_outliers %>%
 ```
 
 ```{r, fig.width=7, fig.height=11, echo=FALSE}
-plot_clusters_on_map(401, hotspots_peak, zoom_level = 10)
-plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(355, hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(128, hotspots_peak, zoom_level = 10)
 ```
 
 *The data from July 2014, shows very high ISI values at a specific location in British Columbia.\
@@ -1378,11 +1357,14 @@ grid.arrange(boxplot_isi,boxplot_isi_clean)
 *A numerical rating of the total amount of fuel available for combustion.\
 It is derived from the Duff Moisture Code (DMC) and the Drought Code (DC).*
 
-*Low: 0-40 Moderate: 41-80 High: 81-120 Extreme: 121 and above*
+*Low: 0-40   
+Moderate: 41-80   
+High: 81-120   
+Extreme: 121 and above*
 
 ```{r, echo=FALSE}
 ggplot(hotspots_peak, aes(x = bui)) +
-  geom_histogram(binwidth = 10, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of BUI Values", x = "BUI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
@@ -1457,7 +1439,7 @@ Extreme (31+): Fires start and spread quickly, and are intense and challenging t
 
 ```{r, echo=FALSE}
 ggplot(hotspots_peak, aes(x = fwi)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution of FWI Values", x = "FWI", y = "Frequency") +
   scale_y_continuous(labels = scales::comma) + 
   theme_minimal()
@@ -1518,13 +1500,13 @@ fwi_outliers %>%
 ```
 
 ```{r, fig.width=7, fig.height=11, echo=FALSE}
-plot_clusters_on_map(401, hotspots_peak, zoom_level = 10)
-plot_clusters_on_map(130, hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(355, hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(128, hotspots_peak, zoom_level = 10)
 ```
 
 *The analysis of FWI extreme outliers in 2014, specifically values greater than 75,\
 reveals that these outliers are concentrated in the same event clusters as the ISI outliers\
-(clusters 401 and 130).\
+(clusters 355 and 128).\
 This corresponds to the Mount McAllister fire in British Columbia, which occurred in July 2014.*
 
 ### Remove outliers
@@ -1633,6 +1615,15 @@ it can't tell us exactly how many fires will happen in a season.\
 For example, the FWI was lower in 2018 than in 2017, but 2018 still had some major fires.\
 This shows that indices can indicate fire conditions but don't predict the exact number of fires.*
 
+
+### Summary table after removal of outliers
+
+```{r}
+summary_fire_indices_clean <- describe_numerical(hotspots_peak_clean, c('ffmc', 'dmc', 'dc', 'isi', 'bui', 'fwi'))
+print(summary_fire_indices_clean)
+```
+
+
 ### Other Variables
 
 *These variables include additional factors that can influence fire events, such as fuel type and rate of spread.*
@@ -1682,11 +1673,11 @@ print(summary_other_variables)
 
 *The predicted speed of the fire at the front or head of the fire (where the fire moves fastest).\
 It is measured in metres per minute and is based on the Fuel Type, Initial Spread Index, Buildup Index, and some others.\
-The scale ranges from 0 to over 20 m/min in the dataset.*
+The scale ranges from 0 to over 96.23 m/min in the dataset.*
 
 ```{r, echo=FALSE}
 ggplot(hotspots_peak, aes(x = ros)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black", alpha = 0.7) +
+  geom_histogram(fill = "skyblue", color = "black", alpha = 0.7) +
   labs(title = "Distribution Rate of Spread at Fire Hotspots",
        x = "ROS (m/min)",
        y = "Frequency") +
@@ -1724,7 +1715,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 # Plot boxplot for ROS
 ggplot(hotspots_peak_clean, aes(x = factor(year), y = ros)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "ROS Distribution Across Years",
+  labs(title = "ROS Distribution Across Years (Clean)",
        x = "Year",
        y = "ROS") +
   theme_minimal() +
@@ -1753,7 +1744,7 @@ Extreme (10,000+ kW/m): Fires exhibit explosive behavior and can cause catastrop
 ```{r, echo=FALSE}
 # Plot histogram for HFI
 ggplot(hotspots_peak, aes(x = hfi)) +
-  geom_histogram(binwidth = 1000, fill = "skyblue", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
+  geom_histogram(fill = "skyblue", color = "black", alpha = 0.7) + # Each bin represent a range of 1000 HFI units.
   labs(title = "Distribution of HFI Values",
        x = "HFI (kW/m)",
        y = "Frequency") +
@@ -1841,27 +1832,27 @@ hfi_outliers <- hotspots_peak %>%
 hfi_outliers %>% 
   count(event_cluster) %>% 
   arrange(desc(n))
-# Most hfi outliers come from clusters 4956, 4844, 13837 and 4887
+# Most hfi outliers come from clusters 4094, 3983, 11877 and 4024
 
 ```
 
 ```{r}
 # See the details of the events with high hfi
 cluster_summary %>%
-  filter(event_cluster %in% c(4956, 4844, 13837, 4887))
+  filter(event_cluster %in% c(4094, 3983, 11877, 4024))
 ```
 
 *Snowy Mountain Fire and other fires in the Okanagan region in 2018.\
 Placer Mountain Fire area, a notable fire from 2018, which also burned in 2023.*
 
 ```{r, fig.width=7, fig.height=11, echo=FALSE}
-plot_clusters_on_map(4956, hotspots_peak, zoom_level = 10) 
+plot_clusters_on_map(3983, hotspots_peak, zoom_level = 10) 
 
-plot_clusters_on_map(4844, hotspots_peak, zoom_level = 10) 
+plot_clusters_on_map(4024, hotspots_peak, zoom_level = 10) 
 
-plot_clusters_on_map(4887, hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(4094, hotspots_peak, zoom_level = 10)
 
-plot_clusters_on_map(13837, hotspots_peak, zoom_level = 10)
+plot_clusters_on_map(11877, hotspots_peak, zoom_level = 10)
 ```
 
 ### Remove the outliers
@@ -1874,7 +1865,7 @@ hotspots_peak_clean <- hotspots_peak %>%
 # Plot boxplot for HFI
 ggplot(hotspots_peak_clean, aes(x = factor(year), y = hfi)) +
   geom_boxplot(fill = "skyblue", color = "black", alpha = 0.7) +
-  labs(title = "HFI Distribution Across Years",
+  labs(title = "HFI Distribution Across Years (Clean)",
        x = "Year",
        y = "HFI") +
   theme_minimal() +
@@ -2136,8 +2127,9 @@ create_summary_table <- function(test_results) {
   test_summary <- data.frame(
     Index = fire_indices,
     Overall_Mean = round(summary_overall$Mean, 2),
-    Year_2018_Mean = round(summary_2018$Mean, 2),
-    Mean_Difference = round(summary_overall$Mean - summary_2018$Mean, 2),
+    Y_2018_Mean = round(summary_2018$Mean, 2),
+    Overall_Median = round(summary_overall$Median, 2),
+    Y_2018_Median = round(summary_2018$Median, 2),
     P_Value = sapply(test_results, function(x) format_p_value(x$p.value)),
     Significant = sapply(test_results, function(x) ifelse(x$p.value < 0.05, "Yes", "No"))
   )
@@ -2217,7 +2209,7 @@ calculate_similar <- function(df) {
 # Apply the function and choose two clusters with the closest mean FWI and DC
 chosen_clusters <- chosen_clusters %>%
   calculate_similar() %>%
-  slice(1:2)
+  slice(1:5)
 
 # Chosen clusters
 print(chosen_clusters)
@@ -2226,7 +2218,7 @@ print(chosen_clusters)
 
 ```{r}
 # Chosen cluster IDs
-chosen_ids <- chosen_clusters$event_cluster
+chosen_ids <- c(4009, 13137)
 
 # Summary table for the chosen clusters
 cluster_summary <- hotspots_test %>%
@@ -2355,6 +2347,7 @@ ggplot(weekly_summary, aes(x = fires)) +
   labs(title = "Distribution of Weekly Number of Fires", 
        x = "Number of Fires", 
        y = "Frequency") +
+    scale_x_continuous(labels = comma) + 
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, size = 14),
@@ -2404,10 +2397,46 @@ ggplot(weekly_summary, aes(y = boxcox_fires)) +
   )
 ```
 
-```{r, echo=FALSE}
-# Create scatterplot matrix
-ggpairs(weekly_summary, columns = c("fires", "boxcox_fires", numeric_columns),
-        title = "Scatterplot Matrix of Predictors")
+```{r, echo=FALSE, warning=FALSE}
+# Functions for scatterplot
+panel.corr <- function(x, y){
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(0, 1, 0, 1))
+  r <- round(cor(x, y), digits=2)
+  text(0.5, 0.5, r, cex = 1) 
+}
+
+panel.hist <- function(x, ...){
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr = c(usr[1:2], 0, 1.5) )
+  h <- hist(x, plot = FALSE)
+  breaks <- h$breaks
+  len <- length(breaks)
+  y <- h$counts/max(h$counts)
+  rect(breaks[-len], 0, breaks[-1], y, col = "lightblue")
+}
+
+panel.scat <- function(x, y){
+  points(x, y, pch = 19, cex = 0.5, col = "lightgrey")
+  abline(lm(y ~ x), col = "lightblue4", lwd = 2) 
+}
+
+# Prepare the data for the scatterplot matrix
+data_for_plot <- weekly_summary %>%
+  select(fires, boxcox_fires, temp, rh, ws, pcp, ffmc, dmc, dc, isi, bui, fwi, ros, hfi)
+
+# Scatterplot matrix
+pairs(
+  data_for_plot,
+  lower.panel = panel.scat,
+  upper.panel = panel.corr,
+  diag.panel = panel.hist,
+  labels = c("Fires", "BoxCox Fires", "Temp", "RH", "WS", "PCP", "FFMC", "DMC", "DC", "ISI", "BUI", "FWI", "ROS", "HFI"),
+  gap = 0.3, 
+  main = "Scatterplot Matrix of Predictors",
+  cex.labels = 1.2
+  )
+
 ```
 
 ##### 
@@ -2458,19 +2487,52 @@ vif(model_final)
 ```
 
 ```{r, echo=FALSE}
-# Plot diagnostic plots
-par(mfrow = c(2, 2))
-plot(model_final)
+# Diagnostic plots
+# Residuals
+ggplot(data = model_final, aes(x = .fitted, y = .resid)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(title = "Residuals vs Fitted Values", x = "Fitted Values", y = "Residuals") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12))
 ```
+
+
+```{r, echo=FALSE}
+# Generate predicted values using the final model
+weekly_summary$predicted_values <- predict(model_final, newdata = weekly_summary)
+
+# Create a data frame with actual and predicted values
+plot_data <- data.frame(
+  actual_values = weekly_summary$boxcox_fires,
+  predicted_values = weekly_summary$predicted_values
+)
+
+ggplot(data = plot_data, aes(x = actual_values, y = predicted_values)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", color = "darkgreen") +
+  labs(title = "Actual vs Predicted Values", x = "Actual Values", y = "Predicted Values") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12))
+
+```
+
+
 
 #### Example use of the model
 
+### Test 1
+
 ```{r}
-# Create a dataframe with hypothetical conditions
+# Create a dataframe with hypothetical conditions (moderate, high, extreme)
 test_1 <- data.frame(
-  dc = c(200, 300, 400),     # Example values for Drought Code
-  hfi = c(1000, 2000, 3000), # Example values for Head Fire Intensity
-  ffmc = c(85, 90, 95)       # Example values for Fine Fuel Moisture Code
+  dc = c(200, 400, 600),     
+  hfi = c(1000, 7000, 12000), 
+  ffmc = c(50, 80, 95)      
 )
 ```
 
@@ -2498,12 +2560,15 @@ result_test_1 <- cbind(test_1, predicted_fires_test_1)
 print(result_test_1)
 ```
 
+
+### Test 2
+
 ```{r}
 # Create a dataframe with hypothetical conditions (only HFI changes)
 test_2 <- data.frame(
   dc = rep(300, 5),                # Constant value for Drought Code
-  hfi = seq(1000, 5000, by = 1000),# Varying values for Head Fire Intensity
-  ffmc = rep(90, 5)                # Constant value for Fine Fuel Moisture Code
+  hfi = seq(2000, 10000, by = 2000),# Varying values for Head Fire Intensity
+  ffmc = rep(70, 5)                # Constant value for Fine Fuel Moisture Code
 )
 ```
 
@@ -2520,3 +2585,106 @@ predicted_fires_test_2 <- reverse_boxcox(predicted_boxcox_fires_test_2, lm_best)
 result_test_2 <- cbind(test_2, predicted_fires_test_2)
 print(result_test_2)
 ```
+
+
+### Test 3 Kelowna fire
+
+```{r}
+kelowna_cluster_ids <- kelowna_clusters$event_cluster
+
+# Summary table for Kelowna
+kelowna_summary <- hotspots_test %>%
+  filter(event_cluster %in% kelowna_cluster_ids) %>%
+  group_by(event_cluster, year, month) %>%
+  summarize(
+    count = n(),
+    mean_dc = mean(dc, na.rm = TRUE),
+    mean_hfi = mean(hfi, na.rm = TRUE),
+    mean_ffmc = mean(ffmc, na.rm = TRUE),
+    start_date = min(rep_date),
+    end_date = max(rep_date),
+    .groups = 'drop'  
+  )
+print(kelowna_summary)
+
+
+
+# Create a dataframe with Kelowna data
+test_Kelowna <- data.frame(
+  dc = kelowna_summary$mean_dc,     
+  hfi = kelowna_summary$mean_hfi, 
+  ffmc = kelowna_summary$mean_ffmc        
+)
+
+```
+
+
+```{r}
+predicted_boxcox_fires_test_Kelowna <- predict(model_final, newdata = test_Kelowna)
+
+predicted_fires_test_Kelowna <- reverse_boxcox(predicted_boxcox_fires_test_Kelowna, lm_best)
+
+# Result
+result_test_Kelowna <- cbind(test_Kelowna, predicted_fires_test_Kelowna)
+result_test_Kelowna
+
+```
+
+
+```{r}
+mean(result_test_Kelowna$predicted_fires_test_Kelowna, na.rm = TRUE)
+
+```
+
+
+### Test 4 Kelowna fire with model 1
+
+```{r}
+# Summary table for Kelowna
+kelowna_summary <- hotspots_test %>%
+  filter(event_cluster %in% kelowna_cluster_ids) %>%
+  group_by(event_cluster, year, month) %>%
+  summarize(
+    count = n(),
+    mean_dc = mean(dc, na.rm = TRUE),
+    mean_hfi = mean(hfi, na.rm = TRUE),
+    mean_ffmc = mean(ffmc, na.rm = TRUE),
+    mean_dmc = mean(dmc, na.rm = TRUE),
+    mean_isi = mean(isi, na.rm = TRUE),
+    mean_bui = mean(bui, na.rm = TRUE),
+    mean_fwi = mean(fwi, na.rm = TRUE),
+    start_date = min(rep_date),
+    end_date = max(rep_date),
+    .groups = 'drop'  
+  )
+print(kelowna_summary)
+
+# Create a dataframe with Kelowna data
+test_Kelowna_2 <- data.frame(
+  dc = kelowna_summary$mean_dc,     
+  hfi = kelowna_summary$mean_hfi, 
+  ffmc = kelowna_summary$mean_ffmc,
+  dmc = kelowna_summary$mean_dmc,
+  isi = kelowna_summary$mean_isi,
+  bui = kelowna_summary$mean_bui,
+  fwi = kelowna_summary$mean_fwi
+)
+```
+
+
+```{r}
+predicted_boxcox_fires_test_Kelowna_2 <- predict(model_1, newdata = test_Kelowna_2)
+
+predicted_fires_test_Kelowna_2 <- reverse_boxcox(predicted_boxcox_fires_test_Kelowna_2, lm_best)
+
+# Result
+result_test_Kelowna_2 <- cbind(test_Kelowna_2, predicted_fires_test_Kelowna_2)
+result_test_Kelowna_2
+```
+
+
+```{r}
+mean(result_test_Kelowna_2$predicted_fires_test_Kelowna_2, na.rm = TRUE)
+
+```
+
