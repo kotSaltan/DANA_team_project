@@ -2803,6 +2803,7 @@ ggplot(weekly_summary, aes(x = fires)) +
   labs(title = "Distribution of Weekly Number of Fires", 
        x = "Number of Fires", 
        y = "Frequency") +
+  scale_x_continuous(labels = comma) + 
   theme_minimal() +
   theme(
     plot.title = element_text(hjust = 0.5, size = 14),
