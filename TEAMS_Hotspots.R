@@ -3082,6 +3082,7 @@ print(test_Kelowna_2)
 
 
 
+
 predicted_boxcox_fires_test_Kelowna_2 <- predict(model_1, newdata = test_Kelowna_2)
 
 predicted_fires_test_Kelowna_2 <- reverse_boxcox(predicted_boxcox_fires_test_Kelowna_2, lm_best)
