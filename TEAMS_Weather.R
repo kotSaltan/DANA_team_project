@@ -11,6 +11,7 @@ library(reshape2)
 library(GGally)
 library(caret)
 library(ggbreak)
+library(geosphere) 
 
 # Create a new RProject, create data folder with the datasets, set working directory.
 
@@ -55,6 +56,12 @@ weather_peak$month <- factor(weather_peak$month,
 str(weather_peak$month)
 
 
+
+
+
+
+# Select specific variables to describe ####
+
 # Select only the specified variables
 weather_peak <- weather_peak %>%
   select(station_name, station_id, lat, lon, date, year, month, day, 
@@ -96,7 +103,6 @@ print(summary_weather_peak)
 
 
 # Table shows NA values in spd_max_gust  (80%)
-
 
 
 
@@ -208,8 +214,6 @@ missing_pcp
 # The missing values range from 16.0% to 28.0% per year.
 # The year with the highest percentage of missing values is 2019 with 28.0%.
 # There is an increase in missing values in more recent years, from 2018 onwards.
-
-
 
 
 
@@ -507,11 +511,6 @@ ggplot(monthly_avg_weather, aes(x = month, y = avg_pcp, color = factor(year), gr
 
 # Each year shows unique trends, indicating variability in weather patterns.
 # Some years, such as 2023, show significantly higher peaks in precipitation compared to others.
-# DRAFT ####
-names(weather)
-
-
-
 
 
 
@@ -561,7 +560,7 @@ print(hist_filtered)
 
 
 
-# Two Sample T Test
+# Two Sample T Test ####
 
 # Subset the data
 names(weather_peak)
@@ -604,7 +603,7 @@ create_histogram <- function(data_2018, data_2021, var_name, binwidth) {
 }
 
 # Create histograms for each variable
-create_histogram(august_2018, august_2021, "max_temp", binwidth = 1)
+create_histogram(august_2018, august_2021, "mean_temp", binwidth = 1)
 create_histogram(august_2018, august_2021, "spd_max_gust", binwidth = 1)
 create_histogram(august_2018, august_2021, "total_precip", binwidth = 1)
 create_histogram(august_2018, august_2021, "total_rain", binwidth = 1)
